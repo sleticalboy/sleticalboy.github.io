@@ -1,0 +1,20 @@
+## Okio
++ Source<InputStream>
+    * -read()
+    * -close()
+    * -timeout()
+    |-- BufferedSource
+        |-- RealBufferedSource
+    |-- GzipSource
+    |-- ForwardingSource
+    |-- InflateSource
++ Sink<OutputStream>
+    * write()
+    * flush()
+    * close()
+    * timeout()
+    |-- BufferedSink
+        |-- RealBufferedSink
+    |-- GzipSink
+    |-- ForwardingSink
+    |-- InflateSink
