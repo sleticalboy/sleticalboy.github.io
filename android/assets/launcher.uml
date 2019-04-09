@@ -1,0 +1,48 @@
+# 第一部分
+app 启动流程分析 @ v1.0.0 @ 2016-04-09 @ 李斌
+Launcher : onClick()
+Launcher : startActivitySafely()
+Launcher : startActivity()
+Launcher -> Activity : startActivity()
+Activity : startActivityForResult()
+Activity -> Instrumentation: execStartActivity()
+Instrumentation -> AMS: startActivity()
+AMS : startActivityAsUser()
+AMS -> ActivityStarter: startActivityMayWait()
+ActivityStarter: startActivityLocker()
+ActivityStarter: startActivity(23参)
+ActivityStarter: startActivity(9参)
+ActivityStarter: startActivityUnchecker()
+ActivityStarter-> ActivityStackSupervisor: resumeFocusedStackTopActivityLocked()
+ActivityStackSupervisor-> ActivityStack: resumeTopActivityUncheckedLocked()
+ActivityStack: resumeTopActivityInnerLocked()
+ActivityStack-> ActivityStackSupervisor: startSpecificActivityLocked()
+ActivityStackSupervisor-> AMS: startProcessLocked()
+AMS: startProcessLocked(6参)
+AMS-> Process: Progress.start()
+[Launcher -> Progress]
+
+# 第二部分
+app 启动流程分析 @ v1.0.1 @ 2016-04-09 @ 李斌
+Process-> ZygoteProcess: Process.zygoteProcess.start()
+ZygoteProcess: startViaZygote()
+ZygoteProcess: zygetoSendArgsAndGetResult()
+ZygoteProcess-> ZygoteServer: 通过 ZygoteConnection 与 server 通讯
+ZygoteServer:: runSelectLoop() 死循环，可能在 os 启动的时候就开始循环了
+ZygoteServer:: acceptCommandPeer() 创建 ZygoteConnection
+ZygoteServer-> ZygoteConnection: runOnce()
+ZygoteConnection: readArgList() 读取参数
+ZygoteConnection-> Zygote: Zygote.forkAndSpecialize() fork 子进程
+Zygote:: nativeFork()
+Zygote--> ZygoteConnection: 返回 pid
+ZygoteConnection:: handleChildProc() fork 子进程成功
+ZygoteConnection-> ^ZygoteInit: ZygoteInit.zygoteInit() 
+ZygoteInit:: zygoteInit()
+ZygoteInit--> ZygoteServer: ZygoteInit.main() 调用 ZygoteServer.runSelectLoop() 方法，同时捕获 RuntimeInit.invokeStaticMain() 方法抛出的 Zygote.MethodAndArgsCaller 异常
+ZygoteInit-> RuntimeInit: RuntimeInit.applicationInit()
+RuntimeInit:: invokeStaticMain() 抛出 Zygote.MethodAndArgsCaller 异常
+RuntimeInit--> ZygoteInit: 该异常被 ZygoteInit.main() 捕获
+ZygoteInit:: main() 在 cache 代码块中执行 ex.run() 方法
+ZygoteInit-> ActivityThread: ex.run() 通过反射调用 ActivityThread.main()
+ActivityThread:: main() 正式开始 app 初始化
+[Progress -> ActivityThread.main()]

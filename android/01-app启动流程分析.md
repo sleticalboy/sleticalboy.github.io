@@ -1,6 +1,10 @@
 # App 启动流程源码分析(一)
 > 第一阶段：从点击桌面 app 图标到 ActivityThread 的 main() 方法执行
 
+## 先来两张图
+![Launcher-Process](/assets/Launcher-Process.png)
+![Process-ActivityThread](/assets/Process-ActivityThread.png)
+
 ## Launcher 
 `/packages/apps/Launcher2/src/com/android/launcher2/Launcher.java`
 - 什么是 Launcher 
@@ -17,7 +21,7 @@
 @Override
 public void onClick(View v) {
     Object tag = v.getTag();
-    if (tag instanceof ShortcutInfo) {
+    if (tag instanceof Short``````cutInfo) {
         // ShortcutInfo: 表示工作空间和文件夹中的可启动图标, 可以理解为我们的 app 启动图标
         // Open shortcut
         final Intent intent = ((ShortcutInfo) tag).intent;
@@ -141,7 +145,7 @@ public ActivityResult execStartActivity(
     }
     return null;
 }
-    ```
+```
 
 ## ActivityManagerService 
 `/frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`
@@ -965,10 +969,10 @@ public static class MethodAndArgsCaller extends Exception implements Runnable {
 ## 参考资料
 - [[高级]Android Launcher研究(二)Launcher为何物，究竟是干什么的？][1]
 - [Android 7.0 startActivity()源码解析以及对几个问题的思考][2]
+- [画图工具][4]
 - [什么是EOF][5]
 
 [1]: https://www.cnblogs.com/mzsoft/p/4460156.html
 [2]: https://dev-xu.cn/posts/b3e682b8.html
-[3]: https://www.processon.com/
-[4]: https://juejin.im/post/5b27bfc56fb9a00e373bd232
+[4]: https://github.com/echoma/text_sequence_diagram
 [5]: https://baike.baidu.com/item/EOF/1017800?fr=aladdin
