@@ -2,8 +2,8 @@
 > 第一阶段：从点击桌面 app 图标到 ActivityThread 的 main() 方法执行
 
 ## 先来两张图
-![Launcher-Process](/assets/Launcher-Process.png)
-![Process-ActivityThread](/assets/Process-ActivityThread.png)
+![Launcher-Process](assets/Launcher-Process.png)
+![Process-ActivityThread](assets/Process-ActivityThread.png)
 
 ## Launcher 
 `/packages/apps/Launcher2/src/com/android/launcher2/Launcher.java`
