@@ -1,0 +1,8 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=anything u like
+Exec=exex/path/to/ur/file or soft/link/for/you/file
+Icon=icon/path/for/ur/software
+Terminal=false
+Type=Application
+Categories=Internet;
