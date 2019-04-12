@@ -10,6 +10,9 @@
 - ContextImpl 是何时被创建的？
 - ViewRootImpl 是何时被创建的？
 
+## 先来一张价值 5 千万的时序图
+![uml](assets/app启动流程.svg)
+
 ## ActivityThread
 - #main()
 ```java
@@ -111,8 +114,7 @@ private void attach(boolean system) {
 - #getPackageInfoNoCheck()
 
 ## AMS
-- #attachApplication(IApplicationThread thread)
-- #attachApplicationLocked(IApplicationThread thread, int pid)
+- #attachApplication(IApplicationThread thread) -> #attachApplicationLocked(IApplicationThread thread, int pid)
 - thread.bindApplication()
 - mStackSupervisor.attachApplicationLocked(app)
 
@@ -140,12 +142,12 @@ private void attach(boolean system) {
 ## ActivityThread.H `/*extends Handler {}*/`
 - #BIND_APPLICATION
   - ActivityThread#handleBindApplication(AppBindData data)
-  - ActivityThread#getPackageInfoNoCheck(data.appInfo, data.compatInfo)
-  - ContextImpl.createAppContext()
-  - mInstrumentation = new Instrumentation()
-  - data.info.makeApplication(data.restrictedBackupMode, null /\*instrumentation\*/);
-  - mInstrumentation.callApplicationOnCreate(app) -> app.onCreate: 在 app.attachBaseContext() 之后执行
-  - 预加载一些字体等资源文件
+    - ActivityThread#getPackageInfoNoCheck(data.appInfo, data.compatInfo) 返回 LoadedApk 对象
+    - ContextImpl.createAppContext() 创建 ContextImpl 对象，getService() 等操作就是托管给这个类处理
+    - mInstrumentation = new Instrumentation()
+    - data.info.makeApplication(data.restrictedBackupMode, null /\*instrumentation\*/); 实例化 Application
+    - mInstrumentation.callApplicationOnCreate(app) -> app.onCreate: 在 app.attachBaseContext() 之后执行
+    - 预加载一些字体等资源文件
 - #LAUNCH_ACTIVITY
   - ActivityThread#handleLaunchActivity(ActivityClientRecord r, Intent customIntent, String reason)
   - ActivityThread#performLaunchActivity()
@@ -185,6 +187,10 @@ private void attach(boolean system) {
 ## 参考资料
 - [Android 7.0 startActivity()源码解析以及对几个问题的思考][2]
 - [画图工具][4]
+- [ViewRootImpl的独白，我不是一个View(布局篇)][3]
+- [starUML 破解][1]
 
+[1]: https://www.52pojie.cn/thread-796355-1-1.html
 [2]: https://dev-xu.cn/posts/b3e682b8.html
+[3]: https://blog.csdn.net/stven_king/article/details/78775166
 [4]: https://github.com/echoma/text_sequence_diagram
