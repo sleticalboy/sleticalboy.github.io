@@ -523,7 +523,7 @@ final void handleResumeActivity(IBinder token, boolean clearHide, boolean isForw
             r.window = r.activity.getWindow();
             // window.getDecorView() 是个抽象方法，具体实现在 PhoneWindow 中
             // 如果 window.mDecor 为 null， 会执行 window.installDecor() 方法实例化 mDecor 对象
-            // 我明平时调用的 activity.findViewById() 实际是调用的 mDecor.findViewById()
+            // 我们明平时调用的 activity.findViewById() 实际是调用的 mDecor.findViewById()
             View decor = r.window.getDecorView();
             // ...
             if (a.mVisibleFromClient) {
