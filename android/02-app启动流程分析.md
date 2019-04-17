@@ -587,9 +587,9 @@ final void handleResumeActivity(IBinder token, boolean clearHide, boolean isForw
 > 还有几个疑问：<br/>
 > 1, AndroidManifest.xml 文件是何时被解析的？<br/>
 > 2, 关于 ClassLoader? 一脸懵逼啊！<br/>
-> 3, WindowManager/ViewRootImpl/WindowManagerGloble 之间有什么关联？<br/>
+> 3, WindowManager/ViewRootImpl/WindowManagerGlobal 之间有什么关联？<br/>
 > 4, Service/BroadcastReceiver/ContentProvider 是什么时候初始化的？<br/>
-> 5, JIT 是什么？见了好多次了!</br>
+> 5, JIT 是什么？见了好多次了!<br/>
 > 道阻且长！
 
 ## 参考资料
