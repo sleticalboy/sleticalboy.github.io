@@ -12,3 +12,7 @@
     2，如果有冲突，则解决冲突；
     3，提交，推送。
 ```
+- 在git中出现中文乱码的解决方案
+```
+$ git config --global core.quotePath false
+```

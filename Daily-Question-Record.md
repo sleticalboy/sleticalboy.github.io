@@ -118,7 +118,7 @@ okhttp:
 ```xml
 from: https://blog.csdn.net/qq_18620851/article/details/80617549
 问题： 由于 Android P 限制了明文流量的网络请求，非加密的流量请求都会被系统禁止掉。
-1: 在 res 下新建一个 xml 目录，然后创建一个名为：network_security_config.xml 文件 ，该文件内容如下：
+1: 在 res 下新建一个 xml 目录，然后创建一个名为: network_security_config.xml 文件 ，该文件内容如下：
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <base-config cleartextTrafficPermitted="true" />

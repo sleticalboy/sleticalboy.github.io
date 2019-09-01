@@ -16,41 +16,41 @@
 
 ### PackageManagerService
 - 重要字段
-```java
-// packageName -> Package 映射
-final ArrayMap<String, PackageParser.Package> mPackages = new ArrayMap<String, PackageParser.Package>();
-final PackageHandler mHandler = new PackageHander(); // 子线程
-```
+  ```java
+  // packageName -> Package 映射
+  final ArrayMap<String, PackageParser.Package> mPackages = new ArrayMap<>();
+  final PackageHandler mHandler = new PackageHander(); // 子线程
+  ```
 - PMS 的构造器里做了巨多(600多行代码)的工作，其中就包括扫描 /data/app/ 下所有符合‘包名-flag/base.apk’的文件 ，
   然后由 ParallelPackageParser(内部有一个线程池)调用 PackageParser 解析每一个 apk 并缓存解析出来的 Package 文件等待下次使用。
 - PMS 初始化是在 SystemServer.main() 方法里执行的
 - 我们平时对 PMS 的调用都是跨进程调用
-```shell
-# 可以看到，所有的文件属性都是 d 即目录，符合‘/data/app/包名-flag/’格式
-root@NX529J:/data/app # ls -al
-drwxr-xr-x          cn.nubia.accounts-1
-drwxr-xr-x          cn.nubia.browser-1
-drwxr-xr-x          cn.nubia.calendar.preset-1
-drwxr-xr-x          cn.nubia.neopush-1
-drwxr-xr-x          cn.nubia.neoshare-2
-drwxr-xr-x          cn.nubia.paycomponent-1
-drwxr-xr-x          cn.nubia.soundrecorder.preset-1
-drwxr-xr-x          cn.nubia.thememanager-1
-drwxr-xr-x          com.dodola.breakpad-1
-drwxr-xr-x          com.sleticalboy.dailywork-1
-drwxr-xr-x          com.sleticalboy.ic-2
-drwxr-xr-x          com.sleticalboy.noc-2
-drwxr-xr-x          com.sleticalboy.okhttp25.test-1
-drwxr-xr-x          com.sleticalboy.tinker-1
-drwxr-xr-x          com.speedsoftware.rootexplorer-1
-drwxr-xr-x          com.willme.topactivity-1
-drwxr-xr-x          uk.co.senab.photoview.sample-2
-# 下边随便进入一个目录看下，任何一个应用安装完成之后都会有一个 base.apk 文件
-# lib 是一个目录，里面放的是打包到 apk 中的 .so 文件，如果一个应用中没有 .so 那么这个目录将会是个空目录
-root@NX529J:/data/app/com.speedsoftware.rootexplorer-1 # ls -al
--rw-r--r--  4573584 base.apk
-drwxr-xr-x          lib
-```
+  ```shell
+  # 可以看到，所有的文件属性都是 d 即目录，符合‘/data/app/包名-flag/’格式
+  root@NX529J:/data/app # ls -al
+  drwxr-xr-x          cn.nubia.accounts-1
+  drwxr-xr-x          cn.nubia.browser-1
+  drwxr-xr-x          cn.nubia.calendar.preset-1
+  drwxr-xr-x          cn.nubia.neopush-1
+  drwxr-xr-x          cn.nubia.neoshare-2
+  drwxr-xr-x          cn.nubia.paycomponent-1
+  drwxr-xr-x          cn.nubia.soundrecorder.preset-1
+  drwxr-xr-x          cn.nubia.thememanager-1
+  drwxr-xr-x          com.dodola.breakpad-1
+  drwxr-xr-x          com.sleticalboy.dailywork-1
+  drwxr-xr-x          com.sleticalboy.ic-2
+  drwxr-xr-x          com.sleticalboy.noc-2
+  drwxr-xr-x          com.sleticalboy.okhttp25.test-1
+  drwxr-xr-x          com.sleticalboy.tinker-1
+  drwxr-xr-x          com.speedsoftware.rootexplorer-1
+  drwxr-xr-x          com.willme.topactivity-1
+  drwxr-xr-x          uk.co.senab.photoview.sample-2
+  # 下边随便进入一个目录看下，任何一个应用安装完成之后都会有一个 base.apk 文件
+  # lib 是一个目录，里面放的是打包到 apk 中的 .so 文件，如果一个应用中没有 .so 那么这个目录将会是个空目录
+  root@NX529J:/data/app/com.speedsoftware.rootexplorer-1 # ls -al
+  -rw-r--r--  4573584 base.apk
+  drwxr-xr-x          lib
+  ```
 
 ### PackageParser
 - 一些静态常量
