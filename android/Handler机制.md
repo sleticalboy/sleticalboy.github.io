@@ -61,15 +61,23 @@ public void dispatchMessage(Message msg) {
 ```java
 //////////////////// java 源码
 public class Leak {
+    private final NonStaticInner inner = new NonStaticInner() {
+        @Override
+        public void foo() {
+        }
+    };
     // 非静态内部类
-    class NonStaticInner {}
+    class NonStaticInner {
+        public void foo() {
+        }
+    }
     // 静态内部类
     static class StaticInner {}
 }
 //////////////////// 编译之后的字节码
 // 非静态内部类
 class Leak$NonStaticInner {
-    // 持有外部类 Leak 的引用 this$0，如果有耗时操作没有执行完毕，会一直持有此引用，
+    // 非静态内部类持有外部类 Leak 的引用 this$0，如果有耗时操作没有执行完毕，会一直持有此引用，
     // 从而使外部类的实例在生命周期结束时无法及时释放而造成内存泄露
     Leak$NonStaticInner(Leak this$0) {
         this.this$0 = this$0;
@@ -77,8 +85,16 @@ class Leak$NonStaticInner {
 }
 // 静态内部类
 class Leak$StaticInner {
-    // 不持有外部类的引用，从而不会导致泄露
+    // 静态内部类不持有外部类的引用，从而不会导致泄露
     Leak$StaticInner() {}
+}
+// 匿名内部类
+class Leak$1 extends NonStaticInner {
+    // 同非静态内部类
+    Leak$1(Leak this$0) {
+        super(this$0);
+        this.this$0 = this$0;
+    }
 }
 ```
 
