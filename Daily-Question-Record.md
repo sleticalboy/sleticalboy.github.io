@@ -104,7 +104,7 @@ if (mContext instanceof Activity && !((Activity) mContext).isFinishing()) {
 - 302：
 - 306：
 - 307：
-- 400：bad request 说明请求没有进入到 server 里
+- 400：bad request 
   ```log
   是多少
   ```

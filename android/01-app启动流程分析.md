@@ -21,7 +21,7 @@
 @Override
 public void onClick(View v) {
     Object tag = v.getTag();
-    if (tag instanceof Short``````cutInfo) {
+    if (tag instanceof ShortcutInfo) {
         // ShortcutInfo: 表示工作空间和文件夹中的可启动图标, 可以理解为我们的 app 启动图标
         // Open shortcut
         final Intent intent = ((ShortcutInfo) tag).intent;
@@ -640,7 +640,7 @@ private static Process.ProcessStartResult zygoteSendArgsAndGetResult(
   当有新的 app 启动时就会调用这个方法，所以当我们调用 ZygoteProcess#openZygoteSocketIfNeeded()
   方法的时候就会执行到这里来。<br/>
   事实：此方法会抛出 Zygote.MethodAndArgsCaller 异常并且被 Zygote.main()
-  捕获, 在 cache 代码块里会调用 Zygote.MethodAndArgsCaller.run() 方法
+  捕获, 在 catch 代码块里会调用 Zygote.MethodAndArgsCaller.run() 方法
 - runSelectLoop() 调用 ZygoteConnection#runOnce()
 ```java
 void runSelectLoop(String abiList) throws Zygote.MethodAndArgsCaller {

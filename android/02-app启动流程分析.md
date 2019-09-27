@@ -235,7 +235,7 @@ private void handleBindApplication(AppBindData data) {
         // If the app is being launched for full backup or restore, bring it up in
         // a restricted environment with the base application class.
         // 14, 生成 Application 实例，
-        // 第一个参数跟备份和回复有关，一般都是 false, 第二个参数是 Instrumentation 对象
+        // 第一个参数跟备份和恢复有关，一般都是 false, 第二个参数是 Instrumentation 对象
         Application app = data.info.makeApplication(data.restrictedBackupMode, null);
         mInitialApplication = app;
         if (!data.restrictedBackupMode) {
@@ -247,6 +247,7 @@ private void handleBindApplication(AppBindData data) {
                 mH.sendEmptyMessageDelayed(H.ENABLE_JIT, 10*1000);
             }
         }
+        // 由此可见，ContentProvider#onCreate() 方法先于 Application#onCreate() 方法执行
         try {
             // 25，调用 application.onCreate()
             mInstrumentation.callApplicationOnCreate(app);
