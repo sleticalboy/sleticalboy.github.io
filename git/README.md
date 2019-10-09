@@ -1,3 +1,5 @@
 # git learning and questions
 
-## how to add a public key
+## structure
+- [common commands](./common_commands.md)
+- [common questions](./common_questions.md)
