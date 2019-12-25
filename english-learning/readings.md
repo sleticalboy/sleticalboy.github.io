@@ -1,5 +1,35 @@
 # readings
 
+## Expressions about Dog
+### main
+### others
+---
+
+## Expressions about Water
+### main
+- in hot water 
+	- to be in trouble, serious or not so serious
+	- a man who breaks a low can be in hot water with the police
+- in deep water
+	- be in difficult position
+	- be facing a problem that you do not have the ability to solve
+- to keep your head above water
+	- to stay out of debt
+- water over the dam
+	- to forget sth. bad that had happened
+- to hold water
+	- It comes from a way of testing the condition of a container
+	- is about the strength or weakness of an idea or opinion that you may be arguing about
+- throw cold water
+	- It means to not like an idea.
+
+### others
+- come from
+- deal with
+- proposal
+
+---
+
 ## Expressions about Fish
 ### main
 - sth. sounds fishy
@@ -30,7 +60,7 @@
 - a big fish in small pond
 - plenty of other fish in the sea
 
-### other
+### others
 - in other words
 - in an effort to do...
 - roller coaster
@@ -40,10 +70,4 @@
 - break up with sb.
 - marriage ceremony
 
----
-
-## Expressions about Water
----
-
-## Expressions about Dog
 ---
