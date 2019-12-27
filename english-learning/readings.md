@@ -1,5 +1,38 @@
 # readings
 
+## Computer Terms
+### major part
+- mouse
+	- a small device that you move around on a flat surface in front of a computer
+	- pointer, cursor, computer screen
+	- a carved block of wood with two metal wheels
+	- had a tail at the end which was the wire that connected it to the computer
+- hacker
+	- who writes software programs in a special computer language
+	- who tries to steal information from computer systems
+- Google
+	- search engine
+		- find information about almost any subject on the Internet
+	- googol is an extremely large number(100 zeroes behind 1)
+- blog 
+	- the shortened name for a Web log
+	- a personal web page
+	- people who have blogs are called bloggers
+- spam
+	- unwanted sales messages sent to your electronic mailbox
+- SPAM 
+	- a eating place that only serves a processed meat product from the USA.
+	- just as unwanted sales messages interfere with communication over the Internet
+
+### minor part
+- a major part of people's life
+- open fields
+- in front of
+- a large amount of
+- interfere with
+
+---
+
 ## Expressions about Dog
 ### main
 - lead a dog's life
