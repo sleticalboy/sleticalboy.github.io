@@ -2,7 +2,35 @@
 
 ## Expressions about Dog
 ### main
+- lead a dog's life
+	- to describe a person who has an unhappy existence
+- a dog-eat-dog world
+	- means many people are competing for something
+- work like a doy
+	- means sb. has to work very, very hard
+	- such hard work can make perple dog-tired
+- every dog has its day
+	- every person enjoys a successful period during his or her life.
+- you can never teach an old dog new tricks
+	- older people do not like to learn new things and will not change the way they do things
+- meaner than a junkyard dog(mean dogs)
+- his bark is worse than his bite
+- be in the doghouse
+	- husbands and wives use this doghouse term when they are angry at each other
+- let sleeping dogs lie
+- dogs day of summer
+	- the hottest days of the year
+- A rainstorm may cool the weather. But we do not want it to rain too hard. 
+We do not want it to rain cats and dogs.
+
 ### others
+- treat sb. well
+- medical care
+- compete for
+- be compared to
+- wedding anniversary
+- leave sth. alone
+
 ---
 
 ## Expressions about Water
