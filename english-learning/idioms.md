@@ -6,3 +6,5 @@
 - instances
 	- Stop playing the fool!! Everybody is looking at us.
 	- He plays the fool when he is around girls.
+
+## in the same boat
