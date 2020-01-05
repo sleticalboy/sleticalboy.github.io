@@ -10,6 +10,11 @@
 - Antarctica
 
 ## Others
+- Well, we can start by getting you an **apron** that fits better.
+- European size thirty-seven, which is a US size seven.
+- large, extra large, or even extra-extra large
+- She asked me **what size** it is and I said **medium**.
+- A big shirt will make you look **sloppy**.
 - Only one **puppy** remained in the cage as the rest were sold.
 - The **playhouse** is big and empty.
 - All of my summer clothing is hung in the **closet**.
