@@ -10,6 +10,19 @@
 - Antarctica
 
 ## Others
+- show her friends a bit of Middle Eastern **hospitality**
+- main street, the shopping mall downtown, 
+- He doesn't let me make **entrees**.
+- He doesn't let me prepare **appetizers** anymore.
+- You can't make **starters**?
+- There **is nothing wrong with** being a server, but that's **insulting**.
+- to find a different **career**
+- These shoes are **tiny**! I can't get my feet into them!
+- I understand his point. It makes you look sloppy, and it's not very professional.
+- make a good impression
+- black pants are always good
+- look professional, nice jacket, shirt with a tie
+- You're going to be standing for a long time, so your shoes need to be comfortable.
 - Well, we can start by getting you an **apron** that fits better.
 - European size thirty-seven, which is a US size seven.
 - large, extra large, or even extra-extra large
