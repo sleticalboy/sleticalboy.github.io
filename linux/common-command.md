@@ -31,12 +31,39 @@ rename -n 's/[^\d^\w^\.]//g' *.png
 # ln -s 源地址 目标地址 [最好使用绝对路径]
 ln -s src target
 ```
-- mount: 挂载硬盘
-```shell
-# 1、创建挂载点目录
-# 2、执行挂载命令
-# 开机自动挂载，需要修改 /etc/fstab 文件
-```
+
+## 文件切割
+- 大小切割 `split -b 500M src child_prefix`
+- 行数切割 `split -l 500 src child_prefix`
+
+## 磁盘操作
+- 挂载U盘
+    - 1、先查看 `sudo fdisk -l `
+    - 2、找到自己的U盘并挂载 `sudo mount /dev/sdxxx /media/username/xxx（如果不存在xxx要先创建）`
+- 开机自动挂载，需要修改 /etc/fstab 文件
+- 查看磁盘空间 `df / du`
+- 重新挂载磁盘 `mount -o remount,rw mount_point`
+- 卸载U盘 `sudo umount /media/username/xxx`
+- 弹出U盘 `udisksctl unmount -b /dev/sdb1`、`udisksctl power-off -b /dev/sdb`
+
+## grep 全局搜索字符串
+- 只在目录中所有的.php和.html文件中递归搜索字符"main()"
+    - `grep"main()" . -r --include *.{php,html}`
+- 在 dir 下递归[r]搜索 string，匹配之后显示行号[n]
+    - `grep "string" -rn [dir or file] `
+- 递归 `-r`
+- 显示行号 `-n`
+- 指定类型文件 `--include="*.xml"`
+- 指定上下文行数 `-C n 之前和之后n行 -B n 之前n行 -A n 之后n行`
+
+## 其他
+- 查看内核启动日志 `dmesg`
+- 查看所有端口占用情况 `netstat -apn or netstat -tulpn`
+- 查看当前用户 `whoami`
+- 查看用户 id `id root[user_name]`
+- 查看文件属性 `lsattr/chattr`
+- ssh 远程登录 `ssh -p 80 username@ip/hostname`
+
 - [查看系统快捷键]
 ```shell
 gsettings get/set org.gnome.desktop.wm.keybindings [key:switch-to-workspace-left]
