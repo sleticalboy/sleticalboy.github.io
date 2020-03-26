@@ -56,6 +56,12 @@ ln -s src target
 - 指定类型文件 `--include="*.xml"`
 - 指定上下文行数 `-C n 之前和之后n行 -B n 之前n行 -A n 之后n行`
 
+## 查看文件内容
+- `cat`/`more`/`less`
+- 显示指定行 
+    - `cat file | tail -n +100 | head -n 20` (从第100行开始，显示20行)
+    - `cat file | head -n 100 | tail -n +20` (显示100到第120行)
+
 ## 其他
 - 查看内核启动日志 `dmesg`
 - 查看所有端口占用情况 `netstat -apn or netstat -tulpn`
@@ -63,6 +69,8 @@ ln -s src target
 - 查看用户 id `id root[user_name]`
 - 查看文件属性 `lsattr/chattr`
 - ssh 远程登录 `ssh -p 80 username@ip/hostname`
+- 查看历史命令 `history | grep 'cmd'`
+- 执行历史命令 `!序号`
 
 - [查看系统快捷键]
 ```shell
