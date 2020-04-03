@@ -34,6 +34,7 @@ public enum State {
 ```
 - 打开开发者模式中的【布局边界开关】
 ```java
+// 自己编译的镜像上可用，测试通过反射方式在三星 S8+ 设备上是无效的
 // setprop debug.layout true/false
 private void updateLayoutBounds() {
     // show layout bound
@@ -78,7 +79,10 @@ dumpsys meminfo com.example.app
 - 卸载应用
 ```pm uninstall package.name```
 - 启动activity
-暂无
+```shell
+# 打开原生设置主页面
+[adb shell] am start -n com.android.settings/.Settings
+```
 - 清除数据
 ```pm clear package.name```
 - 禁用组件
