@@ -80,8 +80,10 @@ dumpsys meminfo com.example.app
 ```pm uninstall package.name```
 - 启动activity
 ```shell
-# 打开原生设置主页面
+# 通过指定包名和类来打开(原生设置主)页面
 [adb shell] am start -n com.android.settings/.Settings
+# 通过 action 打开页面
+[adb shell] am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS
 ```
 - 清除数据
 ```pm clear package.name```
