@@ -61,8 +61,10 @@ Device storage monitor service (devicestoragemonitor) commands:
 ```
 - 输入事件模拟：
 ```shell
-input keyevent xxx （xxx 是KeyEvent.java里面的按键数值）
-input text [what you like]
+# 模拟按键事件
+[adb shell] input keyevent key_code (key_code 是KeyEvent.java里面的按键数值）
+# 模拟输入文本
+[adb shell] input text 'string'
 ```
 - 内存泄露检测
 ```shell
@@ -77,13 +79,15 @@ dumpsys meminfo com.example.app
     Death Recipients:        2      OpenSSL Sockets:        0
 ```
 - 卸载应用
-```pm uninstall package.name```
+```[adb shell] pm uninstall package.name```
 - 启动activity
 ```shell
 # 通过指定包名和类来打开(原生设置主)页面
 [adb shell] am start -n com.android.settings/.Settings
 # 通过 action 打开页面
 [adb shell] am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS
+# 发送广播
+[adb shell ] am broadcast -a com.android.action.XXX -e[s/i/f/l/z]
 ```
 - 清除数据
 ```pm clear package.name```
