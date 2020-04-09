@@ -87,7 +87,7 @@ dumpsys meminfo com.example.app
 # 通过 action 打开页面
 [adb shell] am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS
 # 发送广播
-[adb shell ] am broadcast -a com.android.action.XXX -e[s/i/f/l/z]
+[adb shell ] am broadcast -a com.android.action.XXX -e[s/i/f/l/z] key1 value1
 ```
 - 清除数据
 ```pm clear package.name```
@@ -113,3 +113,5 @@ Second NTP:
 Android NTP: time.android.com, used: false
 Duration(s) to update: 86400
 ```
+- 打开 WLAN 详细日志记录功能
+  - 设置->开发者选项->网络->打开【启用WLAN详细日志记录功能】
