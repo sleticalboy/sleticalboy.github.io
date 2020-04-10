@@ -10,6 +10,8 @@
 - logcat 带颜色输出
 ```logcat -v color```
 - 如何查看Android 系统中 native 层的 Service
+- logcat 过滤 pid
+```logcat --pid=xxx -v color```
 ```shell
 $ getprop | grep init.svc 
 init.svc.cameraserver: [running]
