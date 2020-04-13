@@ -15,7 +15,7 @@
     tools:text="a man has no name"/>
 ```
 
-### EditText
+### EditText/TextView
 - 限制字符长度
 ```xml
 android:maxLength="50"
@@ -26,6 +26,19 @@ et.setFilters(new InputFilter[]{new InputFilter.LengthFilter(50)})
 - 软键盘搜索事件
 ```xml
 imeOptions="actionSearch"
+```
+- 限制输入类型为 ip
+```xml
+<EditText
+    android:id="@+id/et_setting_printer_edit_info_ip"
+    ...
+    android:inputType="number"
+    android:digits="0123456789." />
+```
+```java
+final EditText mEditText = new EditText(context);
+mEditText.setKeyListener(DigitsKeyListener.getInstance("0123456789."));
+mEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
 ```
 
 ### Bitmap
