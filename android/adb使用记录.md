@@ -82,14 +82,22 @@ dumpsys meminfo com.example.app
 ```
 - 卸载应用
 ```[adb shell] pm uninstall package.name```
+- 发送广播
+```shell
+# 发送广播并携带数据
+[adb shell ] am broadcast -a com.android.action.XXX
+string： --es key value --es k2 v2 ...
+int: --ei key value
+float: --ef key value
+long: --el key value
+bool: --ez key value
+```
 - 启动activity
 ```shell
 # 通过指定包名和类来打开(原生设置主)页面
-[adb shell] am start -n com.android.settings/.Settings
+[adb shell] am start -n com.android.settings/.Settings {携带数据同广播}
 # 通过 action 打开页面
-[adb shell] am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS
-# 发送广播
-[adb shell ] am broadcast -a com.android.action.XXX -e[s/i/f/l/z] key1 value1
+[adb shell] am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS {携带数据同广播}
 ```
 - 清除数据
 ```pm clear package.name```
