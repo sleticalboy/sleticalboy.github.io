@@ -125,3 +125,8 @@ Duration(s) to update: 86400
 ```
 - 打开 WLAN 详细日志记录功能
   - 设置->开发者选项->网络->打开【启用WLAN详细日志记录功能】
+- 打开某一个 tag 的日志
+  - ```setprop log.tag.xxx VERBOSE/DEBUG/WARN/ERROR```
+  - 前提： public static final boolean D = Log.isLoggable(TAG, Log.VERBOSE);
+  - 需要判断是否可以输出日志
+  - 打开之后可能需要杀进程重启
