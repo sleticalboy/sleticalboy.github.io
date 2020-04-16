@@ -130,3 +130,8 @@ Duration(s) to update: 86400
   - 前提： public static final boolean D = Log.isLoggable(TAG, Log.VERBOSE);
   - 需要判断是否可以输出日志
   - 打开之后可能需要杀进程重启
+- anr： Reason: Input dispatching timed out (Waiting to send key event because the focused window has not finished processing all of the input events that were previously delivered to it.  Outbound queue length: 0.  Wait queue length: 1.)
+  - a、设备内存不足的现象：System is running low on memory、ActivityManager: Low on memory:
+  - b、WebServer: call detail 有大量的日志被打印(vendor/grandstream/service/webserver/websocket/tcpserver.c:L531)
+  - c、Binder线程池耗尽的日志 03-20 18:15:40.915 E/IPCThreadState(  516): binder thread pool (4 threads) starved for 878 ms
+  - d、03-20 18:15:48.669 W/hw-IPCThreadState(  498): All binder threads in pool (4 threads) busy for 447 ms
