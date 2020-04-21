@@ -53,6 +53,16 @@ mEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
 
 ## Dialog
 
+## OpenGL
+- OpenGl ES关于渲染方式有以下两种：
+```
+RENDERMODE_CONTINUOUSLY和RENDERMODE_WHEN_DIRTY。
+默认渲染方式为RENDERMODE_CONTINUOUSLY，这两种渲染的含义是：
+RENDERMODE_CONTINUOUSLY：渲染器会不停地渲染场景，
+RENDERMODE_WHEN_DIRTY：只有在创建和调用requestRender()时才会刷新。
+一般设置为RENDERMODE_WHEN_DIRTY方式，这样不会让CPU一直处于高速运转状态，提高手机电池使用时间和软件整体性能。
+```
+
 ## Android DataBinding 使用
 - 布局跟标签必须是 layout 
 ```xml
