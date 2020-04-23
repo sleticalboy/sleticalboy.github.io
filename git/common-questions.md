@@ -33,3 +33,12 @@ $ git config --global core.quotePath false
     $ cat id_sra.pub
     ```
     - step 4: and the add the output's content to your GitHub see [this page](https://help.github.com/en/articles/adding-a-new-ssh-key-to-your-github-account)
+- Permission denied (publickey). fatal: Could not read from remote repository.
+```shell
+binli@192.168.120.246: Permission denied (publickey).
+fatal: Could not read from remote repository.
+Please make sure you have the correct access rights
+and the repository exists.
+```
+    - add ssh public key to remote repository, if you still have the problem, see next;
+    - add your private key use `ssh-add` command like this: `ssh-add ~/.ssh/id_rsa`, now the problem is resolved.
