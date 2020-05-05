@@ -12,6 +12,8 @@
 - 如何查看Android 系统中 native 层的 Service
 - logcat 过滤 pid
 ```logcat --pid=xxx -v color```
+- logcat 查看蓝牙协议栈的日志
+```logcat -v color time | grep -E "(bt_)"```
 ```shell
 $ getprop | grep init.svc 
 init.svc.cameraserver: [running]
