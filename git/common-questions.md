@@ -42,3 +42,15 @@ and the repository exists.
 ```
     - add ssh public key to remote repository, if you still have the problem, see next;
     - add your private key use `ssh-add` command like this: `ssh-add ~/.ssh/id_rsa`, now the problem is resolved.
+- no matching key exchange method found
+```shell
+Unable to negotiate with 192.168.120.246 port 29418: no matching key exchange method found. Their offer: diffie-hellman-group1-sha1
+fatal: Could not read from remote repository.
+Please make sure you have the correct access rights
+and the repository exists.
+```
+    - add the following line to your `~/.ssh/config` file
+        ```
+        Host 192.168.120.246
+            KexAlgorithms +diffie-hellman-group1-sha1
+        ```
