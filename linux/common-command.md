@@ -77,4 +77,14 @@ ln -s src target
 gsettings get/set org.gnome.desktop.wm.keybindings [key:switch-to-workspace-left]
 ```
 
+## 查看服务状态
+	- `sudo systemctl status sshd`
+
+## 不小心改动了 /usr/bin/sudo 的权限
+> `sudo: /usr/bin/sudo must be owned by uid 0 and have the setuid bit set`
+
+- 以当前用户身份注销，然后以root用户身份重新登录。
+- 执行 `chown root:root /usr/bin/sudo && chmod 4755 /usr/bin/sudo`
+- 以root身份注销，然后以当前用户身份重新登录。
+
 [查看系统快捷键]: https://askubuntu.com/questions/1041914/something-blocks-ctrlaltleft-right-arrow-keyboard-combination/1042413
