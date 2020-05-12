@@ -23,3 +23,12 @@ sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/java-7-oracle
 update-alternatives: --remove needs <name> <path>
 sudo update-alternatives --remove java /usr/lib/jvm/java-7-oraclejdk/bin/java
 ```
+
+## upgrade to latest LTS version
+- 方式1：
+	- `sudo apt update`
+	- `sudp apt upgrade`
+	- `sudo update-manager`
+- 方式2：
+	- 检查升级： `sudo do-release-upgrade`
+	- 升级到 dev 版本： `sudo do-release-upgrade -d`
