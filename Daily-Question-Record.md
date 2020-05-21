@@ -46,6 +46,8 @@ mEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
 ### Drawable
 
 ## Activity
+- 启动 Activity 时，如果添加了 Intent.FLAG_ACTIVITY_NEW_TASK 标记位，startActivityForResult() 之后会立即回调 onActivityResult() 方法
+- Android认为不同Task之间的Activity是不能传递数据的
 
 ## Service
 
