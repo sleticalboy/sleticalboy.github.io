@@ -54,3 +54,7 @@ and the repository exists.
         Host 192.168.120.246
             KexAlgorithms +diffie-hellman-group1-sha1
         ```
+- 执行 git 命令长时间卡住，需要看详细日志
+```shell
+GIT_TRACE=2 git [command]
+```
