@@ -67,7 +67,10 @@
 // ActiveServices.bringDownServiceIfNeededLocked() -> bringDownServiceLocked() -...-> scheduleStopService() -> 
 // ActivityThread.handleStopService() -> Service.onDestroy()
 ```
-
+- bind 服务的 3 种方式
+	- 扩展 Binder : 同一个进程内提供服务
+	- 使用 Messenger : IPC，单线程
+	- 使用 aidl : IPC，多线程
 
 
 [1]: https://www.jianshu.com/p/a50a366a160c
