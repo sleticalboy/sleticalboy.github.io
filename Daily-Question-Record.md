@@ -40,6 +40,12 @@ final EditText mEditText = new EditText(context);
 mEditText.setKeyListener(DigitsKeyListener.getInstance("0123456789."));
 mEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
 ```
+- 文字实现`跑马灯`效果
+    - setEllipsize(TextUtils.TruncatAt.MARQUEE)
+    - text.setSelected(true)
+    - 注意：
+        - EditText 不支持跑马灯效果，如果执行 setEllipsize(TextUtils.TruncatAt.MARQUEE) 会抛出异常 EditText cannot use the ellipsize mode TextUtils.TruncateAt.MARQUEE
+        - 只有当 text.setSelected(true) 时才有效果
 
 ### Bitmap
 
