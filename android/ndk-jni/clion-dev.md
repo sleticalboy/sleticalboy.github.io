@@ -1,6 +1,18 @@
 # Clion 配置开发环境
 
-## 
+## 配置如下信息：Build,Excution,Deployment -> CMake -> Profiles
+```
+-DCMAKE_SYSTEM_NAME=Android
+-DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a
+-DCMAKE_ANDROID_NDK=$ANDROID_SDK/ndk/20.0.5594570
+-DCMAKE_SYSTEM_VERSION=28
+-DCMAKE_C_FLAGS=""
+-DCMAKE_CXX_FLAGS=""
+-DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang
+```
+![Clion-CMake-config](./src/clion-cmake-config.png)
+
+## 配置之后的输出内容(勾选 Automatically reload CMake project on editing)
 ```
 /home/binli/opt/clion-2020.1.1/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a -DCMAKE_ANDROID_NDK=/home/binli/opt/android-sdk/ndk/20.0.5594570 -DCMAKE_SYSTEM_VERSION=28 -DCMAKE_C_FLAGS= -DCMAKE_CXX_FLAGS= -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -G "CodeBlocks - Unix Makefiles" /home/binli/code/HelloClion
 -- Android: Targeting API '28' with architecture 'arm', ABI 'armeabi-v7a', and processor 'armv7-a'
@@ -23,15 +35,4 @@
 -- Generating done
 -- Build files have been written to: /home/binli/code/HelloClion/cmake-build-android-jni
 [Finished]
-```
-
-##
-```
--DCMAKE_SYSTEM_NAME=Android
--DCMAKE_ANDROID_ARCH_ABI=armeabi-v7a
--DCMAKE_ANDROID_NDK=$ANDROID_SDK/ndk/20.0.5594570
--DCMAKE_SYSTEM_VERSION=28
--DCMAKE_C_FLAGS=""
--DCMAKE_CXX_FLAGS=""
--DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang
 ```
