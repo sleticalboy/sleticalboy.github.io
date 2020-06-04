@@ -56,6 +56,7 @@ mEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
 - Android认为不同Task之间的Activity是不能传递数据的
 
 ## Service
+- ServiceConnection#onServiceDisconnected() 方法不会在 Context#unbindServie() 调用后执行，只会在 service 死掉时执行
 
 ## BroadcastReceiver
 
