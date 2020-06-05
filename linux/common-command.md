@@ -30,6 +30,8 @@ rename -n 's/[^\d^\w^\.]//g' *.png
 ```shell
 # ln -s 源地址 目标地址 [最好使用绝对路径]
 ln -s src target
+# 修改已有链接
+ln -snf 新源地址 软链接地址
 ```
 
 ## 文件切割
