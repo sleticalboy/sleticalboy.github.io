@@ -101,6 +101,10 @@ bool: --ez key value
 # 通过 action 打开页面
 [adb shell] am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS {携带数据同广播}
 ```
+- 开启/停止服务 
+```shell
+[adb shell] am stop/startservice com.example.xxx/.MyService
+```
 - 清除数据
 ```pm clear package.name```
 - 禁用组件
