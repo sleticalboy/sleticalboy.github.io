@@ -47,6 +47,19 @@ mEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
         - EditText 不支持跑马灯效果，如果执行 setEllipsize(TextUtils.TruncatAt.MARQUEE) 会抛出异常 EditText cannot use the ellipsize mode TextUtils.TruncateAt.MARQUEE
         - 只有当 text.setSelected(true) 时才有效果
 
+### ListView
+- 在 TV 开发中可能会遇到 ListView#setSelection(int index) 无效，可尝试以下解决办法
+```
+private Instrumentation mInst;
+public void performKeyEvent(int keyCode) {
+    if (mInst == null) {
+        mInst = new Instrumentation();
+    }
+    mInst.sendKeyDownUpSync(keyCode);
+}
+```
+
+
 ### Bitmap
 
 ### Drawable
