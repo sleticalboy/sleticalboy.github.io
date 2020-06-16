@@ -3,6 +3,11 @@
 
 - 查看可以被 dump 的 service ：
 ```dumpsys | grep "DUMP OF SERVICE"```
+- dump service
+```
+# 需要重写 Service#dump(FileDescriptor fd, PrintWriter writer, String[] args) 方法
+dumpsys activity service package.name/.abs.YourService
+```
 - 系统应用新添加的Activity后跳转报错解决办法（比如Settings应用）：
 ```pm install -r system/priv-app/GsSettings/GsSettings.apk```，触发pms重新解析一次apk即可
 - logcat 模板
