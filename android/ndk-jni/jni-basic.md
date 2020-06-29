@@ -45,6 +45,8 @@ static void sendCommand_native(JNIEnv *env, jobject clazz, jcharArray cmd) {
     if (ret < 0) {
         LOGE("send cmd to Nrf failed with ret: %d", ret);
     }
+    // release
+    env->ReleaseCharArrayElements(_cmd, cmd, JNI_ABORT);
     close(fd);
 }
 ```
