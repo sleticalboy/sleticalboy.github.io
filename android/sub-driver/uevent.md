@@ -13,6 +13,27 @@
 - hardware/libhardware_legacy/uevent.c
 - hardware/libhardware_legacy/include/hardware_legacy/uevent.h
 
+## 代码实例
+```java
+// UEventObserver 使用
+final UEventObserver observer = new UEventObserver() {
+    @Override
+    public void onUEvent(UEvent event) {
+        final String value = event.get("WIRELESS_MICROPHONE_CHANNEL");
+        Log.d(TAG, "onUEvent() event: " + event + ", value: " + value);
+        if (value != null && !"ff".equals(value)) {
+            final String[] arr = value.split(" ");
+            for (int i = 0; i < arr.length; i += 2) {
+                if (i + 1 < arr.length) {
+                    final GmdChannels.Table table = GmdChannels.resolveTable(null, arr[i] + arr[i + 1]);
+                    Log.d(TAG, "onUEvent() table: " + table);
+                }
+            }
+        }
+    }
+};
+observer.startObserving("WIRELESS_MICROPHONE_CHANNEL");
+```
 
 ## 扩展
 - linux 获取热插拔事件： `udevadm monitor --env`
