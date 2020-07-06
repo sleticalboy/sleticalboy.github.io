@@ -95,4 +95,7 @@ gsettings get/set org.gnome.desktop.wm.keybindings [key:switch-to-workspace-left
 - 执行 `chown root:root /usr/bin/sudo && chmod 4755 /usr/bin/sudo`
 - 以root身份注销，然后以当前用户身份重新登录。
 
+## 系统源码路径
+- `/usr/src/`
+
 [查看系统快捷键]: https://askubuntu.com/questions/1041914/something-blocks-ctrlaltleft-right-arrow-keyboard-combination/1042413
