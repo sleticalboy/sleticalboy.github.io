@@ -5,6 +5,30 @@
 - on workday/weekday
 
 ## some work-related words
+- adapt
+```
+英 [əˈdæpt] 美 [əˈdæpt]
+vt. 使适应；改编
+vi. 适应
+It's amazing how soon you adapt.
+你这么快就适应了，真是令人惊奇。
+The organisms were forced to adapt in order to survive.
+生物被迫适应，以求生存。
+We must constantly adapt and innovate to ensure success in a growing market.
+我们必须不时地适应并创新，以确保在不断扩大的市场中取得成功。
+```
+- optimize
+```
+英 [ˈɒptɪmaɪz] 美 [ˈɑːptɪmaɪz]
+vt. 使最优化，使完善
+vi. 优化；持乐观态度
+As always, you should profile your code and optimize it when necessary.
+一如既往的，你应该在必要的时候分析和优化你的代码。
+Most of us could do with some professional guidance on how to optimize our time.
+我们大多数人在如何优化时间上可能需要一些职业指导。
+This includes skills about how to integrate these products with each other, as well as with existing systems, and how to optimize solutions running on them.
+这包括有关这些产品彼此如何集成(以及如何与现有系统集成)和如何优化在其上运行的解决方案的技能。
+```
 - peripheral
 ```
 英 [pəˈrɪfərəl] 美 [pəˈrɪfərəl]
