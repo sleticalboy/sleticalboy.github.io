@@ -5,6 +5,42 @@
 - on workday/weekday
 
 ## some work-related words
+- bond
+```
+英 [bɒnd] 美 [bɑːnd]
+n. 债券；结合；约定；粘合剂；纽带
+vi. 结合，团结在一起
+vt. 使结合；以…作保
+n. (Bond)人名；(英、德、西、刚(金)、瑞典)邦德
+The bond is currently priced at $900.
+这种债券当前定价为$900。
+It looks like a miniature version of James Bond's car.
+它看上去像一辆小型的詹姆斯•邦德的汽车。
+The eight-year bond will bear annual interest of 10.5%.
+这份8年期的债券将产生10.5%的年息。
+```
+- explicit
+```
+英 [ɪkˈsplɪsɪt] 美 [ɪkˈsplɪsɪt]
+adj. 明确的；清楚的；直率的；详述的
+He gave me very explicit directions on how to get there.
+他清楚地向我说明了去那儿的路线。
+Peter gives two explicit answers in verse 38 to what they need—what we need.
+彼得在 38 诗节中给出了两个明确的答案，他们需要什么——我们需要什么。
+They may hesitate in the face of political pressure or an explicit decision.
+面对政治压力或明确的决定，他们可能会犹豫不决。
+```
+- bionic
+```
+英 [baɪˈɒnɪk] 美 [baɪˈɑːnɪk]
+adj. 仿生学的；利用仿生学的
+The most unexpected things will brew in this bionic hivelike supermind.
+在这种类似于蜂巢的仿生超级思维中，一定酝酿着某种最出人意料的东西。
+Formula One fan Matthew James, however, had a more specific ambition. He wanted the car company to help build him a new bionic hand.
+然而一级方式程赛车粉丝马修·詹姆斯却拥有更具体的雄心。他想让汽车公司帮他做一个新的仿生手。
+Moreover, the bionic material structures, which mimic the Plato bodies and Kapler-Poinsot bodies, were suggested to design the composite coating systems.
+此外还讨论了仿柏拉图体与开普勒-波因索特体的复合材料涂层结构设计。
+```
 - adapt
 ```
 英 [əˈdæpt] 美 [əˈdæpt]
