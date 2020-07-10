@@ -5,6 +5,17 @@
 - on workday/weekday
 
 ## some work-related words
+-sniffer
+```
+英 [snɪfə] 美
+n. 嗅探器；嗅探犬；以鼻吸毒者
+Sniffer dogs could be trained to track them down.
+可以训练嗅探犬来追捕他们。
+Anybody with a packet sniffer on your network or on a remote machine can view the information as it is exchanged, sometimes even password information.
+任何人都可以在您的网络或远程计算机上使用包嗅探器查看交换的信息，有时甚至可以查看密码信息。
+For example, a network sniffer could track which machines and at what time a particular machine communicated with another machine just by knowing its MAC address.
+例如，只要知道一台机器的mac地址，网络嗅探器就可以追踪哪些机器以及在什么时候哪台机器与此机器通信。
+```
 - bond
 ```
 英 [bɒnd] 美 [bɑːnd]
