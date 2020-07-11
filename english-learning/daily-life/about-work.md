@@ -5,6 +5,17 @@
 - on workday/weekday
 
 ## some work-related words
+- eviction
+```
+英 [ɪˈvɪkʃn] 美 [ɪˈvɪkʃn]
+n. 逐出；赶出；收回
+He was facing eviction, along with his wife and family.
+他及其妻儿正面临着被驱逐。
+They received a notice threatening them with eviction if they did not immediately pay the back monthly rent of $1, 025.
+当他们接到通知威胁他们说，如果不能立即支付1025美元的月租，他们将被驱逐。
+Some who have bought their own land, but failed to get planning permission for their dwellings, now face eviction.
+那些已购买了自己土地但未能取得居留地计划许可的人如今面临着被驱逐的境地。
+```
 -sniffer
 ```
 英 [snɪfə] 美
