@@ -5,7 +5,18 @@
 - on workday/weekday
 
 ## some work-related words
-<<<<<<< HEAD
+- postfix
+```
+英 [pəʊs(t)'fɪks] 美 [post'fɪks]
+n. [语] 后缀；词尾
+vt. 加字尾于
+Read the postfix expression from left to right.
+从左到右读入后缀表达式
+If you could not pop two operators, the syntax of the postfix expression was not correct.
+如果您不能够弹出两个操作数，后缀表达式的语法就不正确。
+Infix notation is a common way of writing expressions, while prefix and postfix notations are primarily used in computer science.
+中缀表示法是书写表达式的常见方式，而前缀和后缀表示法主要用于计算机科学领域。
+```
 - eviction
 ```
 英 [ɪˈvɪkʃn] 美 [ɪˈvɪkʃn]
