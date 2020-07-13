@@ -5,6 +5,7 @@
 - on workday/weekday
 
 ## some work-related words
+<<<<<<< HEAD
 - eviction
 ```
 英 [ɪˈvɪkʃn] 美 [ɪˈvɪkʃn]
@@ -26,6 +27,18 @@ Anybody with a packet sniffer on your network or on a remote machine can view th
 任何人都可以在您的网络或远程计算机上使用包嗅探器查看交换的信息，有时甚至可以查看密码信息。
 For example, a network sniffer could track which machines and at what time a particular machine communicated with another machine just by knowing its MAC address.
 例如，只要知道一台机器的mac地址，网络嗅探器就可以追踪哪些机器以及在什么时候哪台机器与此机器通信。
+```
+- bracket
+```
+英 [ˈbrækɪt] 美 [ˈbrækɪt]
+n. 支架，墙上凸出的托架；括号；等级，范围
+vt. 括在一起；把…归入同一类；排除
+Most of the houses are out of our price bracket.
+大多数房子都超出我们的价格范围。
+Each bracket is fixed to the wall with just three screws.
+每个托架只用3颗螺钉固定在墙上。
+It is unfair to bracket together those who cannot work with those who will not.
+把不能工作的人和不愿工作的人等同看待是不公平的。
 ```
 - bond
 ```
