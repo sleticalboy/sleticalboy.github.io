@@ -98,4 +98,7 @@ gsettings get/set org.gnome.desktop.wm.keybindings [key:switch-to-workspace-left
 ## 系统源码路径
 - `/usr/src/`
 
+## 实现无限循环
+- `watch -n 1 {command}`
+
 [查看系统快捷键]: https://askubuntu.com/questions/1041914/something-blocks-ctrlaltleft-right-arrow-keyboard-combination/1042413
