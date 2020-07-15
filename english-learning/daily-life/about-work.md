@@ -5,6 +5,18 @@
 - on workday/weekday
 
 ## some work-related words
+- audit
+```
+英 [ˈɔːdɪt] 美 [ˈɔːdɪt]
+n. 审计，稽核；查账；审查，检查；（系统的）调查，评估；审核结论，审计结论，稽核结论
+v. 审计，稽核；查账；进行财务审查；系统检查；内部审计；（北美）旁听（大学课程）
+The audit process can then query this key.
+然后，审计过程就可以查询这个键了。
+Each year they audit our accounts and certify them as being true and fair.
+每年他们都会审核我们的账目，以证明其准确合理。
+The bank first learned of the problem when it carried out an internal audit.
+银行是在进行内部审计时最先得知这个问题的。
+```
 - postfix
 ```
 英 [pəʊs(t)'fɪks] 美 [post'fɪks]
