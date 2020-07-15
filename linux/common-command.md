@@ -102,4 +102,7 @@ gsettings get/set org.gnome.desktop.wm.keybindings [key:switch-to-workspace-left
 - `watch -n 1 {command}`
     - `watch -n 1 i2cget -f -y 8 0x40 0x10`
 
+## 查看最近使用过的命令
+- 在 terminal 中按下 `ctrl + r` 然后输入关键字，会自动进行搜索
+
 [查看系统快捷键]: https://askubuntu.com/questions/1041914/something-blocks-ctrlaltleft-right-arrow-keyboard-combination/1042413
