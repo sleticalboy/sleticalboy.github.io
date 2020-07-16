@@ -5,6 +5,17 @@
 - on workday/weekday
 
 ## some work-related words
+- distinct
+```
+英 [dɪˈstɪŋkt] 美 [dɪˈstɪŋkt]
+adj. 明显的；独特的；清楚的；有区别的
+Being 6ft 3in tall has some distinct disadvantages!
+身高6英尺3英寸有明显的劣势！
+The lighthouse beam was quite distinct in the gathering dusk.
+灯塔的光柱在渐暗的黄昏中相当清楚。
+Now that Tony was no longer present, there was a distinct change in her attitude.
+现在托尼不在场了，她的态度就发生了明显变化。
+```
 - audit
 ```
 英 [ˈɔːdɪt] 美 [ˈɔːdɪt]
