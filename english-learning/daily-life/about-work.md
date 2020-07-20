@@ -5,6 +5,40 @@
 - on workday/weekday
 
 ## some work-related words
+- precondition
+```
+英 [ˌpriːkənˈdɪʃn] 美 [ˌpriːkənˈdɪʃn]
+n. 前提；先决条件
+vt. 预处理；事先准备
+A ceasefire is an essential precondition for negotiation.
+停火是谈判的必要前提。
+They have demanded the release of three prisoners as a precondition for any negotiation.
+他们要求释放3名囚犯作为谈判的先决条件。
+After taking office in January, Barack Obama offered talks without precondition to Iran.
+一月，奥巴马上任以后，提出与伊朗进行无先决条件会谈。
+```
+- interference
+```
+英 [ˌɪntəˈfɪərəns] 美 [ˌɪntərˈfɪrəns]
+n. 干扰，冲突；干涉
+Any outside criticism is routinely dismissed as interference.
+任何外来批评照例都被当作干涉而不予理睬。
+They resent foreign interference in the internal affairs of their country.
+他们憎恶对他们国家内政的外来干涉。
+What may seem helpful behaviour to you can be construed as interference by others.
+在你看来似乎有助益的行为会被他人看作干涉。
+```
+- concurrent
+```英 [kənˈkʌrənt] 美 [kənˈkɜːrənt]
+adj. 并发的；一致的；同时发生的；并存的
+n. [数] 共点；同时发生的事件
+Galerie St. Etienne is holding three concurrent exhibitions.
+圣·艾蒂安美术馆在同时举办3场展览。
+He will actually be serving three concurrent five-year sentences.
+实际上他要同期服3个5年的刑期。
+He was imprisoned for two concurrent terms of 30 months and 18 months.
+他被判处30个月和18个月的监禁，合并执行。
+```
 - distinct
 ```
 英 [dɪˈstɪŋkt] 美 [dɪˈstɪŋkt]
