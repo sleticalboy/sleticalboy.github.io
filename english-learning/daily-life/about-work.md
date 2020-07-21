@@ -5,6 +5,17 @@
 - on workday/weekday
 
 ## some work-related words
+- hierarchy
+```
+英 [ˈhaɪərɑːki] 美 [ˈhaɪərɑːrki]
+n. 层级；等级制度
+She's quite high up in the management hierarchy.
+她位居管理层要职。
+My ambition was to travel upwards in the ecclesiastical hierarchy.
+我的雄心是在基督教会体系内步步高升。
+Like most other American companies with a rigid hierarchy, workers and managers had strictly defined duties.
+像大多数其他等级制度森严的美国公司一样，工人和管理人员都有严格界定的职责。
+```
 - precondition
 ```
 英 [ˌpriːkənˈdɪʃn] 美 [ˌpriːkənˈdɪʃn]
