@@ -58,3 +58,7 @@ and the repository exists.
 ```shell
 GIT_TRACE=2 git [command]
 ```
+- git stash 备份部分文件
+    - add 并 commit 那些你不想备份的文件（例如： git add file1.js, file2.js）
+    - 调用 git stash --include-untracked 只会备份那些没有被add的文件
+    - 调用 git reset 取消已经 add 并 commit 的备份文件，继续工作
