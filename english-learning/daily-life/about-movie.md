@@ -12,6 +12,32 @@ Grand Mercure Hongqiao Shanghai successfully held the press conference of "Bitte
 ```
 
 ## words
+- rage
+```
+英 [reɪdʒ] 美 [reɪdʒ]
+n. 愤怒；狂暴，肆虐；情绪激动
+vi. 大怒，发怒；流行，风行
+n. (Rage)人名；(丹)拉厄
+A tide of rage surged through her.
+一股怒火燃遍她的全身。
+Most air rage incidents involve heavy drinking.
+大多数空中愤怒事件都与酗酒有关。
+Rage bubbled just below the surface of his mind.
+怒火在他心中燃烧，随时可能迸发。
+```
+- suck
+```
+英 [sʌk] 美 [sʌk]
+vt. 吸吮；吸取
+vi. 吸吮；糟糕；巴结
+n. 吮吸
+Greenfly can literally suck a plant dry.
+蚜虫的确能把一株植物吸干。
+Did the farmer suck the poison out of the wound?
+那位农民将毒液从伤口里吸出来了吗？
+Good writers suck in what they see of the world, re-creating their own universe on the page.
+好的作家吸收他们所看到的世界，在书里重新创造自己的世界。
+```
 - ladder
 ```
 英 [ˈlædə(r)] 美 [ˈlædər]
