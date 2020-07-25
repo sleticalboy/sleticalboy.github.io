@@ -12,6 +12,29 @@ Grand Mercure Hongqiao Shanghai successfully held the press conference of "Bitte
 ```
 
 ## words
+- module
+```
+英 [ˈmɒdjuːl] 美 [ˈmɑːdʒuːl]
+n. [计] 模块；组件；模数
+You create a new module for the selector.
+您为选择器创建一个新的模块。
+I simply have isolated that module inside of that function.
+我只需把这个模块加到函数中去。
+I've got both an option to check the module, though in this case I'm just going to run it.
+我有两个选项来检查模块，尽管在本例中，我只是运行它。
+```
+- project
+```
+英 [ˈprɒdʒekt] 美 [ˈprɑːdʒekt]
+n. （生产或研究）工程；方案；计划；事业；项目；专题研究；住房，廉租住宅区
+v. 设计；计划；抛射；投射；表现；促进（观点或意象）；确立（好印象）；突出；预测；发送；（声音）扩及远处；想象（自己或场景）在另一个时间或地点；作……投影线；（情感、愿望）无意投射转移（给别人）
+The whole project was badly managed.
+整个项目管理得差劲。
+What's the timescale for the project?
+这个项目的工期是多长？
+The project cost a shedload of money.
+这个项目花费了一大笔钱。
+```
 - rage
 ```
 英 [reɪdʒ] 美 [reɪdʒ]
