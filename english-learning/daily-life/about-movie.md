@@ -12,6 +12,18 @@ Grand Mercure Hongqiao Shanghai successfully held the press conference of "Bitte
 ```
 
 ## words
+- canary
+```
+英 [kəˈneəri] 美 [kəˈneri]
+n. 金丝雀；淡黄色，鲜黄色；加纳利甜酒
+n. (Canary) （美、印、英）卡纳里
+My canary has laid an egg.
+我的金丝雀下了一个蛋。
+The one with the pointy roof is Canary Wharf.
+那个有尖顶的是金丝雀码头。
+I think all the big banks are in Canary Wharf.
+我觉得所有的大银行都在金丝雀码头。
+```
 - module
 ```
 英 [ˈmɒdjuːl] 美 [ˈmɑːdʒuːl]
