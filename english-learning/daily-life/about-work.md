@@ -5,6 +5,18 @@
 - on workday/weekday
 
 ## some work-related words
+- refund
+```
+英 [ˈriːfʌnd] 美 [ˈrifʌnd]
+n. 退款，退税，返还款，偿还金额
+v. 退还，退款，偿还
+We will refund you your money in full.
+我们会退还你所有的钱。
+If the warranty is limited, the terms may entitle you to a replacement or refund.
+如果保修单有限制，这些条款可让你有权换货或退款。
+The bank has agreed to give an immediate refund in the unlikely event of an error being made.
+银行已同意倘若出现不太可能的错误便立即退款。
+```
 - hierarchy
 ```
 英 [ˈhaɪərɑːki] 美 [ˈhaɪərɑːrki]

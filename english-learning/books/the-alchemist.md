@@ -1,5 +1,27 @@
 # The Alchemist
 
+- bearable
+```
+英 [ˈbeərəbl] 美 [ˈberəbl]
+adj. 可忍受的；支持得住的
+A cool breeze made the heat bearable.
+一阵凉爽的微风使得炎热可以忍受。
+She was the only thing that made life bearable.
+只因有了她生活才可以过得下去。
+BAA and the government think that because aircraft are getting quieter and cleaner the extra flights will be bearable.
+英国机场管理局以及政府认为，由于飞机的噪音和污染都在降低，额外的航班便将在可允许的范围之内。
+```
+- apparently
+```
+英 [əˈpærəntli] 美 [əˈpærəntli]
+adv. 显然地；似乎，表面上
+He paused, apparently lost in thought.
+他停顿下来，显然陷入了沉思。
+The two crimes are apparently unconnected.
+这两起犯罪显然没有关联。
+The plane apparently overshot the runway after landing.
+飞机在着陆后明显越过了跑道。
+```
 - miracle
 ```
 英 [ˈmɪrəkl] 美 [ˈmɪrəkl]
