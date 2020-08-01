@@ -5,6 +5,31 @@
 - on workday/weekday
 
 ## some work-related words
+- blur
+```
+英 [blɜː(r)] 美 [blɜːr]
+n. 模糊不清的事物；模糊的记忆；污迹
+v. 使……模糊不清，变模糊；使暗淡；玷污，沾上污迹
+n. (Blur) （英、美、俄、马、新、印）布勒（人名）
+The events of that day were just a blur.
+那天发生的事只剩一片模糊的记忆。
+The victim's face was blotted out by a camera blur.
+受害者的面部图像被做了模糊处理。
+Out of the corner of my eye I saw a blur of movement on the other side of the glass.
+从眼角我看见了玻璃窗另一边一个移动的模糊身影。
+```
+- fuzzy
+```
+英 [ˈfʌzi] 美 [ˈfʌzi]
+adj. 模糊的；失真的；有绒毛的
+n. (Fuzzy)人名；(英)富齐
+The soundtrack is fuzzy in places.
+这电影声带有些地方模糊不清。
+The lettering is fuzzy and indistinct.
+书写的文字模糊难认。
+A couple of fuzzy pictures have been published.
+几张模糊的图片已被刊印。
+```
 - refund
 ```
 英 [ˈriːfʌnd] 美 [ˈrifʌnd]
