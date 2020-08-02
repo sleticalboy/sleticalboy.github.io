@@ -12,6 +12,24 @@ Grand Mercure Hongqiao Shanghai successfully held the press conference of "Bitte
 ```
 
 ## words
+-  yd well-documented
+```
+well-documented 显而易见的;文档良好;罄竹难书
+well-documented software tool 文件齐全的软件工具  
+reasonable and well-documented 有理有据
+there are well-documented cases 有证据充分的个案
+Well Documented Code 有据可查代码
+well documented for users 资料完备有序
+So Well Documented 因此有据可查
+Its Well Documented 这有文件证明
+well documented with critical operations 福记载与关键行动;与关键的操作有据可查;有据可查的关键操作
+The problem is well documented.
+这个问题有很多依据。
+Causes of the disease have been well documented.
+这种疾病的起因已有完备的记载。
+The main attractions of the Big Apple are well documented.
+纽约城主要景点被很好地记录在案。
+```
 - canary
 ```
 英 [kəˈneəri] 美 [kəˈneri]
