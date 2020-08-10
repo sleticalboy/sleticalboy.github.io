@@ -5,6 +5,28 @@
 - on workday/weekday
 
 ## some work-related words
+- matchable
+```
+[ˈmætʃəbl]
+adj. 对等的，匹配的；敌得过的
+Z Trace this letter first, then color the matchable upper and lower case letters.
+首先按线描好字母，然后将匹配的字母大小写的框内区域图成相同颜色。
+We have the matchable product lines, the complete spare parts, a perfect after-sales service, valued pricing system, Hope to be your ideal choice.
+配套的产品线，齐备的零配件，完善的售后服务，超值的价格体系，希望成为您的理想所选。
+For example, this would change the word "COLOR" into the string "CLOOR"; this string represents all the letters from the word "COLOR," but in a predictable (and more importantly, matchable) order.
+例如，这样做将把单词“COLOR”改为字符串“CLOOR”；该字符串表示单词“COLOR”中的所有字母，但是按照可预测的(而且更重要的是相配的)顺序。
+```
+- overdue
+```
+英 [ˌəʊvəˈdjuː] 美 [ˌoʊvərˈduː]
+adj. 过期的；迟到的；未兑的
+Her baby is two weeks overdue.
+她的胎儿已超过预产期两周了。
+This car is overdue for a service.
+这辆汽车早就该维修了。
+The rent is now overdue.
+现在房租已属拖欠。
+```
 - blur
 ```
 英 [blɜː(r)] 美 [blɜːr]
