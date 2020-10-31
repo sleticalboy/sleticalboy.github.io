@@ -16,7 +16,7 @@
         // ... 省略
     }
     ```
-- #onClick()
+- Launcher#onClick()
 ```java
 @Override
 public void onClick(View v) {
@@ -39,7 +39,7 @@ public void onClick(View v) {
     }
 }
 ```
-- #startActivitySafely()
+- Launcher#startActivitySafely()
   ```java
   boolean startActivitySafely(View v, Intent intent, Object tag) {
       boolean success = false;
@@ -52,7 +52,7 @@ public void onClick(View v) {
       return success;
   }
   ```
-- #startActivity()
+- Launcher#startActivity()
 ```java
 boolean startActivity(View v, Intent intent, Object tag) {
     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -101,9 +101,7 @@ public void startActivityForResult(@RequiresPermission Intent intent, int reques
     if (mParent == null) {
         options = transferSpringboardActivityOptions(options);
         Instrumentation.ActivityResult ar =
-            mInstrumentation.execStartActivity(
-                this, mMainThread.getApplicationThread(), mToken, this,
-                intent, requestCode, options);
+            mInstrumentation.execStartActivity(this, mMainThread.getApplicationThread(), mToken, this, intent, requestCode, options);
         // ...
     } else {
         // ...
@@ -115,8 +113,7 @@ public void startActivityForResult(@RequiresPermission Intent intent, int reques
 `/frameworks/base/core/java/android/app/Instrumentation.java`
 - #execStartActivity()
 ```java
-public ActivityResult execStartActivity(
-        Context who, IBinder contextThread, IBinder token, Activity target,
+public ActivityResult execStartActivity(Context who, IBinder contextThread, IBinder token, Activity target,
         Intent intent, int requestCode, Bundle options) {
     IApplicationThread whoThread = (IApplicationThread) contextThread;
     Uri referrer = target != null ? target.onProvideReferrer() : null;
@@ -169,7 +166,7 @@ public final int startActivityAsUser(IApplicationThread caller, String callingPa
 
 ## ActivityStarter
 `/frameworks/base/services/core/java/com/android/server/am/ActivityStarter.java`
-- #startActivityMayWait()
+- ActivityStarter#startActivityMayWait()
 ```java
 final int startActivityMayWait(IApplicationThread caller, int callingUid,
         String callingPackage, Intent intent, String resolvedType,
@@ -230,7 +227,7 @@ final int startActivityMayWait(IApplicationThread caller, int callingUid,
     }
 }
 ```
-- #startActivityLocked()
+- ActivityStarter#startActivityLocked()
 ```java
 int startActivityLocked(IApplicationThread caller, Intent intent, Intent ephemeralIntent,
         String resolvedType, ActivityInfo aInfo, ResolveInfo rInfo,
@@ -251,7 +248,7 @@ int startActivityLocked(IApplicationThread caller, Intent intent, Intent ephemer
     return mLastStartActivityResult;
 }
 ```
-- #startActivity(23个参数) -> 调用 startActivity(9个参数) [重载方法]
+- ActivityStarter#startActivity(23个参数) -> 调用 startActivity(9个参数) [重载方法]
 ```java
 private int startActivity(final ActivityRecord r, ActivityRecord sourceRecord,
         IVoiceInteractionSession voiceSession, IVoiceInteractor voiceInteractor,
@@ -272,7 +269,7 @@ private int startActivity(final ActivityRecord r, ActivityRecord sourceRecord,
     return result;
 }
 ```
-- #startActivityUnchecked()
+- ActivityStarter#startActivityUnchecked()
 ```java
 private int startActivityUnchecked(final ActivityRecord r, ActivityRecord sourceRecord,
         IVoiceInteractionSession voiceSession, IVoiceInteractor voiceInteractor,
