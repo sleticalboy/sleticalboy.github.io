@@ -1,4 +1,8 @@
-global options:
+# Android Debug Bridge
+> version 1.0.41
+
+## global options:
+<pre>
  -a         listen on all network interfaces, not just localhost
  -d         use USB device (error if multiple devices connected)
  -e         use TCP/IP device (error if multiple TCP/IP devices available)
@@ -7,13 +11,17 @@ global options:
  -H         name of adb server host [default=localhost]
  -P         port of adb server [default=5037]
  -L SOCKET  listen on given socket for adb server [default=tcp:localhost:5037]
+</pre>
 
-general commands:
+## general commands:
+<pre>
  devices [-l]             list connected devices (-l for long output)
  help                     show this help message
  version                  show version num
+</pre>
 
-networking:
+## networking:
+<pre>
  connect HOST[:PORT]      connect to a device via TCP/IP
  disconnect [[HOST]:PORT] disconnect from given TCP/IP device, or all
  forward --list           list all forward socket connections
@@ -38,8 +46,10 @@ networking:
        localfilesystem:<unix domain socket name>
  reverse --remove REMOTE  remove specific reverse socket connection
  reverse --remove-all     remove all reverse socket connections from device
+</pre>
 
-file transfer:
+## file transfer:
+<pre>
  push [--sync] LOCAL... REMOTE
      copy local files/directories to device
      --sync: only push files that are newer on the host than the device
@@ -49,8 +59,10 @@ file transfer:
  sync [all|data|odm|oem|product|system|system_ext|vendor]
      sync a local build from $ANDROID_PRODUCT_OUT to the device (default all)
      -l: list files that would be copied, but don't copy them
+</pre>
 
-shell:
+## shell:
+<pre>
  shell [-e ESCAPE] [-n] [-Tt] [-x] [COMMAND...]
      run remote shell command (interactive shell if no command given)
      -e: choose escape character, or "none"; default '~'
@@ -59,8 +71,12 @@ shell:
      -t: allocate a pty if on a tty (-tt: force pty allocation)
      -x: disable remote exit codes and stdout/stderr separation
  emu COMMAND              run emulator console command
+</pre>
 
-app installation (see also `adb shell cmd package help`):
+## app installation
+> (see also `adb shell cmd package help`):
+
+<pre>
  install [-lrtsdg] [--instant] PACKAGE
      push a single package to the device and install it
  install-multiple [-lrtsdpg] [--instant] PACKAGE...
@@ -86,22 +102,28 @@ app installation (see also `adb shell cmd package help`):
  uninstall [-k] PACKAGE
      remove this app package from the device
      '-k': keep the data and cache directories
+</pre>
 
-debugging:
+##debugging:
+<pre>
  bugreport [PATH]
      write bugreport to given PATH [default=bugreport.zip];
      if PATH is a directory, the bug report is saved in that directory.
      devices that don't support zipped bug reports output to stdout.
  jdwp                     list pids of processes hosting a JDWP transport
  logcat                   show device log (logcat --help for more)
+</pre>
 
-security:
+## security:
+<pre>
  disable-verity           disable dm-verity checking on userdebug builds
  enable-verity            re-enable dm-verity checking on userdebug builds
  keygen FILE
      generate adb public/private key; private key stored in FILE,
+</pre>
 
-scripting:
+## scripting:
+<pre>
  wait-for[-TRANSPORT]-STATE
      wait for device to be in the given state
      STATE: device, recovery, rescue, sideload, bootloader, or disconnect
@@ -122,15 +144,19 @@ scripting:
  unroot                   restart adbd without root permissions
  usb                      restart adbd listening on USB
  tcpip PORT               restart adbd listening on TCP on PORT
+</pre>
 
-internal debugging:
+## internal debugging:
+<pre>
  start-server             ensure that there is a server running
  kill-server              kill the server if it is running
  reconnect                kick connection from host side to force reconnect
  reconnect device         kick connection from device side to force reconnect
  reconnect offline        reset offline/unauthorized devices to force reconnect
+</pre>
 
-environment variables:
+## environment variables:
+<pre>
  $ADB_TRACE
      comma-separated list of debug info to log:
      all,adb,sockets,packets,rwx,usb,sync,sysdeps,transport,jdwp
@@ -138,3 +164,4 @@ environment variables:
  $ANDROID_SERIAL          serial number to connect to (see -s)
  $ANDROID_LOG_TAGS        tags to be used by logcat (see logcat --help)
  $ADB_LOCAL_TRANSPORT_MAX_PORT max emulator scan port (default 5585, 16 emus)
+</pre>
