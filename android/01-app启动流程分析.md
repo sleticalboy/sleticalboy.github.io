@@ -870,6 +870,7 @@ public static void main(String argv[]) {
 
 ## RuntimeInit
 `/frameworks/base/core/java/com/android/internal/os/RuntimeInit.java`
+
 - #applicationInit()
 ```java
 protected static void applicationInit(int targetSdkVersion, String[] argv, 
@@ -892,6 +893,7 @@ protected static void applicationInit(int targetSdkVersion, String[] argv,
     invokeStaticMain(args.startClass, args.startArgs, classLoader);
 }
 ```
+
 - #invokeStaticMain()
 ```java
 private static void invokeStaticMain(String className, String[] argv, ClassLoader classLoader)
@@ -928,6 +930,7 @@ private static void invokeStaticMain(String className, String[] argv, ClassLoade
 
 ## Zygonte
 `/frameworks/base/core/java/com/android/internal/os/Zygote.java`
+
 - Zygonte.MethodAndArgsCaller 继承 Exception 并实现了 Runnable 接口
 ```java
 public static class MethodAndArgsCaller extends Exception implements Runnable {
