@@ -1,5 +1,7 @@
-Usage: logcat [options] [filterspecs]
-options include:
+# Usage of logcat
+
+- options include:
+<pre>
   -s              Set default filter to silent. Equivalent to filterspec '*:S'
   -f <file>, --file=<file>               Log to file. Default is stdout
   -r <kbytes>, --rotate-kbytes=<kbytes>
@@ -57,10 +59,8 @@ options include:
   --wrap          Sleep for 2 hours or when buffer about to wrap whichever
                   comes first. Improves efficiency of polling by providing
                   an about-to-wrap wakeup.
-
 filterspecs are a series of 
   <tag>[:priority]
-
 where <tag> is a log component tag (or * for all) and priority is:
   V    Verbose (default for <tag>)
   D    Debug (default for '*')
@@ -69,12 +69,10 @@ where <tag> is a log component tag (or * for all) and priority is:
   E    Error
   F    Fatal
   S    Silent (suppress all output)
-
 '*' by itself means '*:D' and <tag> by itself means <tag>:V.
 If no '*' filterspec or -s on command line, all filter defaults to '*:V'.
 eg: '*:S <tag>' prints only <tag>, '<tag>:S' suppresses all <tag> log messages.
-
 If not specified on the command line, filterspec is set from ANDROID_LOG_TAGS.
-
 If not specified with -v on command line, format is set from ANDROID_PRINTF_LOG
 or defaults to "threadtime"
+</pre>
