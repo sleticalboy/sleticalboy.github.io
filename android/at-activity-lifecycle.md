@@ -7,15 +7,63 @@
 > (ActivityClientRecord r, PendingTransactionActions pendingActions, Intent customIntent)
 
 ### 初始化 WindowManager : WindowManagerGlobal.initialize();
+- 单例模式： `WindowManagerGlobal#getWindowManagerService()`
+- `sWindowManagerService = IWindowManager.Stub.asInterface(ServiceManager.getService("window"));`
+
 ### 执行 performLaunchActivity() 返回 Activity 对象
 > (ActivityClientRecord r, Intent customIntent)
 
 #### 通过 getPackageInfo() 方法检查 r.packageInfo (LoadedApk)
+1. 安全性检查
+2. 从缓存中查找，如果找到并且资源是最新的则直接返回
+3. 否则构造一个新的 LoadedApk 放入缓存并返回
+
 #### 实例化 Activity 对象（反射）
+1. 通过调用 `Instrumentation#newActivity()` 构造 Activity
+```java
+public Activity newActivity(ClassLoader cl, String className, Intent intent)
+  throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+  return (Activity)cl.loadClass(className).newInstance();
+}
+```
+
 #### 检查并实例化 Application
+- `r.packageInfo.makeApplication(false, mInstrumentation)`
+  1. 检查是否已实例化；
+  2. 检查是否是自定义 application；
+  3. `mInstrumentation.newApplication()`;
+  4. 添加到缓存： `mActivityThread.mAllApplications.add(app)`;
+  5. 调用 `onCreate()` 方法：`mInstrumentation.callApplicationOnCreate(app)`；
+  6. Rewrite the R 'constants' for all library apks
+
 #### 执行 Activity#attach()
+1. `attachBaseContext()`;
+2. 实例化 Activity 的 Window：`mWindow = new PhoneWindow()`；
+3. 设置 WindowCallback：`mWindow.setCallback(this/*Activity*/)`；
+4. 设置 LayoutFactory：`mWindow.getLayoutInflater().setPriviateFactory(this/*Activity*/)`；
+5. 定义 `mUiThread = Thread.currentThread()` 即主线程；
+
+#### 给 Activity 设置主题
+```java
+int theme = r.activityInfo.getThemeResource();
+if (theme != 0) {
+  activity.setTheme();
+}
+```
+
 #### 执行 Activity#onCreate()
+- 通过 `mInstrumentation.callActivityOnCreate()` 调用 `Activity#performCreate()`，最终调用 `Activity.onCreate()`
+- onCreate()
+  1. android O 横屏操作检测；
+  2. Fragment 恢复状态；
+  3. Fragment 分发 create 方法：`mFragments.dispatchCreate()`；
+  4. 执行生命周期回调方法：`getApplication().dispatchActivityCreated()`；
+
+
 #### 将 Activity 放入 mActivities 缓存
+```java
+mActivities.put(r.token, r);
+```
 
 ## handleStartActivity
 > (ActivityClientRecord r, PendingTransactionActions pendingActions)
