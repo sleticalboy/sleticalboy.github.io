@@ -50,7 +50,23 @@
 
 ---
 ## 源码下载
-> 目录说明
+> 参考：[清华大学开源软件镜像站 Android 镜像使用帮助](https://mirrors.tuna.tsinghua.edu.cn/help/AOSP/)
+
+### 下载 repo 工具
+``` shell
+mkdir ~/bin
+PATH=~/bin:$PATH
+curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+# or curl https://mirrors.tuna.tsinghua.edu.cn/git/git-repo -o ~/bin/repo
+chmod a+x ~/bin/repo
+```
+
+### 初始化仓库
+- `repo init -u https://mirrors.tuna.tsinghua.edu.cn/git/AOSP/platform/manifest`
+- 指定 Android 版本：`repo init -u https://mirrors.tuna.tsinghua.edu.cn/git/AOSP/platform/manifest -b android-4.0.1_r1`
+
+### 同步源码
+- `repo sync`
 
 ---
 ## 源码编译
