@@ -414,16 +414,131 @@ performPauseActivityIfNeeded(r, reason);
 > (IBinder token, boolean finishing, int configChanges,</br>
   boolean getNonConfigInstance, String reason)
 
-#### performPauseActivityIfNeeded
-- 检查是否已执行 onPause 方法
+#### 从缓存 mActivities 获取 Activity
+
+- `ActivityClientRecord r = mActivities.get(token);`
+
+#### 检查是否已执行 `onPause` 方法
+
+- `performPauseActivityIfNeeded()`
 
 #### 检查是否已执行 onStop 方法
+
+```java
+if (!r.stopped) {
+    callActivityOnStop(r, false /* saveState */, "destroy");
+}
+```
+
 #### 执行 Activity#onDestroy()
+
+1. `mInstrumentation.callActivityOnDestroy(r.activity);` -> `activity.performDestroy();`
+
+2. `Activity#performDestroy()`
+
+   1. 标记 window 已销毁：`mWindow.destroy();`
+   2. 分发 destroy：`mFragments.dispatchDestroy();`
+   3. 执行 `onDestroy()` 方法
+   4. 销毁任务加载器：`mFragments.doLoaderDestroy()`
+
+3. `Activity#onDestroy()`
+
+   1. 关闭 dialog
+
+      ```java
+      // dismiss any dialogs we are managing.
+      if (mManagedDialogs != null) {
+          final int numDialogs = mManagedDialogs.size();
+          for (int i = 0; i < numDialogs; i++) {
+              final ManagedDialog md = mManagedDialogs.valueAt(i);
+              if (md.mDialog.isShowing()) {
+                  md.mDialog.dismiss();
+              }
+          }
+          mManagedDialogs = null;
+      }
+      ```
+
+   2. 关闭 cursor
+
+      ```java
+      // close any cursors we are managing.
+      synchronized (mManagedCursors) {
+          int numCursors = mManagedCursors.size();
+          for (int i = 0; i < numCursors; i++) {
+              ManagedCursor c = mManagedCursors.get(i);
+              if (c != null) {
+                  c.mCursor.close();
+              }
+          }
+          mManagedCursors.clear();
+      }
+      ```
+
+   3. 执行生命周期回调方法：`getApplication().dispatchActivityDestroyed(this);`
+
 #### 从缓存 mActivities 中移除
 
+- `mActivities.remove(token);`
+
 ### 从 WindowManager 中移除当前 Activity 的 Window
+
+```java
+WindowManager wm = r.activity.getWindowManager();
+View v = r.activity.mDecor;
+if (v != null) {
+    if (r.activity.mVisibleFromServer) {
+        mNumVisibleActivities--;
+    }
+    IBinder wtoken = v.getWindowToken();
+    if (r.activity.mWindowAdded) {
+        if (r.mPreserveWindow) { // ...}
+        else {
+            wm.removeViewImmediate(v);
+            // 从 WindowManager 中移除 DecorView，调用链如下：
+            // WindowManagerImpl.removeViewImmediate() -> 
+            // WindowManagerGlobal.removeView() -> removeViewLocked() ->
+            // ViewRootImpl.die() -> doDie():
+            //   1. dispatchDetachedFromWindow();
+            //   2. destroyHardwareRenderer();
+            //   3. mSurface.release();
+            //   4. WindowManagerGlobal.getInstance().doRemoveView(this);
+        }
+    }
+}
+```
+
 ### 最终的清理工作
+
+```java
+// Mocked out contexts won't be participating in the normal process lifecycle, but if we're 
+// running with a proper ApplicationContext we need to have it tear down things cleanly.
+Context c = r.activity.getBaseContext();
+if (c instanceof ContextImpl) {
+    ((ContextImpl) c).scheduleFinalCleanup(r.activity.getClass().getName(), "Activity");
+    // 移除潜在的 context 泄露，调用链如下：
+    // ContextImpl.scheduleFinalCleanup() ->
+    // ActivityThread.scheduleContextCleanup() -> mH.sendMessage(H.CLEAN_UP_CONTEXT) -> 
+    // ContextImpl.performFinalCleanup() ->
+    // LoadedApk.removeContextRegistrations()
+    //   1. 清理未 unregister 的 Receiver;
+    //   2. 清理未 unbind 的 Service
+}
+```
+
 ### 清除任务栈
+
+```java
+ActivityManager.getService().activityDestroyed(token);
+// 从任务栈中移除 Activity，调用链如下：
+// ActivityManagerService.activityDestroyed() -> 
+// ActivityRecord.activityDestroyedLocked()
+//   1. mHandler.removeMessages(DESTROY_TIMEOUT_MSG, record);
+//   2. cleanUpActivityLocked(record, true, false);
+//   3. removeActivityFromHistoryLocked(record, reason);
+```
+
+
 
 ## performRestartActivity
 > (IBinder token, boolean start)
