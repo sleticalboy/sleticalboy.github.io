@@ -79,9 +79,9 @@ if (theme != 0) {
 - 通过 `mInstrumentation.callActivityOnCreate()` 调用 `Activity#performCreate()`，最终调用 onCreate 方法
 - `Activity.performCreate()`
   - `onCreate();`
-  - `mActivityTransitionState.readState(icicle);`
+  - 修改 TransitionState 状态：`mActivityTransitionState.readState(icicle);`
   - `mFragments.dispatchActivityCreated();`
-  - `mActivityTransitionState.setEnterActivityOptions(this, getActivityOptions());`
+  - 修改 TransitionState 状态：`mActivityTransitionState.setEnterActivityOptions(this, getActivityOptions());`
 - `Activity.onCreate()`
   1. Fragment 恢复状态：`mFragments.restoreAllState()`；
   3. Fragment 分发 create 方法：`mFragments.dispatchCreate()`；
@@ -98,13 +98,13 @@ mActivities.put(r.token, r);
 > (ActivityClientRecord r, PendingTransactionActions pendingActions)
 
 ### 执行 Activity#performStart()
-1. `mActivityTransitionState.setEnterActivityOptions(this, getActivityOptions());`
+1. 修改 TransitionState 状态：`mActivityTransitionState.setEnterActivityOptions(this, getActivityOptions());`
 2. `mFragments.execPendingActions()`
 3. `mInstrumentation.callActivityOnStart(this)` -> `activity.onStart()`
    1. 执行异步加载任务：`mFragments.doLoaderStart();`
-   2. 执行声明周期回调方法：`getApplication().dispatchActivityStarted(this);`
+   2. 执行生命周期回调方法：`getApplication().dispatchActivityStarted(this);`
 4. `mFragments.dispatchStart()`
-5. `mActivityTransitionState.enterReady(this);`
+5. 修改 TransitionState 状态：`mActivityTransitionState.enterReady(this);`
 
 ### 恢复 Activity 状态
 
@@ -150,8 +150,8 @@ if (r.pendingResults != null) {
 
 1. `mFragments.execPendingActions()`
 2. `mInstrumentation.callActivityOnResume(this)` -> `activity.onResume()`
-   1. `getApplication().dispatchActivityResumed(this);`
-   2. `mActivityTransitionState.onResume(this, isTopOfTask());`
+   1. 执行生命周期回调方法：`getApplication().dispatchActivityResumed(this);`
+   2. 修改 TransitionState 状态：`mActivityTransitionState.onResume(this, isTopOfTask());`
 3. `mFragments.dispatchResume();`
 4. `mFragments.execPendingActions();`
 
@@ -265,16 +265,40 @@ if (r.pendingResults != null) {
 
 ### performUserLeaving()
 
+```java
+if (userLeaving) {
+    performUserLeavingActivity(r);
+}
+```
+
 ### performPauseActivity()
+
 > (ActivityClientRecord r, boolean finished, String reason, PendingTransactionActions pendingActions)
 
 #### 保存 Activity 状态
+```java
+// Pre-Honeycomb apps always save their state before pausing
+final boolean shouldSaveState = !r.activity.mFinished && r.isPreHoneycomb();
+if (shouldSaveState) {
+    callActivityOnSaveInstanceState(r);
+}
+```
+
 #### performPauseActivityIfNeeded()
+
 > (ActivityClientRecord r, String reason)
 
 ##### 执行 Activity#onPause()
 
+-  `mInstrumentation.callActivityOnPause()` -> `activity.performPause()` ->  `Activity.onPause()`方法
+- `Activity#performPause()`
+  1.  `mFragments.dispatchPause();`
+  2. `onPause();`
+- `Activity#onPause()`
+  - 执行生命周期回调方法：`getApplication().dispatchActivityPaused(this);`
+
 ## handleStopActivity
+
 > (IBinder token, boolean show, int configChanges,</br>
   PendingTransactionActions pendingActions, boolean finalStateRequest, String reason)
 
