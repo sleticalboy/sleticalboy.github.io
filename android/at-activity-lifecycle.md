@@ -303,21 +303,108 @@ if (shouldSaveState) {
   PendingTransactionActions pendingActions, boolean finalStateRequest, String reason)
 
 ### 从缓存 mActivityes 获取 Activity
+```java
+final ActivityClientRecord r = mActivities.get(token);
+```
+
 ### performStopActivityInner
+
 > (ActivityClientRecord r, StopInfo info, boolean keepShown,</br>
   boolean saveState, boolean finalStateRequest, String reason)
 
-### 检查是否需要执行 stop
-### performPauseActivityIfNeeded
+#### 检查是否已执行过 onStop
+
+#### performPauseActivityIfNeeded
+
 > (ActivityClientRecord r, String reason)
 
 #### 检查是否已调用 onPause 
 
-### callActivityOnStop
+```java
+// One must first be paused before stopped...
+performPauseActivityIfNeeded(r, reason);
+// 如果已执行过 pause 方法则返回，否则执行 onPause
+```
+
+#### callActivityOnStop
+
 > (ActivityClientRecord r, boolean saveState, String reason)
 
-#### 保存 Activity 状态
-#### 执行 Activity#performStop()
+1. 保存 Activity 状态
+
+   ```java
+   // Before P onSaveInstanceState was called before onStop, starting with P it's
+   // called after. Before Honeycomb state was always saved before onPause.
+   final boolean shouldSaveState = saveState && !r.activity.mFinished 
+       && r.state == null && !r.isPreHoneycomb();
+   final boolean isPreP = r.isPreP();
+   if (shouldSaveState && isPreP) {
+       callActivityOnSaveInstanceState(r);
+   }
+   ```
+
+2. 执行 Activity#performStop()：`r.activity.performStop(r.mPreserveWindow, reason);`
+
+   1. 停止任务加载：`mFragments.doLoaderStop(mChangingConfigurations /*retain*/);`
+
+   2. 分发 stop：`mFragments.dispatchStop();`
+
+   3. `mInstrumentation.callActivityOnStop(this)` -> `activity.onStop()`
+
+   4. 清理 cursour：
+
+      ```java
+      synchronized (mManagedCursors) {
+          final int N = mManagedCursors.size();
+          for (int i=0; i<N; i++) {
+              ManagedCursor mc = mManagedCursors.get(i);
+              if (!mc.mReleased) {
+                  mc.mCursor.deactivate();
+                  mc.mReleased = true;
+              }
+          }
+      }
+      ```
+
+3. `Activity#onStop()`
+
+   1. 修改 TransitionState 状态：`mActivityTransitionState.onStop();`
+   2. 执行生命周期回调方法：`getApplication().dispatchActivityStopped(this);`
+
+### 更新 Activity 可见性
+
+- `updateVisibility()`
+
+  ```java
+  private void updateVisibility(ActivityClientRecord r, boolean show) {
+      // Activity#mDecor
+      View v = r.activity.mDecor;
+      if (v != null) {
+          if (show) {
+              if (!r.activity.mVisibleFromServer) {
+                  r.activity.mVisibleFromServer = true;
+                  mNumVisibleActivities++;
+                  if (r.activity.mVisibleFromClient) {
+                      // 更新窗口可见性
+                      r.activity.makeVisible();
+                  }
+              }
+              if (r.newConfig != null) {
+                  // 触发 Activity#onConfiturationChaned() 方法
+                  performConfigurationChangedForActivity(r, r.newConfig);
+                  r.newConfig = null;
+              }
+          } else {
+              if (r.activity.mVisibleFromServer) {
+                  r.activity.mVisibleFromServer = false;
+                  mNumVisibleActivities--;
+                  // 更新窗口可见性
+                  v.setVisibility(View.INVISIBLE);
+              }
+          }
+      }
+  }
+  ```
 
 ## handleDestroyActivity
 > (IBinder token, boolean finishing, int configChanges,</br>
