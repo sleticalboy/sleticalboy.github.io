@@ -543,4 +543,12 @@ ActivityManager.getService().activityDestroyed(token);
 ## performRestartActivity
 > (IBinder token, boolean start)
 
-### 执行 Activity#onRestart()
+### 从缓存 mActivities 中获取 Activity
+
+- `ActivityClientRecord r = mActivities.get(token);`
+
+### activity#performRestart()
+
+1. `mFragments.noteStateNotSaved();`
+2. `mInstrumentation.callActivityOnRestart(this)` -> `activity.onRestart()`
+3. 如果 start ，则执行 `performStart()` 方法，流程与 `handleStartActivity`一致
