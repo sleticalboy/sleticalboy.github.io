@@ -35,7 +35,7 @@ public static IWindowManager getWindowManagerService() {
 ### 执行 performLaunchActivity() 返回 Activity 对象
 > (ActivityClientRecord r, Intent customIntent)
 
-#### 通过 getPackageInfo() 方法检查 r.packageInfo (LoadedApk)
+#### <a id="get-package-info">通过 getPackageInfo() 方法检查 r.packageInfo (LoadedApk)</a>
 1. 安全性检查
 2. 从缓存中查找，如果找到并且资源是最新的则直接返回
 3. 否则构造一个新的 LoadedApk 放入缓存并返回
