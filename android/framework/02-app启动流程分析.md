@@ -11,7 +11,7 @@
 - Q7: ViewRootImpl 是何时被创建的？
 
 ## 首先来一张价值五千万(两包小江山)的时序图
-![uml](assets/app启动流程.svg)
+![uml](../assets/app启动流程.svg)
 
 ## 接下来分析具体流程
 - 1, ActivityThread#main()

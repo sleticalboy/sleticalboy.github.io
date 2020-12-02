@@ -7,10 +7,10 @@
 - [分支管理](aosp/checkout-branch.md)
 
 ## framework 层
-- [面试总结](./面试总结.md)
+- [面试总结](面试总结.md)
 - [app启动流程分析(一)从点击桌面图标到 ActivityThread 的 main() 方法执行](framework/01-app启动流程分析.md)
 - [app启动流程分析(二)从 ActivityThread 的 main() 方法执行到页面显示](framework/02-app启动流程分析.md)
-- [app启动流程分析(三)AndroidManifest.xml 文件解析](framework/03-AndroidManifest文件解析.md)
+- [app启动流程分析(三)AndroidManifest.xml 文件解析](framework/pms/03-AndroidManifest文件解析.md)
 - [ActivityThread 对 Activity 的生命周期的管理](framework/components/at-activity-lifecycle.md)
 - [ActivityThread 对 ContentProvider 的生命周期的管理](framework/components/at-provider-lifecycle.md)
 - [ActivityThread 对 BroadcastReceiver 的生命周期的管理](framework/components/at-receiver-lifecycle.md)
