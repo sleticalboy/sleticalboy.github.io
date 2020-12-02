@@ -23,7 +23,7 @@ if (data.appInfo.targetSdkVersion <= android.os.Build.VERSION_CODES.HONEYCOMB_MR
 ### 检查 LoadedApk
 
 - `data.info = getPackageInfoNoCheck();` -> `getPackageInfo()`
-- <a herf="/android/framework/components/at-activity-lifecycle.md#get-package-info">`getPackageInfo`</a>
+- [`getPackageInfo`](at-activity-lifecycle.md#通过-getpackageinfo-方法检查-rpackageinfo-loadedapk)
 
 ### 检测 debug 模式
 
