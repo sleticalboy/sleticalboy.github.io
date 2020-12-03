@@ -1,2 +1,14 @@
-.vscode/
 daily-work/
+
+# hidden files
+.*
+# exclude .github
+!.github
+
+# jekyll cache 
+_site
+Gemfile.lock
+vendor
+
+# temp folder
+temp
