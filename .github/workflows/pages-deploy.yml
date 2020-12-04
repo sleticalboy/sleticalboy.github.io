@@ -20,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # for posts's lastmod
+          fetch-depth: 5  # 0 means all history for all branches and tags
 
       - name: Setup Ruby
         uses: actions/setup-ruby@v1
