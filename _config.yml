@@ -189,6 +189,9 @@ exclude:
   - docs
   - README.md
   - LICENSE
+  - Rakefile
+  - migrate.sh
+  - .github
 
 jekyll-archives:
   enabled: [categories, tags]

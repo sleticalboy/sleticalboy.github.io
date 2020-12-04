@@ -7,6 +7,9 @@ on:
       - .gitignore
       - README.md
       - LICENSE
+      - gitblog.code-workspace
+      - migrate.sh
+      - Rakefile
 
 jobs:
   continuous-delivery:
