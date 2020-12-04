@@ -96,14 +96,16 @@ RENDERMODE_WHEN_DIRTY：只有在创建和调用requestRender()时才会刷新�
 
 ## Android DataBinding 使用
 - 布局跟标签必须是 layout 
+
 ```xml
 < layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
-</layout>
+< /layout>
 ```
 
 ## Gradle build error
+
 - Program type already present: android.support.v4.app.BackStackRecord$xxx
 ```groovy
  implementation/api/compile 'com.android.support:support-v4:27.1.1'
