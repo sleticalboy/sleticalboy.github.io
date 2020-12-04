@@ -1,10 +1,17 @@
-# Daily Question Record
+---
+layout: post
+title: Daily Question Record
+author: sleticalboy
+date: 2018-09-23 12:15:26
+category: daily
+tags: [android, java]
+---
 
 ## View
 ### TextView
 - 文字阴影效果
 ```xml
-<TextView
+< TextView
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:shadowColor="#8000"
@@ -29,13 +36,15 @@ imeOptions="actionSearch"
 ```
 - 限制输入类型为 ip
 ```xml
-<EditText
+<!-- xml 布局 -->
+< EditText
     android:id="@+id/et_setting_printer_edit_info_ip"
     ...
     android:inputType="number"
     android:digits="0123456789." />
 ```
 ```java
+// Java 代码
 final EditText mEditText = new EditText(context);
 mEditText.setKeyListener(DigitsKeyListener.getInstance("0123456789."));
 mEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
@@ -49,7 +58,7 @@ mEditText.setInputType(InputType.TYPE_CLASS_NUMBER);
 
 ### ListView
 - 在 TV 开发中可能会遇到 ListView#setSelection(int index) 无效，可尝试以下解决办法
-```
+```java
 private Instrumentation mInst;
 public void performKeyEvent(int keyCode) {
     if (mInst == null) {
@@ -88,7 +97,7 @@ RENDERMODE_WHEN_DIRTY：只有在创建和调用requestRender()时才会刷新�
 ## Android DataBinding 使用
 - 布局跟标签必须是 layout 
 ```xml
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
+< layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 </layout>
@@ -114,7 +123,7 @@ androidx -> gradle version 4.10.1
 ## Android Runtime Crash
 - java.lang.NoClassDefFoundError:failed resolution of :Lorg/apache/http/
 ```xml
-<uses-library android:name="org.apache.http.legacy" android:required="false" />
+< uses-library android:name="org.apache.http.legacy" android:required="false" />
 ```
 - Unable to add window -- token android.os.BinderProxy@1e45a46 is not valid; is your activity running?
 ```java
@@ -133,7 +142,7 @@ if (mContext instanceof Activity && !((Activity) mContext).isFinishing()) {
 ```
 - java.lang.UnsupportedOperationException: TextureView doesn't support displaying a background drawable
 ```xml
-<TextureView
+< TextureView
     android:id="@+id/mLiveView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -165,13 +174,13 @@ from: https://blog.csdn.net/qq_18620851/article/details/80617549
 问题： 由于 Android P 限制了明文流量的网络请求，非加密的流量请求都会被系统禁止掉。
 1: 在 res 下新建一个 xml 目录，然后创建一个名为: network_security_config.xml 文件 ，该文件内容如下：
 <?xml version="1.0" encoding="utf-8"?>
-<network-security-config>
+< network-security-config>
     <base-config cleartextTrafficPermitted="true" />
-</network-security-config>
-<application
+< /network-security-config>
+< application
     ...
     android:networkSecurityConfig="@xml/network_security_config">
-</application>
+< /application>
 2：服务器和本地应用都改用 https (推荐)
 3：targetSdkVersion 降级回到 27
 ```

@@ -189,7 +189,7 @@ public static @NonNull Intent parseIntent(@NonNull Resources resources, @NonNull
 ### Package installer 相关
 - InstallStart.java 系统安装 apk 入口页面, 会根据 packageUri.getSchema() 判断打开 InstallStaging 还是 PackageInstallerActivity 页面
 ```xml
-<activity android:name=".InstallStart"
+< activity android:name=".InstallStart"
         android:exported="true"
         android:excludeFromRecents="true">
     <intent-filter android:priority="1">
@@ -211,7 +211,7 @@ public static @NonNull Intent parseIntent(@NonNull Resources resources, @NonNull
         <action android:name="android.content.pm.action.CONFIRM_PERMISSIONS" />
         <category android:name="android.intent.category.DEFAULT" />
     </intent-filter>
-</activity>
+< /activity>
 ```
 - InstallStaging.java 负责开启 AsyncTask 拷贝一份临时的 apk 文件，然后将文件路径转换成 android.net.Uri 传递给 PackageInstallerActivity
 - PackageInstallerActivity.java 根据 packageUri.getSchema() 处理相应的逻辑

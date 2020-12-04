@@ -32,7 +32,10 @@ if (data.appInfo.targetSdkVersion <= android.os.Build.VERSION_CODES.HONEYCOMB_MR
 ### 检查 LoadedApk
 
 - `data.info = getPackageInfoNoCheck();` -> `getPackageInfo()`
-- [`getPackageInfo`](at-activity-lifecycle.md#通过-getpackageinfo-方法检查-rpackageinfo-loadedapk)
+- `getPackageInfo`
+  1. 安全性检查
+  2. 从缓存中查找，如果找到并且资源是最新的则直接返回
+  3. 否则构造一个新的 LoadedApk 放入缓存并返回
 
 ### 检测 debug 模式
 

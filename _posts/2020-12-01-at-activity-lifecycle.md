@@ -41,6 +41,7 @@ public static IWindowManager getWindowManagerService() {
     }
 }
 ```
+
 ### 执行 performLaunchActivity() 返回 Activity 对象
 > (ActivityClientRecord r, Intent customIntent)
 
