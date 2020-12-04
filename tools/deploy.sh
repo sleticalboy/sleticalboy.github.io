@@ -24,7 +24,7 @@ init() {
   if [[ -z $(git branch -av | grep "$PAGES_BRANCH") ]]; then
     # _no_branch=true
     # git checkout -b "$PAGES_BRANCH"
-    git push origin -- delete "$PAGES_BRANCH"
+    git push origin -- delete "origin/$PAGES_BRANCH"
   fi
   git checkout -b "$PAGES_BRANCH"
 }
