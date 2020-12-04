@@ -16,11 +16,11 @@ _backup_dir="$(mktemp -d)"
 
 init() {
   if [[ -z $(git branch -av | grep "$PAGES_BRANCH") ]]; then
-    _no_branch=true
-    git checkout -b "$PAGES_BRANCH"
-  else
-    git checkout "$PAGES_BRANCH"
+    # _no_branch=true
+    # git checkout -b "$PAGES_BRANCH"
+    git push origin --delete "$PAGES_BRANCH"
   fi
+  git checkout "$PAGES_BRANCH"
 }
 
 backup() {
@@ -50,12 +50,10 @@ deploy() {
   git add -A
   git commit -m "[Automation] Site update No.${GITHUB_RUN_NUMBER}"
 
-  git pull --rebase origin "$PAGES_BRANCH"
-
   if $_no_branch; then
     git push -u origin "$PAGES_BRANCH"
   else
-    git push -f origin "$PAGES_BRANCH"
+    git push -f
   fi
 }
 
