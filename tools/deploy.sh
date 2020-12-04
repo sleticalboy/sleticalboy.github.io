@@ -46,11 +46,11 @@ deploy() {
   git config --global user.name "GitHub Actions"
   git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-  git pull --rebase origin "$PAGES_BRANCH"
-
   git update-ref -d HEAD
   git add -A
   git commit -m "[Automation] Site update No.${GITHUB_RUN_NUMBER}"
+
+  git pull --rebase origin "$PAGES_BRANCH"
 
   if $_no_branch; then
     git push -u origin "$PAGES_BRANCH"
