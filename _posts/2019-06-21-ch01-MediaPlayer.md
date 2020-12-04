@@ -4,7 +4,7 @@ title: ch01-MediaPlayer
 author: sleticalboy
 date: 2019-06-21 12:15:26
 category: book
-tags: [android音视频开发]
+tags: [android, audio, video]
 ---
 
 # Android 系统的 MediaPlayer

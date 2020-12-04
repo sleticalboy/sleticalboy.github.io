@@ -13,7 +13,7 @@ tags: [android-enhance]
 > 课后作业地址: https://github.com/AndroidAdvanceWithGeektime
 
 ### 一、高质量开发
-- [崩溃](01-app-crash.md)
+- [崩溃](/posts/01-app-crash)
 - 内存
   - 4G 时代的内存优化
   - 从哪里着手

@@ -10,5 +10,5 @@ tags: [git]
 # git learning and questions
 
 ## structure
-- [common commands](common-commands.md)
-- [common questions](common-questions.md)
+- [common commands](/posts/common-commands)
+- [common questions](/posts/common-questions)

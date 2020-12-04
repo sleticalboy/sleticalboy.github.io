@@ -10,12 +10,12 @@ tags: [english-learning]
 # Englist learning
 
 - useful expression
-- [idioms](idioms.md)
+- [idioms](/posts/idioms)
 - grammer
 - sentence structure
-- [readings](readings.md)
+- [readings](/posts/readings)
 
 ## Daily life
-- [about work](daily-life/about-work.md)
-- [about transportation](daily-life/about-transportation.md)
-- [about eating](daily-life/about-eating.md)
+- [about work](/posts/about-work)
+- [about transportation](/posts/about-transportation)
+- [about eating](/posts/about-eating)

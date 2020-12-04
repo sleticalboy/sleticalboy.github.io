@@ -10,20 +10,20 @@ tags: [linux]
 # linux 笔记
 
 ## common
-- [常用命令](common-command.md)
-- [常见问题](common-questions.md)
-- [配置新系统](setup-a-new-os.md)
+- [常用命令](/posts/common-command)
+- [常见问题](/posts/common-questions)
+- [配置新系统](/posts/setup-a-new-os)
 
 ## installation
-- [install gitlab ce](install-gitlab-ce.md)
-- [install node js](install-nodejs-via-binary-archive.md)
-- [install ruby](install-ruby-full.md)
-- [install ckermit](install-serial-port-tools-ckermit.md)
-- [install vim from source code](install-vim-from-source.md)
-- [install ycmd](install-ycmd.md)
-- [appimage luncher](install-AppImage-extersion-file.md)
+- [install gitlab ce](/posts/install-gitlab-ce)
+- [install node js](/posts/install-nodejs-via-binary-archive)
+- [install ruby](/posts/install-ruby-full)
+- [install ckermit](/posts/install-serial-port-tools-ckermit)
+- [install vim from source code](/posts/install-vim-from-source)
+- [install ycmd](/posts/install-ycmd)
+- [appimage luncher](/posts/install-AppImage-extersion-file)
 
 ## skills
-- [vim skill](vim-skill.md)
-- [shell scripts](shell-script.md)
-- [lib c](library-c-functions.md)
+- [vim skill](/posts/vim-skill)
+- [shell scripts](/posts/shell-script)
+- [lib c](/posts/library-c-functions)

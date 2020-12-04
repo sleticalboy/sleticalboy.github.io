@@ -20,7 +20,7 @@ tags: [java-36-core]
 - Vector、ArrayList 和 LinkedList
 - HashTable、HashMap 和 TreeMap
 - 集合线程安全、ConcurrentHashMap
-- [java 中的 io 方式](IO.md)
+- [java 中的 io 方式](/posts/IO)
 - 文件拷贝
 - 接口和抽象类
 - 设计模式
