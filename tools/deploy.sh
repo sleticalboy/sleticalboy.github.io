@@ -11,33 +11,35 @@ set -eu
 
 PAGES_BRANCH="gh-pages"
 _backup_dir="$(mktemp -d)"
+_has_gh_pages=false
 
 init() {
 
-  # if [[ -z $(git branch -av | grep "$PAGES_BRANCH") ]]; then
-  #   git checkout -b "$PAGES_BRANCH"
-  # else
-  #   git push origin --delete "origin/$PAGES_BRANCH"
+  if [[ -z $(git branch -av | grep "$PAGES_BRANCH") ]]; then
+    _has_gh_pages=true
+    git checkout -b "$PAGES_BRANCH"
+  else
+    git push origin --delete "origin/$PAGES_BRANCH"
+  fi
+
+  # # 如果有远程分支，则删除
+  # grep_str=`git branch -av | grep origin/gh-pages`
+  # echo $grep_str
+  # if [[ $grep_str ]]; then
+  #   echo "delete remote gh-pages branch"
+  #   git push origin --delete origin/gh-pages
   # fi
 
-  # 如果有远程分支，则删除
-  grep_str=`git branch -av | grep origin/gh-pages`
-  echo $grep_str
-  if [[ $grep_str ]]; then
-    echo "delete remote gh-pages branch"
-    git push origin --delete origin/gh-pages
-  fi
+  # # 如果有本地分支，则删除
+  # grep_str=`git branch -av | grep gh-pages`
+  # echo $grep_str
+  # if [[ $grep_str ]]; then
+  #   echo "delete local gh-pages"
+  #   git delete -D gh-pages
+  # fi
 
-  # 如果有本地分支，则删除
-  grep_str=`git branch -av | grep gh-pages`
-  echo $grep_str
-  if [[ $grep_str ]]; then
-    echo "delete local gh-pages"
-    git delete -D gh-pages
-  fi
-
-  # 创建分支
-  git checkout -b "$PAGES_BRANCH"
+  # # 创建分支
+  # git checkout -b "$PAGES_BRANCH"
 }
 
 backup() {
@@ -67,7 +69,11 @@ deploy() {
   git add -A
   git commit -m "[Automation] Site update No.${GITHUB_RUN_NUMBER}"
 
-  git push -u origin "$PAGES_BRANCH"
+  if $_has_gh_pages; then
+    git push -u origin "$PAGES_BRANCH"
+  else
+    git push -f
+  fi
 }
 
 main() {
