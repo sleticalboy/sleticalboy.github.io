@@ -14,7 +14,7 @@ PAGES_BRANCH="gh-pages"
 _no_branch=false
 _backup_dir="$(mktemp -d)"
 
-echo "user: $whoami, backup dir: $_backup_dir"
+echo "backup dir: $_backup_dir"
 
 init() {
   if [[ -z $(git branch -av | grep "$PAGES_BRANCH") ]]; then
