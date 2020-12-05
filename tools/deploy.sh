@@ -13,12 +13,23 @@ PAGES_BRANCH="gh-pages"
 _backup_dir="$(mktemp -d)"
 
 init() {
-  if [[ -z $(git branch -av | grep "$PAGES_BRANCH") ]]; then
-    # 创建分支
-    git checkout -b "$PAGES_BRANCH"
-  else
-    # 删除分支
-    git push origin --delete "origin/$PAGES_BRANCH"
+
+  # if [[ -z $(git branch -av | grep "$PAGES_BRANCH") ]]; then
+  #   git checkout -b "$PAGES_BRANCH"
+  # else
+  #   git push origin --delete "origin/$PAGES_BRANCH"
+  # fi
+
+  # 如果有远程分支，则删除
+  if [[ `git branch -av | grep origin/gh-pages` ]]; then
+    echo "delete remote gh-pages branch"
+    git push origin --delete origin/gh-pages
+  fi
+
+  # 如果有本地分支，则删除
+  if [[ `git branch -av | grep gh-pages` ]]; then
+    echo "delete local gh-pages"
+    git delete -D gh-pages
   fi
 
   # 创建分支
