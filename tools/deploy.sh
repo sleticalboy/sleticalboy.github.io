@@ -10,19 +10,19 @@
 set -eu
 
 PAGES_BRANCH="gh-pages"
-
-_no_branch=false
 _backup_dir="$(mktemp -d)"
-
-echo "backup dir: $_backup_dir"
 
 init() {
   if [[ -z $(git branch -av | grep "$PAGES_BRANCH") ]]; then
-    _no_branch=true
+    # 创建分支
     git checkout -b "$PAGES_BRANCH"
   else
-    git checkout "$PAGES_BRANCH"
+    # 删除分支
+    git push origin --delete "origin/$PAGES_BRANCH"
   fi
+
+  # 创建分支
+  git checkout -b "$PAGES_BRANCH"
 }
 
 backup() {
@@ -52,11 +52,7 @@ deploy() {
   git add -A
   git commit -m "[Automation] Site update No.${GITHUB_RUN_NUMBER}"
 
-  if $_no_branch; then
-    git push -u origin "$PAGES_BRANCH"
-  else
-    git push -f
-  fi
+  git push -u origin "$PAGES_BRANCH"
 }
 
 main() {
