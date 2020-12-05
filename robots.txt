@@ -2,4 +2,4 @@ User-agent: *
 
 Disallow: /norobots/
 
-Sitemap: https://sleticalboy.github.io/sitemap.xml
+Sitemap: http://localhost:4001/sitemap.xml
