@@ -23,7 +23,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0  # 0 means all history for all branches and tags
+          # fetch-depth: 0  # 0 means all history for all branches and tags
+          persist-credentials: false
 
       - name: Setup Ruby
         uses: actions/setup-ruby@v1
@@ -70,5 +71,10 @@ jobs:
           fi
           
       - name: Deploy
-        run: |
-          bash tools/deploy.sh
+        uses: JamesIves/github-pages-deploy-action@release@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: _site
+          cname: sleticalboy.com
+

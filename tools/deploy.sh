@@ -21,25 +21,6 @@ init() {
   else
     git push origin --delete "origin/$PAGES_BRANCH"
   fi
-
-  # # 如果有远程分支，则删除
-  # grep_str=`git branch -av | grep origin/gh-pages`
-  # echo $grep_str
-  # if [[ $grep_str ]]; then
-  #   echo "delete remote gh-pages branch"
-  #   git push origin --delete origin/gh-pages
-  # fi
-
-  # # 如果有本地分支，则删除
-  # grep_str=`git branch -av | grep gh-pages`
-  # echo $grep_str
-  # if [[ $grep_str ]]; then
-  #   echo "delete local gh-pages"
-  #   git delete -D gh-pages
-  # fi
-
-  # # 创建分支
-  # git checkout -b "$PAGES_BRANCH"
 }
 
 backup() {
