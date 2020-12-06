@@ -69,12 +69,12 @@ jobs:
           else
             bash tools/test.sh
           fi
-          
+
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@release@3.7.1
+        uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: _site
-          cname: sleticalboy.com
+          BRANCH: gh-pages # The branch the action should deploy to.
+          FOLDER: _site # The folder the action should deploy.
+          CNAME: sleticalboy.com # Automatically remove deleted files from the deploy branch
 
