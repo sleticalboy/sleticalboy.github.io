@@ -39,7 +39,7 @@ tags: [android]
 ## ndk 开发
 - [jni 基础](/posts/jni-basic)
 - [clion 开发环境搭建](/posts/clion-dev)
-- [clion cmake 配置](/android/ndk-jni/src/clion-cmake-config.png)
+- [clion cmake 配置](/assets/android/src/clion-cmake-config.png)
 
 ## 蓝牙子模块
 - [蓝牙概述](/posts/bluetooth)

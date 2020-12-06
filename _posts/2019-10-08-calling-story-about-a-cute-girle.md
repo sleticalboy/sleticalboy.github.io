@@ -1,3 +1,13 @@
+---
+layout: post
+title: a short english story
+author: sleticalboy
+date: 2019-10-08 03:58:14
+category: english
+tags: [english, story]
+---
+
+<pre>
 -----------------------------------------------------------
 - Hi, is that the demolition place?
 - It is, yeah.
@@ -82,3 +92,5 @@ A684C2DC 0B1583D4 19CBD290 217618CD
 DD9AF44B 99C49590 D2DBDEE1 75860FD2
 8C8BB2AD B2ECE5A4 EFC08AF2 25A9B864
 ------ END LICENSE ------​
+
+</pre>

@@ -16,5 +16,5 @@ tags: [book]
 
 ## 书籍
 - [Android 音视频开发](/posts/ch01-MediaPlayer)
-- [Android 性能优化实践](/book/Android性能优实践.svg)
-- [Android 插件化开发](/book/Android插件化开发.svg)
+- [Android 性能优化实践](/assets/book/Android性能优实践.svg)
+- [Android 插件化开发](/assets/book/Android插件化开发.svg)

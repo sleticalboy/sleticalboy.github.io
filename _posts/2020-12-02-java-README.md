@@ -9,9 +9,9 @@ tags: [java]
 
 # Java 知识体系
 
-## [面向对象设计原则](/java/面向对象设计原则.svg)
+## [面向对象设计原则](/assets/java/面向对象设计原则.svg)
 
-## [设计模式](/java/设计模式.svg)
+## [设计模式](/assets/java/设计模式.svg)
 
 ## [socket](/posts/java-socket)
 
