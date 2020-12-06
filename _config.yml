@@ -190,7 +190,6 @@ exclude:
   - README.md
   - LICENSE
   - Rakefile
-  - migrate.sh
   - .github
 
 jekyll-archives:
