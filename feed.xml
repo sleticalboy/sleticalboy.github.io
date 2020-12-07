@@ -1,1 +1,63 @@
-<feed xmlns="http://www.w3.org/2005/Atom"> <id>http://localhost:4002</id><title>sleticalboy</title><subtitle>A minimal, portfolio, sidebar, bootstrap Jekyll theme with responsive web design and focuses on text presentation.</subtitle> <updated>2020-12-07T15:51:37+08:00</updated> <author> <name>sleticalboy</name> <uri>http://localhost:4002</uri> </author><link href="/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4002" rel="alternate" type="text/html" /> <generator uri="https://jekyllrb.com/" version="4.1.1">Jekyll</generator> <rights> © 2020 sleticalboy </rights> <icon>/assets/img/favicons/favicon.ico</icon> <logo>/assets/img/favicons/favicon-96x96.png</logo> <entry><title>java-socket</title><link href="http://localhost:4002/java/2020/12/02/java-socket/" rel="alternate" type="text/html" title="java-socket" /><published>2020-12-02T10:19:11+08:00</published> <updated>2020-12-02T10:19:11+08:00</updated> <id>http://localhost:4002/java/2020/12/02/java-socket/</id> <content src="http://localhost:4002/java/2020/12/02/java-socket/" /> <author> <name>sleticalboy</name> </author> <category term="java" /> <summary> Socket 编程 参考 Socket 编程 </summary> </entry> <entry><title>binder-settings-anr</title><link href="http://localhost:4002/android/2020/12/02/binder-settings-anr/" rel="alternate" type="text/html" title="binder-settings-anr" /><published>2020-12-02T10:19:11+08:00</published> <updated>2020-12-02T10:19:11+08:00</updated> <id>http://localhost:4002/android/2020/12/02/binder-settings-anr/</id> <content src="http://localhost:4002/android/2020/12/02/binder-settings-anr/" /> <author> <name>sleticalboy</name> </author> <category term="android" /> <summary> Binder Settings anr 引起的思考 native: #02 pc 000000000005a844 /system/lib64/libbinder.so (android::IPCThreadState::talkWithDriver(bool)+260) native: #03 pc 000000000005b718 /system/lib64/libbinder.so (android::IPCThreadState::waitForResponse(android::Parcel*, int*)+360) native: #04 pc 000000000005b438 /system/lib64/libbinder.so (android::IPCThreadState::transact(int, unsigned int, android::Parce... </summary> </entry> <entry><title>at-provider-lifecycle</title><link href="http://localhost:4002/android/2020/12/02/at-provider-lifecycle/" rel="alternate" type="text/html" title="at-provider-lifecycle" /><published>2020-12-02T10:19:11+08:00</published> <updated>2020-12-04T12:03:50+08:00</updated> <id>http://localhost:4002/android/2020/12/02/at-provider-lifecycle/</id> <content src="http://localhost:4002/android/2020/12/02/at-provider-lifecycle/" /> <author> <name>sleticalboy</name> </author> <category term="android" /> <summary> ActivityThread 中 Provider 生命周期 bindApplication() bindApplication() -&amp;gt; mH.sendMessage(H.BIND_APPLICATION) -&amp;gt; handleBindApplication() handleBindApplication() 设置 AsyncTask 执行任务的线程池 // If the app is Honeycomb MR1 or earlier, switch its AsyncTask // implementation to use the pool executor. Normally, we use the // serialized executor as the default. This has to happen in the // main t... </summary> </entry> <entry><title>anr</title><link href="http://localhost:4002/android/2020/12/02/anr/" rel="alternate" type="text/html" title="anr" /><published>2020-12-02T10:19:11+08:00</published> <updated>2020-12-02T10:19:11+08:00</updated> <id>http://localhost:4002/android/2020/12/02/anr/</id> <content src="http://localhost:4002/android/2020/12/02/anr/" /> <author> <name>sleticalboy</name> </author> <category term="android" /> <summary> anr 原理 </summary> </entry> <entry><title>02-app启动流程分析</title><link href="http://localhost:4002/android/2020/12/02/02-app%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90/" rel="alternate" type="text/html" title="02-app启动流程分析" /><published>2020-12-02T10:19:11+08:00</published> <updated>2020-12-06T14:21:40+08:00</updated> <id>http://localhost:4002/android/2020/12/02/02-app%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90/</id> <content src="http://localhost:4002/android/2020/12/02/02-app%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90/" /> <author> <name>sleticalboy</name> </author> <category term="android" /> <summary> android 8.0 app 启动流程源码分析(二) 从 ActivityThread 的 main() 方法执行到页面显示 开篇之前，先思考以下几个问题 Q1: Application 是如何创建的？ Q2: Application 的 attachBaseContext() 为什么会在 onCreate() 方法之前调用？ Q3: Activity 是如何被创建的？ Q4: Activity 的生命周期方法是如何被调用的？ Q5: PhoneWindow 是何时被创建的？ Q6: ContextImpl 是何时被创建的？ Q7: ViewRootImpl 是何时被创建的？ 首先来一张价值五千万(两包小江山)的时序图 接下来分析具体流程 1, ActivityThread#main() public static vo... </summary> </entry> </feed>
+---
+layout: compress
+# Atom Feed, reference: https://validator.w3.org/feed/docs/atom.html
+# v2.0
+# https://github.com/cotes2020/jekyll-theme-chirpy
+# © 2019 Cotes Chung
+# MIT License
+---
+
+{% capture source %}
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>{{ site.url }}</id>
+  <title>{{ site.title }}</title>
+  <subtitle>{{ site.description }}</subtitle>
+  <updated>{{ site.time | date_to_xmlschema }}</updated>
+  <author>
+    <name>{{ site.author }}</name>
+    <uri>{{ site.url }}</uri>
+  </author>
+  <link href="/feed.xml" rel="self" type="application/atom+xml" />
+  <link href="{{ site.url }}" rel="alternate" type="text/html" />
+  <generator uri="https://jekyllrb.com/" version="{{ jekyll.version }}">Jekyll</generator>
+  <rights> © {{ 'now' | date: '%Y' }} {{ site.author }} </rights>
+  <icon>{{ site.baseurl }}/assets/img/favicons/favicon.ico</icon>
+  <logo>{{ site.baseurl }}/assets/img/favicons/favicon-96x96.png</logo>
+
+{% for post in site.posts limit: 5 %}
+  {% assign post_absolute_url = site.url | append: post.url %}
+  <entry>
+    <title>{{ post.title }}</title>
+    <link href="{{ post_absolute_url }}" rel="alternate" type="text/html" title="{{ post.title }}" />
+    <published>{{ post.date | date_to_xmlschema }}</published>
+  {% if post.last_modified_at %}
+    <updated>{{ post.last_modified_at | date_to_xmlschema }}</updated>
+  {% else %}
+    <updated>{{ post.date | date_to_xmlschema }}</updated>
+  {% endif %}
+    <id>{{ post_absolute_url }}</id>
+    <content src="{{ post_absolute_url }}" />
+    <author>
+      <name>{{ site.author }}</name>
+    </author>
+
+  {% if post.categories %}
+    {% for category in post.categories %}
+    <category term="{{ category }}" />
+    {% endfor %}
+  {% endif %}
+
+  {% if post.summary %}
+    <summary>{{ post.summary | strip }}</summary>
+  {% else %}
+    <summary>
+      {% include no-linenos.html content=post.content %}
+      {{ content  | strip_html | truncate: 400 }}
+    </summary>
+  {% endif %}
+
+  </entry>
+{% endfor %}
+</feed>
+{% endcapture %}
+{{ source | replace: '&', '&amp;' }}
