@@ -7,5 +7,5 @@
 # © 2020 Cotes Chung
 # MIT Licensed
 
-bundle exec jekyll s -l -o
+bundle exec jekyll s --port 4001 --incremental
 

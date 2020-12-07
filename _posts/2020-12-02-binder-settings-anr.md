@@ -4,7 +4,7 @@ title: binder-settings-anr
 author: sleticalboy
 date: 2020-12-02 02:19:11
 category: android
-tags: [framework]
+tags: [anr,framework]
 ---
 
 # Binder Settings anr 引起的思考

@@ -26,19 +26,12 @@ avatar: /assets/img/sample/avatar.jpg   # support internet resources
 github:
   username: sleticalboy             # change to your github username
 
-twitter:
-  username: twitter_username            # change to your twitter username
-
 social:
   name: BenLee                  # it will shows as the copyright owner in Footer
   email: sleticalboy@gmail.com             # change to your email address
   links:
     # The first element serves as the copyright owner's link
-    - https://twitter.com/username      # change to your twitter homepage
     - https://github.com/sleticalboy       # change to your github homepage
-    # Uncomment below to add more social links
-    # - https://www.facebook.com/username
-    # - https://www.linkedin.com/in/username
 
 google_site_verification: google_meta_tag_verification # change to your verification string
 #--------------------------
@@ -101,7 +94,8 @@ kramdown:
 
 # DO NOT change this unless you're a Pro user on Jekyll and Web development,
 # or you think you're smart enough to change other relevant URLs within this template.
-permalink: /posts/:title/
+# permalink: /posts/:title/
+permalink: pretty
 
 collections:
   tabs:
