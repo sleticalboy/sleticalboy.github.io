@@ -7,5 +7,6 @@
 # © 2020 Cotes Chung
 # MIT Licensed
 
+bundle clean
 bundle exec jekyll s --port 4001 --incremental
 
