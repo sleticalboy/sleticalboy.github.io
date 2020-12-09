@@ -1,13 +1,12 @@
 ---
 layout: post
-title: app crash
+title: 应用崩溃
 author: sleticalboy
 date: 2019-01-20 15:50:20
 category: book
 tags: [android, book]
 ---
 
-# app crash
 ## 关于崩溃
 - 崩溃类型
   - Java 崩溃就是在 Java 代码中，出现了未捕获异常，导致程序异常退出。
