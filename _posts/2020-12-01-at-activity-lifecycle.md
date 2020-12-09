@@ -4,7 +4,7 @@ title: at-activity-lifecycle
 author: sleticalboy
 date: 2020-12-01 02:31:07
 category: android
-tags: [framework, components]
+tags: [android, framework]
 ---
 
 # ActivityThread 中 Activity 生命周期

@@ -2,7 +2,7 @@
 layout: post
 title: install-nodejs-via-binary-archive
 author: sleticalboy
-date: 2019-10-09 09:19:23
+date: 2019-10-09 17:12:23
 category: linux
 tags: [linux]
 ---

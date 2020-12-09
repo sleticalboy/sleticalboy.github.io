@@ -3,8 +3,8 @@ layout: post
 title: Android Service 系列
 author: sleticalboy
 date: 2020-12-08 14:20:43 +0800
-category: articale
-tags: [service, components, framework]
+category: android
+tags: [android, framework]
 ---
 
 ## Service 概述

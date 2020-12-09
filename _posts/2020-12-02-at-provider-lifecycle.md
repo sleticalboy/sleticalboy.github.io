@@ -4,7 +4,7 @@ title: at-provider-lifecycle
 author: sleticalboy
 date: 2020-12-02 02:19:11
 category: android
-tags: [framework, components]
+tags: [android, framework]
 ---
 
 # ActivityThread 中 Provider 生命周期

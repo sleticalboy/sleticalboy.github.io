@@ -4,7 +4,7 @@ title: multi-thread-and-concurrence
 author: sleticalboy
 date: 2020-11-26 09:41:22
 category: java
-tags: [thread]
+tags: [java]
 ---
 
 # 多线程与并发（Android）

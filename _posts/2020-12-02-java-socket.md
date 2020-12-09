@@ -4,7 +4,7 @@ title: java-socket
 author: sleticalboy
 date: 2020-12-02 02:19:11
 category: java
-tags: [socket]
+tags: [java, net]
 ---
 
 # Socket 编程
