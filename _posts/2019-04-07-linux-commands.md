@@ -30,7 +30,7 @@ find [dir] -name [keyword]
 - tar：压缩/解压缩命令
 - rename
 ```shell
-# 文件名开头添加 smiley_
+# 文件名开头添加 smiley_ -n 表示预览修改结果，不实际修改
 rename -n 's/^/smiley_/' *.png
 # 替换非数字、字母、点
 rename -n 's/[^\d^\w^\.]//g' *.png
@@ -68,16 +68,35 @@ ln -s /src/dir /target/dir
 - 显示行号 `-n`
 - 指定类型文件 `--include="*.xml"`
 - 指定上下文行数 `-C n 之前和之后n行 -B n 之前n行 -A n 之后n行`
+- 反向选择 `-v`
 - 正则表达式
 	- . (小数点)：代表『一定有一个任意字节』的意思；
 	- * (星号)：代表『重复前一个字符， 0 到无穷多次』的意思，为组合形态
 	- ^ (尖尖)：代表以该字符开始
+
+## sed 
+- 使用格式：`sed [options] 'commands' file(s)`
+- 修改文件内容：`-i`
+  - 删除匹配到的行：`sed -i /keyword/d file`
+  - 替换匹配到的字符：`sed -i /-// file` 将 '-' 替换为 ''
 
 ## 查看文件内容
 - `cat`/`more`/`less`
 - 显示指定行 
     - `cat file | tail -n +100 | head -n 20` (从第100行开始，显示20行)
     - `cat file | head -n 100 | tail -n +20` (显示100到第120行)
+- 输入多行内容到文件中
+```shell
+cat <<EOF >file
+#!/usr/bin/env sh
+
+echo "start"
+echo "multi lines to file start"
+echo "multi lines to file end"
+echo "exit"
+
+EOF
+```
 
 ## 其他
 - 查看内核启动日志 `dmesg`
