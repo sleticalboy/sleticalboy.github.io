@@ -7,7 +7,7 @@ category: linux
 tags: [linux]
 ---
 
-## 字符串
+## 字符串操作
 
 1. `long int strtol(const char *str, char **endptr, int base)`
 - string to long -> strtol
@@ -29,7 +29,8 @@ tags: [linux]
 - string length -> strlen
 - 计算字符串 str 的长度，直到空结束字符，但不包括空结束字符'\0'。
 
-## 文件
+## 文件操作
+
 1. `int fcntl(int fd, int cmd, .../* arg*/)`
 - file control
 - 操作文件句柄，返回值小于 0 表示操作失败
@@ -48,6 +49,64 @@ tags: [linux]
 
 3. `int poll(struct poolfd *fds, nfds_t nfds, int timeout)`
 - poll 和 ppoll 等待文件描述符上的某个事件
+- 输入参数
+  - fds：可以传递多个结构体，即可检测多个驱动设备所产生的事件，只要有一个产生了请求事件，此方法就能立即返回
+  - pollfd 结构体定义：
+  ```cpp
+  struct pollfd {
+      int fd;        /* 文件描述符 */
+      short events;  /* 请求的事件类型，监视驱动文件的事件掩码 */
+      short revents; /* 驱动文件实际返回的事件 */
+  };
+  ``` 
+  - nfds：检测启动文件的个数
+  - timeout：超时时间，单位 ms
+- follfd.events 类型
+  - POLLIN：有数据可读
+  - POLLRDNORM：有普通数据可读，等效 POLLIN
+  - POLLPRI：有紧迫数据可读
+  - POLLOUT：写数据不会导致阻塞
+  - POLLRE：指定的文件描述符发生错误
+  - POLLHUP：指定的文件描述符挂起事件
+  - POLLNVAL：无效的请求，打不开指定的文件描述符
+- 方法返回值
+  - 超时：返回 0
+  - 失败：返回 -1，并设置 errno 为错误类型
+  - 有事件发生：返回 revents 域不为 0 的文件描述符的个数，即事件发生或错误报告
+- 示例代码
+```cpp
+// a demo of poll function
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <poll.h>
+int main(int argc, char const *argv[]) {
+    int i;
+    int ret;
+    int fd;
+    unsigned char keys_val;
+    struct pollfd fds[1];
+    fd = open("/dev/buttons", 0);
+    if (fd < 0) {
+        printf("can not open /dev/buttons\n");
+        return -1;
+    }
+    fds[0].fd = fd;
+    fds[0].events = POLLIN;
+    while (1) {
+        ret = poll(fds, 1, 5000);
+        if (ret == 0) {
+            printf("poll time out\n");
+        } else {
+            read(fd, &keys_val, sizeof(keys_val));
+            printf("keys value: 0x%x\n");
+        }
+    }    
+    close(fd);
+    return 0;
+}
+```
 
 ## 内存管理
 1. `void *malloc(size_t size)`
