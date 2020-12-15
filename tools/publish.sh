@@ -3,6 +3,12 @@
 # Deploy the content of _site to 'origin/gh-pages'
 
 main() {
+
+    # clean build cache
+    bundle exec jekyll clean
+    # rebuild site
+    bundle exec jekyll build
+
     work_dir=`mktemp -d`
     cur_dir=`pwd`
     echo "work dir: $work_dir, current dir: $cur_dir"
