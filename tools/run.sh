@@ -7,6 +7,7 @@
 # © 2020 Cotes Chung
 # MIT Licensed
 
-rm -rf .jekyll*
+# clean the build cache first
+bundle exec jekyll clean
 bundle exec jekyll s --port 4001 --incremental
 
