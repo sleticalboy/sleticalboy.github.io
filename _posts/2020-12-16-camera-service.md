@@ -31,6 +31,11 @@ client.initialize() ->
 	frameworks/av/services/camera/libcameraservice/api2/CameraDeviceClient.h
 	frameworks/av/services/camera/libcameraservice/api2/CameraDeviceClient.cpp
 	initializeImpl() -> 父类初始化 Camera2ClientBase::initialize()
+	在 CameraClient.cpp::initialize() 中初始化 mHardware = new CameraHardwareInterface(),
+    接着进行 hardware 初始化：mHardware::initialize() ->
+	CameraProviderManager.cpp::openSession() -> 打开设备：上电、初始化、返回 session 句柄
+	mHardware::setCallbacks(notifyCallback, dataCallback, ...) 注意此处传递的是函数指针
+	enableMsgType() -> mHardware::enableMsgType(error, zoom, focus, metadata msg, ...)
 返回 client 引用
 
 ## hal 层
