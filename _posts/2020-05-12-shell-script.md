@@ -89,3 +89,30 @@ do
     echo "$var"
 done
 ```
+
+## 变量键盘读取、数组与声明
+
+### 变量键盘读取：read
+- `read atest`：将输入内容赋值给 `atest` 变量
+- `read -p 'please enter (yes/no) ' -t 30 confirm`：提示 30s 内输入 `yes/no` 并赋值给 `confirm`
+
+### 声明：declare/typeset
+1. `declare [-aixr] name`
+  - `-a`：声明变量为 `array` 类型
+  - `-i`：声明变量为 `int` 类型
+  - `-x`：声明变量为环境变量
+  - `-r`：声明变量为 `readonly`
+2. 示例：
+```bash
+$ declare -i sum=100+300+400 # 计算总和
+$ echo $sum # 输出 800
+```
+
+### 数组
+
+### 执行多个指令
+1. `cmd ; cmd`：不考虑命令的相关性连续执行
+2. `cmd && cmd`：当且仅前命令执行成功时，才执行后命令
+3. `cmd || cmd`：若前命令执行成功则后命令不执行，反之后命令执行
+
+
