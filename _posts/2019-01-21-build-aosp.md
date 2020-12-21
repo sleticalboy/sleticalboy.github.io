@@ -32,3 +32,12 @@ $ mmm frameworks/native/libs/ui
 $ ls out/development/ide/clion/frameworks/native/libs/ui
 libui-arm64-android libui-arm-android
 ```
+
+## 如何将 Android.mk 文件转换成 Android.bp 文件？
+1. 使用 `androidmk` 工具，位于 `${ANDROID_ROOT}/out/soong/host/linux-x86/bin/androidmk`
+  - 使用方法：`androidmk Android.mk >Android.bp`;
+  - 其原理是读入一个 mk 文件，然后解析成 bp文件
+2. Android N 之前，mk 文件是标准的编译文件，N 之后默认 bp 文件为标准编译文件；
+3. mk 与 bp 的区别：
+  - mk 中可以引用环境变量但 bp 中不能引用环境变量；
+  - mk 中可以有流程控制但 bp 中无流程控制；
