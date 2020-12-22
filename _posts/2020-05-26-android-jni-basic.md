@@ -7,6 +7,31 @@ category: android
 tags: [ndk, android]
 ---
 
+## JNI
+
+Java Native Interface 缩写为 JNI，通过 JNI 可以：
+1. java 程序可以调用 native 函数；
+2. native 程序可以反向调用 java 函数
+
+注意：JNI 层必须实现为动态库的形式，这样 JVM 才能加载并调用 so 中的函数
+
+总结：JNI 是连通 java 层和 native 层的桥梁
+
+## 加载动态库与 native 函数声明
+
+```java
+static {
+    // 加载对应的 JNI 库，name 是库的名称，实际加载时：
+    // linux -> libname_jni.so, windows -> name.dll
+    System.loadLibrary("name");
+}
+
+// java 中使用 native 关键字声明 native 函数，具体实现在 JNI 层
+private static native void native_init();
+```
+
+## JNI 函数注册
+
 ##  char* to jcharArray
 ```cpp
 static jcharArray getData_native(JNIEnv *env, jobject clazz) {
