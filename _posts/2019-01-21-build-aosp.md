@@ -7,6 +7,20 @@ category: aosp
 tags: [aosp, android]
 ---
 
+
+## 编译系统
+
+Android 平台提供三种指令来编译：
+
+1. `make`：不带参数，编译整个系统，时间比较久；
+2. `mmm`：编译单个模块，比如：`mmm packages/apps/Settings`，
+3. `mm`：编译单个模块，需要进入该模块目录，比如：`cd packags/apps/Settings && mm`
+4. `make module_name`：编译单个模块，需要知道模块名，且编译时会编译该模块所依赖的所有其他模块
+
+指令参数：
+1. `-B`：默认是增量编译，只编译改动的文件，这个指令强制编译所有目标文件
+
+
 编译成功的标志：
 ```bash
 #### make completed successfully (02:37:19 (hh:mm:ss)) ####
@@ -41,3 +55,5 @@ libui-arm64-android libui-arm-android
 3. mk 与 bp 的区别：
   - mk 中可以引用环境变量但 bp 中不能引用环境变量；
   - mk 中可以有流程控制但 bp 中无流程控制；
+
+
