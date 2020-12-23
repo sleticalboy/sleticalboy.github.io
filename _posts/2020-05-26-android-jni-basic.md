@@ -32,6 +32,12 @@ private static native void native_init();
 
 ## JNI 函数注册
 
+## Java 和 JNI 层数据类型的转换
+
+## JNIEnv 和 jstring 的使用方法及 JNI 中的类型签名
+
+## 垃圾回收在 JNI 层中的使用及异常处理
+
 ##  char* to jcharArray
 ```cpp
 static jcharArray getData_native(JNIEnv *env, jobject clazz) {
