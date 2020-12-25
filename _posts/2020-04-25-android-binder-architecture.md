@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Android bind 架构
+title: Android binder 架构
 author: sleticalboy
 date: 2020-04-25 23:54:30
 category: android
@@ -12,6 +12,7 @@ tags: [android, framework]
 `frameworks/av/media/mediaserver/main_mediaserver.cpp`
 `frameworks/native/libs/binder/ProcessState.cpp`
 `frameworks/native/libs/binder/IServiceManager.cpp`
+`frameworks/native/libs/binder/include/binder/IInterface.h`
 ---
 
 ## binder 概述
@@ -49,7 +50,8 @@ int main(int argc __unused, char **argv __unused) {
 
 ### ProcessState （1）
 
-1. `ProcessState::self()`
+1、`ProcessState::self()`
+
 ```cpp
 sp<ProcessState> ProcessState::self() {
     // 单例模式，即每个进程只有一个该对象
@@ -62,7 +64,9 @@ sp<ProcessState> ProcessState::self() {
     return gProcess;
 }
 ```
-2. ProcessState 构造器
+
+2、ProcessState 构造器
+
 ```cpp
 ProcessState::ProcessState(const char *driver)
     : mDriverName(String8(driver))
@@ -89,7 +93,9 @@ ProcessState::ProcessState(const char *driver)
     }
 }
 ```
-3. 打开 binder 设备
+
+3、打开 binder 设备
+
 ```cpp
 static int open_driver(const char *driver) {
     // 打开 /dev/binder 设备
@@ -107,14 +113,15 @@ static int open_driver(const char *driver) {
 }
 ```
 
-总结一下 ProcessState::self() 所做的事：
+**总结一下 ProcessState::self() 所做的事**：
 - 打开 `/dev/binder` 设备，及打开与内核的 binder 驱动的通道；
 - 对打开的文件句柄使用 `mmap`，让 binder 驱动分配一块内存来接收数据；
 - 由于 ProcessState 是单例，因此每个进程只会打开设备一次
 
 ### defaultServiceManager() 函数 （2）
 
-1. `IServiceManager.cpp::defaultServiceManager()`
+1、`IServiceManager.cpp::defaultServiceManager()`
+
 ```cpp
 sp<IServiceManager> defaultServiceManager() {
     // 单例模式，若已初始化则直接返回
@@ -124,6 +131,7 @@ sp<IServiceManager> defaultServiceManager() {
         AutoMutex _l(gDefaultServiceManagerLock);
         // 若对象未创建，则等待直到创建完成
         while (gDefaultServiceManager == NULL) {
+            // interface_cast 这个宏是什么作用呢？见 4.2
             gDefaultServiceManager = interface_cast<IServiceManager>(
                 // 此处传入的 NULL 参数非常关键，下面来分析一下
                 ProcessState::self()->getContextObject(NULL));
@@ -135,7 +143,8 @@ sp<IServiceManager> defaultServiceManager() {
 }
 ```
 
-2. `ProcessState::self()->getContextObject(NULL)`
+2、`ProcessState::self()->getContextObject(NULL)`
+
 ```cpp
 sp<IBinder> ProcessState::getContextObject(const sp<IBinder>& /*caller*/) {
     // 函数返回值是 IBinder
@@ -143,7 +152,8 @@ sp<IBinder> ProcessState::getContextObject(const sp<IBinder>& /*caller*/) {
 }
 ```
 
-3. `ProcessState::self()->getStrongProxyForHandle()`
+3、`ProcessState::self()->getStrongProxyForHandle()`
+
 ```cpp
 sp<IBinder> ProcessState::getStrongProxyForHandle(int32_t handle) {
     sp<IBinder> result;
@@ -176,7 +186,168 @@ sp<IBinder> ProcessState::getStrongProxyForHandle(int32_t handle) {
 }
 ```
 
-4. BpBinder 与 BBinder 是什么？
+4、BpBinder 与 BBinder 是什么？
+
+BpBinder 与 BBinder 都是 Android 中与 Binder 通信相关的代表，他们都由 IBinder 派生，如下
+是他们的族谱：
+![](这里欠一张图)
+
+- BpBinder 是客户端用来与 Server 交互的代理类（p 可理解为 proxy）；
+- BBinder 则是与 proxy 相对的一端，即 pxory 交互的目标（服务端代理）
+- BpBinder 与 BBinder 一一对应，即 BpBinderA 只能与 BBinderA 对应
+
+① 为什么在 `defaultServiceManager()` 中创建了 BpBinder 而不是 BBinder？
+- 目前，我们还是 ServiceManager 的客户端，所以用 BpBinder 来进行交互
+
+② BpBinder 如何与 BBinder 一一对应？
+- 还记得上述代码中的 `handle` 么，binder 系统是用 `handle` 来进行标识的
+
+③ `handle = 0` 时，表示什么？
+- 0 在 binder 系统中有重要的含义，即 0 代表的就是 ServiceManager 所对应的 BBinder。可以理
+解为 0 号服务就是 ServiceManager，0 号服务管理其他服务
+
+4.1、`BpBinder` 构造
+
+```cpp
+BpBinder::BpBinder(int32_t handle, int32_t trackedUid)
+    : mHandle(handle)
+    , mAlive(1)
+    , mObitsSent(0)
+    , mObituaries(NULL)
+    , mTrackedUid(trackedUid) {
+    // 怎么感觉这里什么也没做呢？回想代码是从 defaultServiceManager() 中开始的，回头看下我
+    // 们是不是有什么细节遗漏了？哦！原来是 interface_cast 这个宏
+    extendObjectLifetime(OBJECT_LIFETIME_WEAK);
+    IPCThreadState::self()->incWeakHandle(handle, this);
+    // 最终返回到 defaultServiceManager() 中
+}
+```
+
+5、被遗忘的宏 `interface_cast` 从 `IInterface.h` 中来
+
+```cpp
+template<typename INTERFACE>
+inline sp<INTERFACE> interface_cast(const sp<IBinder>& obj) {
+    return INTERFACE::asInterface(obj);
+}
+
+// 对 defaultServiceManager() 中的 interface_cast<IServiceManager>(obj) 展开如下：
+inline sp<IServiceManager> interface_cast(const sp<IBinder>& obj) {
+    // 兜兜转转现在又回到 IServiceManager 中了
+    return IServiceManager::asInterface(obj);
+}
+```
+
+6、千呼万唤始出来 `IServiceManager.cpp::asInterface`
+
+- IServiceManager 定义了 ServiceManager 所需的一系列业务接口
+
+```cpp
+class IServiceManager : public IInterface {
+public:
+    // 重要的宏，稍后分析
+    DECLARE_META_INTERFACE(ServiceManager)
+
+    /* 以下是 ServiceManager 中所需的一系列业务接口 */
+    // 从 ServiceManager 中查询服务
+    virtual sp<IBinder> getService( const String16& name) const = 0;
+    virtual sp<IBinder> checkService( const String16& name) const = 0;
+    // 向 ServiceManager 添加/注册一个服务
+    virtual status_t addService(const String16& name, const sp<IBinder>& service,
+                                bool allowIsolated = false,
+                                int dumpsysFlags = DUMP_FLAG_PRIORITY_DEFAULT) = 0;
+    // 列出已注册的所有服务
+    virtual Vector<String16> listServices(int dumpsysFlags = DUMP_FLAG_PRIORITY_ALL) = 0;
+}
+
+// 重要的宏，稍后分析
+IMPLEMENT_META_INTERFACE(ServiceManager, "android.os.IServiceManager");
+```
+
+- 通过宏 `DECLARE_META_INTERFACE` 和宏 `IMPLEMENT_META_INTERFACE` 将业务与通信结合
+
+```cpp
+// 宏定义：声明
+#define DECLARE_META_INTERFACE(INTERFACE)                               \
+    static const ::android::String16 descriptor;                        \
+    static ::android::sp<I##INTERFACE> asInterface(                     \
+            const ::android::sp<::android::IBinder>& obj);              \
+    virtual const ::android::String16& getInterfaceDescriptor() const;  \
+    I##INTERFACE();                                                     \
+    virtual ~I##INTERFACE();                                            \
+
+// 宏定义：实现
+#define IMPLEMENT_META_INTERFACE(INTERFACE, NAME)                       \
+    const ::android::String16 I##INTERFACE::descriptor(NAME);           \
+    const ::android::String16&                                          \
+            I##INTERFACE::getInterfaceDescriptor() const {              \
+        return I##INTERFACE::descriptor;                                \
+    }                                                                   \
+    ::android::sp<I##INTERFACE> I##INTERFACE::asInterface(              \
+            const ::android::sp<::android::IBinder>& obj)               \
+    {                                                                   \
+        ::android::sp<I##INTERFACE> intr;                               \
+        if (obj != NULL) {                                              \
+            intr = static_cast<I##INTERFACE*>(                          \
+                obj->queryLocalInterface(                               \
+                        I##INTERFACE::descriptor).get());               \
+            if (intr == NULL) {                                         \
+                intr = new Bp##INTERFACE(obj);                          \
+            }                                                           \
+        }                                                               \
+        return intr;                                                    \
+    }                                                                   \
+    I##INTERFACE::I##INTERFACE() { }                                    \
+    I##INTERFACE::~I##INTERFACE() { }                                   \
+```
+
+- 将以上两个宏代入 ServiceManager 后展开如下：
+
+```cpp
+/////////////////////// 声明一些函数和变量
+static const ::android::String16 descriptor;
+static ::android::sp<IServiceManager> asInterface(
+    const ::android::sp<::android::IBinder>& obj);
+virtual const ::android::String16& getInterfaceDescriptor() const;
+// 定义构造函数和析构函数
+IServiceManager();
+virtual ~IServiceManager();
+
+/////////////////////// 实现上述声明的函数和变量
+const ::android::String16 IServiceManager::descriptor("android.os.IServiceManager")
+const ::android::String16& IServiceManager::getInterfaceDescriptor() const {
+    // 即 android.os.IServiceManager
+    return IServiceManager::descriptor
+}
+::android::sp<IServiceManager> IServiceManager::asInterface(
+    const ::android::sp<::android::IBinder>& obj) {
+    ::android::sp<IServiceManager> intr;
+    if (obj != NULL) {
+        intr = static_cast<IServiceManager*>(
+            obj->queryLocalInterface(IServiceManager::descriptor).get());
+        // 第一次肯定会进入以下分支
+        if (intr == NULL) {
+            // 创建 BpServiceManager（IServiceManager 的内嵌类）
+            // 这里的 obj 是在 #3 中创建的 BpBinder(0)
+            intr = new BpServiceManager(obj);
+        }
+    }
+    return intr;
+}
+// 实现构造函数和析构函数
+IServiceManager::IServiceManager() {}
+IServiceManager::~IServiceManager() {}
+```
+
+7、IServiceManager 家族族谱如下：
+![](欠图一张)
+
+可知：
+
+- IServiceManager、BpServiceManager 和 BnServiceManager 都与业务逻辑相关
+- BnServiceManager 同时从 IServiceManager BBinder 派生，表示它可直接参与 Binder 通信
+- BpServiceManager 虽然从 BpInterface 中派生，但是这条分支似乎与 BpBinder 没有关系
+- BnServiceManager 是一个虚类，它的业务函数最终需要子类来实现
 
 
 ### 注册 MediaPlayerService （3）
@@ -234,3 +405,6 @@ at com.android.settings.fuelgauge.BatteryInfo.getBatteryInfo(BatteryInfo.java:14
 【native 层 IPCThreadState】IPCThreadState.cpp::transact() -> IPCThreadState.cpp::waitForResponse() -> IPCThreadState.cpp::talkWithDriver() -> 
 【native 层 Binde r驱动】通过 ioctl() 与 binder 驱动交互
 ```
+
+## 参考资料
+- 《深入理解Android卷1》（邓凡平）第六章：深入理解 Binder
