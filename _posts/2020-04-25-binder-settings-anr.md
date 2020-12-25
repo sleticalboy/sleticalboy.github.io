@@ -25,11 +25,12 @@ at com.android.settings.fuelgauge.BatteryInfo.getBatteryInfo(BatteryInfo.java:14
 
 - 整体流程
 ```
-客户端 -> 代理服务端 (Proxy)-> 服务端(Binder) -> native层Binder -> Binder 驱动
-【上层Client发起请求】BatteryStatsHelper#getStats() ->
-【上层服务Proxy】IBatteryStats.Stub.Proxy#getStatisticsStream() ->
-【上层Binder】BinderProxy#transact() -> BinderProxy#transactNative() ->
-【native层BinderProxy】android_util_Binder.cpp#android_os_BinderProxy_transact() -> BpBinder.cpp#android::BpBinder::transact() -> 
-【native层IPCThreadState】IPCThreadState.cpp#android::IPCThreadState::transact() -> IPCThreadState.cpp#android::IPCThreadState::waitForResponse() -> IPCThreadState.cpp#android::IPCThreadState::talkWithDriver() ->
-【native层Binder驱动】------》暂时中断
+客户端 -> 代理服务端 (Proxy)-> 服务端(Binder) -> native 层 Binder -> Binder 驱动
+【java 层 Client 发起请求】BatteryStatsHelper#getStats() ->
+【java 层服务 Proxy】IBatteryStats.Stub.Proxy#getStatisticsStream() ->
+【java 层 Binder】BinderProxy#transact() -> BinderProxy#transactNative() ->
+【native 层 BinderProxy】android_util_Binder.cpp::android_os_BinderProxy_transact() -> BpBinder.cpp::transact() -> 
+【native 层 IPCThreadState】IPCThreadState.cpp::transact() -> IPCThreadState.cpp::waitForResponse() -> IPCThreadState.cpp::talkWithDriver() -> 
+【native 层 Binde r驱动】通过 ioctl() 与 binder 驱动交互
+------》暂时中断
 ```
