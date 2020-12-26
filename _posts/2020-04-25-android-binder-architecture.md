@@ -7,13 +7,18 @@ category: android
 tags: [android, framework]
 ---
 
-源码路径：
+本文涉及到的源码路径：
 
 `frameworks/av/media/mediaserver/main_mediaserver.cpp`
 `frameworks/native/libs/binder/ProcessState.cpp`
 `frameworks/native/libs/binder/IServiceManager.cpp`
 `frameworks/native/libs/binder/include/binder/IInterface.h`
----
+`frameworks/native/libs/binder/Binder.cpp`
+`frameworks/native/libs/binder/include/binder/IBinder.h`
+`frameworks/native/libs/binder/include/binder/BpBinder.h`
+`frameworks/native/libs/binder/include/binder/Binder.h`
+`android/bionic/libc/kernel/uapi/linux/android/binder.h`
+
 
 ## binder 概述
 
@@ -394,7 +399,491 @@ BpRefBase::BpRefBase(const sp<IBinder>& o)
 - BpServiceManager 内部实现了 IServiceManager 中定义的业务接口
 
 ### 注册 MediaPlayerService （3）
+
+1、`MediaPlayService.cpp::instantiate()`
+
+```cpp
+void MediaPlayerService::instantiate() {
+    defaultServiceManager()->addService(
+        String16("media.player"), new MediaPlayerService());
+    // 即 BpServiceManager::addService()
+}
+```
+
+1.1、中转站一 `IServiceManager.cpp::BpServiceManager::addService()` 函数
+
+```cpp
+virtual status_t addService(const String16& name, const sp<IBinder>& service,
+                            bool allowIsolated, int dumpsysPriority) {
+    // data 是要打包发送的数据，reply 是要接收的数据
+    Parcel data, reply;
+    data.writeInterfaceToken(IServiceManager::getInterfaceDescriptor());
+    data.writeString16(name);
+    data.writeStrongBinder(service);
+    data.writeInt32(allowIsolated ? 1 : 0);
+    data.writeInt32(dumpsysPriority);
+    // 打包发送并接收数据
+    status_t err = remote()->transact(ADD_SERVICE_TRANSACTION, data, &reply);
+    // remote() 方法返回 mRemote 即 BpBinder 对象
+    return err == NO_ERROR ? reply.readExceptionCode() : err;
+}
+```
+
+1.2、中转站二 `BpBinder.cpp::transact()`
+
+```cpp
+status_t BpBinder::transact(uint32_t code, const Parcel& data, Parcel* reply,
+    uint32_t flags) {
+    if (mAlive) {
+        // 把实际的苦活交给 IPCThreadState 来干，下面着重分析
+        status_t status = IPCThreadState::self()->transact(
+            mHandle, code, data, reply, flags);
+        if (status == DEAD_OBJECT) mAlive = 0;
+        return status;
+    }
+    return DEAD_OBJECT;
+}
+
+```
+
+2、真正脚踏实地干活的 `IPCThreadState` 类
+
+2.1、线程中单例 `IPCThreadState::self()`
+
+```cpp
+IPCThreadState* IPCThreadState::self() {
+    // 每个线程只会有一个实例
+    if (gHaveTLS) {
+restart:
+        // 如果已经 set，则根据 key 获取相关内容
+        const pthread_key_t k = gTLS;
+        // TLS 全称为 Thread Local Storage，线程本地存储，顾名思义这是线程内部的私有空间，
+        // 并不会与其他线程共享
+        // linux 内核提供了 pthread_set/getspecific() 函数来设置/获取线程私有空间的内容
+        // 所以有 get 的地方肯定有 set
+        IPCThreadState* st = (IPCThreadState*)pthread_getspecific(k);
+        if (st) return st;
+        // 构造函数中会调用 set 方法
+        return new IPCThreadState;
+    }
+
+    pthread_mutex_lock(&gTLSMutex);
+    if (!gHaveTLS) {
+        // 如果没有设置过，则先创建 key 再进行设置
+        int key_create_value = pthread_key_create(&gTLS, threadDestructor);
+        if (key_create_value != 0) {
+            // 创建 key 失败，释放锁并返回 NULL
+            pthread_mutex_unlock(&gTLSMutex);
+            return NULL;
+        }
+        gHaveTLS = true;
+    }
+    pthread_mutex_unlock(&gTLSMutex);
+    // 跳转到 set 的地方去，这个地方用的妙啊！
+    goto restart;
+}
+```
+
+2.2、`IPCThreadState` 构造函数
+
+```cpp
+IPCThreadState::IPCThreadState()
+    : mProcess(ProcessState::self()),
+      mStrictModePolicy(0),
+      mLastTransactionBinderFlags(0) {
+    // 有 get 必有 set，Android 诚不我欺
+    pthread_setspecific(gTLS, this);
+    clearCaller();
+    // mIn 和 mOut 是两个 Parcel 类型的对象
+    // mIn 可以看做接收来自 Binder 数据的缓冲区
+    // mOut 可以看做发送数据到 Binder 的缓冲区
+    mIn.setDataCapacity(256);
+    mOut.setDataCapacity(256);
+}
+```
+
+2.3、马不停蹄的 `transact()` 函数
+
+```cpp
+status_t IPCThreadState::transact(int32_t handle, uint32_t code,
+    const Parcel& data, Parcel* reply, uint32_t flags) {
+    status_t err;
+
+    flags |= TF_ACCEPT_FDS;
+
+    // BR_ 开头的是回复消息，定义在 binder_driver_return_protocol 枚举中
+    // BC_ 开头的是发送消息，定义在 binder_driver_command_protocol 枚举中
+    // 向 binder 发送数据
+    err = writeTransactionData(BC_TRANSACTION, flags, handle, code, data, NULL);
+
+    if (err != NO_ERROR) {
+        if (reply) reply->setError(err);
+        return (mLastError = err);
+    }
+
+    // TF_ONE_WAY 这个是什么东东？
+    if ((flags & TF_ONE_WAY) == 0) {
+        if (reply) {
+            // 接收 binder 返回的数据
+            err = waitForResponse(reply);
+        } else {
+            Parcel fakeReply;
+            err = waitForResponse(&fakeReply);
+        }
+    } else {
+        err = waitForResponse(NULL, NULL);
+    }
+    return err;
+}
+
+```
+
+2.3.1、发送数据 `writeTransactionData()` 函数
+
+```cpp
+status_t IPCThreadState::writeTransactionData(int32_t cmd, uint32_t binderFlags,
+    int32_t handle, uint32_t code, const Parcel& data, status_t* statusBuffer) {
+    binder_transaction_data tr;
+
+    // 将数据填充到 binder_transaction_data 结构体中
+    tr.target.ptr = 0; /* Don't pass uninitialized stack data to a remote process */
+    // handle 值传递给 target，用来标识 target 端，0 表示 ServiceManager
+    tr.target.handle = handle;
+    tr.code = code;
+    tr.flags = binderFlags;
+    tr.cookie = 0;
+    tr.sender_pid = 0;
+    tr.sender_euid = 0;
+    // 检查数据是否合法
+    const status_t err = data.errorCheck();
+    if (err == NO_ERROR) {
+        // 继续填充数据
+        tr.data_size = data.ipcDataSize();
+        tr.data.ptr.buffer = data.ipcData();
+        tr.offsets_size = data.ipcObjectsCount()*sizeof(binder_size_t);
+        tr.data.ptr.offsets = data.ipcObjects();
+    } else if (statusBuffer) {
+        // TF_STATUS_CODE 又是什么东东
+        tr.flags |= TF_STATUS_CODE;
+        *statusBuffer = err;
+        tr.data_size = sizeof(status_t);
+        tr.data.ptr.buffer = reinterpret_cast<uintptr_t>(statusBuffer);
+        tr.offsets_size = 0;
+        tr.data.ptr.offsets = 0;
+    } else {
+        return (mLastError = err);
+    }
+    // 将数据填充到缓冲区等待发送，那实际发送数据是在哪里呢？
+    mOut.writeInt32(cmd);
+    mOut.write(&tr, sizeof(tr));
+    return NO_ERROR;
+}
+```
+
+2.3.2、接收数据 `waitForResponse()` 函数
+
+```cpp
+status_t IPCThreadState::waitForResponse(Parcel *reply,
+    status_t *acquireResult) {
+    uint32_t cmd;
+    int32_t err;
+    // 等待直到返回或者错误
+    while (1) {
+        // 重要的 talkViewDriver() 函数，直接与 binder 驱动进行交互
+        if ((err=talkWithDriver()) < NO_ERROR) break;
+        err = mIn.errorCheck();
+        if (err < NO_ERROR) break;
+        if (mIn.dataAvail() == 0) continue;
+        // 接下来要执行的命令
+        cmd = (uint32_t)mIn.readInt32();
+        switch (cmd) {
+            // ...
+            default:
+                // 执行命令
+                err = executeCommand(cmd);
+                if (err != NO_ERROR) goto finish;
+                break;
+        }
+    }
+
+finish:
+    if (err != NO_ERROR) {
+        if (acquireResult) *acquireResult = err;
+        if (reply) reply->setError(err);
+        mLastError = err;
+    }
+    return err;
+}
+```
+
+2.3.3、`executeCommand()` 函数
+
+```cpp
+status_t IPCThreadState::executeCommand(int32_t cmd) {
+    BBinder* obj;
+    RefBase::weakref_type* refs;
+    status_t result = NO_ERROR;
+
+    switch ((uint32_t)cmd) {
+        case BR_ERROR:
+            result = mIn.readInt32();
+            break;
+        case BR_OK:
+            break;
+        // ...
+        // 重点看这个，其他的先略过
+        case BR_TRANSACTION: {
+            binder_transaction_data tr;
+            result = mIn.read(&tr, sizeof(tr));
+            if (result != NO_ERROR) break;
+
+            Parcel buffer;
+            buffer.ipcSetDataReference(
+                reinterpret_cast<const uint8_t*>(tr.data.ptr.buffer),
+                tr.data_size,
+                reinterpret_cast<const binder_size_t*>(tr.data.ptr.offsets),
+                tr.offsets_size/sizeof(binder_size_t), freeBuffer, this);
+
+            const pid_t origPid = mCallingPid;
+            const uid_t origUid = mCallingUid;
+            const int32_t origStrictModePolicy = mStrictModePolicy;
+            const int32_t origTransactionBinderFlags = mLastTransactionBinderFlags;
+
+            mCallingPid = tr.sender_pid;
+            mCallingUid = tr.sender_euid;
+            mLastTransactionBinderFlags = tr.flags;
+
+            Parcel reply;
+            status_t error;
+            if (tr.target.ptr) {
+                // 将 tr.target.ptr 强转为 RefBase::weakref_type 指针后调用 
+                // attemptIncStrong() 方法，获取一个强引用
+                if (reinterpret_cast<RefBase::weakref_type*>(
+                        tr.target.ptr)->attemptIncStrong(this)) {
+                    // 将 tr.cookie 强转为 BBinder 指针后调用 transact() 方法
+                    error = reinterpret_cast<BBinder*>(tr.cookie)->transact(
+                        tr.code, buffer, &reply, tr.flags);
+                    // 将 tr.cookie 强转为 BBinder 指针后调用 decStrong() 方法减少一次强引用计数
+                    reinterpret_cast<BBinder*>(tr.cookie)->decStrong(this);
+                } else error = UNKNOWN_TRANSACTION;
+            } else {
+                // the_context_object 是 IPCThreadState 中定义的一个全局变量：
+                // sp<BBinder> the_context_object;，可通过 setTheContextObject() 来设置
+                error = the_context_object->transact(tr.code, buffer, &reply, tr.flags);
+            }
+            // 又又又又遇到了 TF_ONE_WAY
+            if ((tr.flags & TF_ONE_WAY) == 0) {
+                if (error < NO_ERROR) reply.setError(error);
+                sendReply(reply, 0);
+            }
+            mCallingPid = origPid;
+            mCallingUid = origUid;
+            mStrictModePolicy = origStrictModePolicy;
+            mLastTransactionBinderFlags = origTransactionBinderFlags;
+        } break;
+        // ...
+        case BR_DEAD_BINDER: {
+            // 收到驱动的指示：service 挂掉了，BpBinder 要做一些事儿了
+            BpBinder *proxy = (BpBinder*)mIn.readPointer();
+            // BpBinder 做的事儿在这，有趣的地方，稍后再看
+            proxy->sendObituary();
+            mOut.writeInt32(BC_DEAD_BINDER_DONE);
+            mOut.writePointer((uintptr_t)proxy);
+            } break;
+        case BR_SPAWN_LOOPER:
+            // 收到驱动的指示：要创建一个新的线程用来与 binder 通信
+            mProcess->spawnPooledThread(false);
+            break;
+        // ...
+    }
+    return result;
+}
+```
+
+2.4、与 binder 交互 `talkWithDriver()` 函数
+
+```cpp
+status_t IPCThreadState::talkWithDriver(bool doReceive) {
+    if (mProcess->mDriverFD <= 0) {
+        return -EBADF;
+    }
+
+    binder_write_read bwr;
+
+    // Is the read buffer empty?
+    const bool needRead = mIn.dataPosition() >= mIn.dataSize();
+
+    // We don't want to write anything if we are still reading
+    // from data left in the input buffer and the caller
+    // has requested to read the next data.
+    const size_t outAvail = (!doReceive || needRead) ? mOut.dataSize() : 0;
+
+    // 结构体填充
+    bwr.write_size = outAvail;
+    bwr.write_buffer = (uintptr_t)mOut.data();
+
+    // This is what we'll read.
+    if (doReceive && needRead) {
+        // 接收数据缓冲区填充，如果接收到数据就直接填充在 mIn 中
+        bwr.read_size = mIn.dataCapacity();
+        bwr.read_buffer = (uintptr_t)mIn.data();
+    } else {
+        bwr.read_size = 0;
+        bwr.read_buffer = 0;
+    }
+    // Return immediately if there is nothing to do.
+    if ((bwr.write_size == 0) && (bwr.read_size == 0)) return NO_ERROR;
+
+    bwr.write_consumed = 0;
+    bwr.read_consumed = 0;
+    status_t err;
+    do {
+        // 通过 ioctl 与 binder 设备进行交互，暂时先到这里
+        // 再向下深入的话需要去分析驱动层的源码了
+        if (ioctl(mProcess->mDriverFD, BINDER_WRITE_READ, &bwr) >= 0)
+            err = NO_ERROR;
+        else 
+            err = -errno;
+        if (mProcess->mDriverFD <= 0) {
+            err = -EBADF;
+        }
+    } while (err == -EINTR);
+
+    if (err >= NO_ERROR) {
+        if (bwr.write_consumed > 0) {
+            if (bwr.write_consumed < mOut.dataSize())
+                mOut.remove(0, bwr.write_consumed);
+            else {
+                mOut.setDataSize(0);
+                processPostWriteDerefs();
+            }
+        }
+        if (bwr.read_consumed > 0) {
+            mIn.setDataSize(bwr.read_consumed);
+            mIn.setDataPosition(0);
+        }
+        return NO_ERROR;
+    }
+    return err;
+}
+```
+
 ### startThreadPool() 和 joinThreadPool() （4/5）
+
+1、`ProcessState.cpp::startThreadPool()` 函数
+
+```cpp
+void ProcessState::startThreadPool() {
+    AutoMutex _l(mLock);
+    // 如果未执行过才会执行以下分支
+    if (!mThreadPoolStarted) {
+        mThreadPoolStarted = true;
+        spawnPooledThread(true);
+    }
+}
+```
+
+1.1、`ProcessState.cpp::spawnPooledThread()` 函数
+
+```cpp
+void ProcessState::spawnPooledThread(bool isMain) {
+    // 此处的 isMain 为 true
+    if (mThreadPoolStarted) {
+        // 生成线程名，其格式为："Binder:%d_%X", pid, seq
+        String8 name = makeBinderThreadName();
+        // 创建 PoolThread 并执行
+        sp<Thread> t = new PoolThread(isMain/*true*/);
+        t->run(name.string());
+    }
+}
+```
+
+1.2、ProcessState 的内嵌类 PoolThread:
+
+```cpp
+class PoolThread : public Thread {
+public:
+    explicit PoolThread(bool isMain)
+        // 调用父类，将值传递给 mIsMain(true) 
+        : mIsMain(isMain) { }
+    
+protected:
+    virtual bool threadLoop() {
+        // mIsMain 为 true，最终调用到 IPCThreadState
+        IPCThreadState::self()->joinThreadPool(mIsMain);
+        return false;
+    }    
+    const bool mIsMain;
+}
+```
+
+2、`IPCThreadState.cpp::joinThreadPool()` 函数
+
+```cpp
+void IPCThreadState::joinThreadPool(bool isMain) {
+    // isMain 为 true, 此处写入 BC_ENTER_LOOPER 指令，进入循环
+    mOut.writeInt32(isMain ? BC_ENTER_LOOPER : BC_REGISTER_LOOPER);
+    status_t result;
+    do {
+        // 处理已经 dead 的 BBinder 对象
+        processPendingDerefs();
+        // 不停地获取并执行下一条指令
+        result = getAndExecuteCommand();
+        // ...
+    } while (result != -ECONNREFUSED && result != -EBADF);
+    // 退出循环
+    mOut.writeInt32(BC_EXIT_LOOPER);
+    talkWithDriver(false);
+}
+```
+
+2.1、`IPCThreadState.cpp::getAndExecuteCommand()` 函数
+
+```cpp
+status_t IPCThreadState::getAndExecuteCommand() {
+    status_t result;
+    int32_t cmd;
+    // 发送指令，读取请求
+    result = talkWithDriver();
+    if (result >= NO_ERROR) {
+        size_t IN = mIn.dataAvail();
+        if (IN < sizeof(int32_t)) return result;
+        // 读取一条指令
+        cmd = mIn.readInt32();
+        pthread_mutex_lock(&mProcess->mThreadCountLock);
+        mProcess->mExecutingThreadsCount++;
+        if (mProcess->mExecutingThreadsCount >= mProcess->mMaxThreads &&
+                mProcess->mStarvationStartTimeMs == 0) {
+            mProcess->mStarvationStartTimeMs = uptimeMillis();
+        }
+        pthread_mutex_unlock(&mProcess->mThreadCountLock);
+        // 执行命令，构成了循环调用
+        result = executeCommand(cmd);
+
+        pthread_mutex_lock(&mProcess->mThreadCountLock);
+        mProcess->mExecutingThreadsCount--;
+        if (mProcess->mExecutingThreadsCount < mProcess->mMaxThreads &&
+                mProcess->mStarvationStartTimeMs != 0) {
+            mProcess->mStarvationStartTimeMs = 0;
+        }
+        pthread_cond_broadcast(&mProcess->mThreadCountDecrement);
+        pthread_mutex_unlock(&mProcess->mThreadCountLock);
+    }
+    return result;
+}
+```
+
+**总结：**
+- 1、从以上来看，有几个 Thread 在为 Service 服务呢？
+  - startThreadPool 中启动的线程通过 joinThreadPool 读取 binder 设备，查看是否有请求
+  - main 线程也调用 joinThreadPool 读取 binder 设备，查看是否有请求
+- 2、由此可见，binder 设备是支持多线程操作的
+- 3、Binder 通信和基于 Binder 通信的业务之间的关系：
+  - Binder 是通信机制
+  - 业务可以基于 Binder 通信，当然也可以使用其他的 IPC 手段
+- 4、binder 通信和业务层的关系图如下：
+
+![binder-transport-logic](/assets/android/binder-transport-logic.png)
 
 ## service manager
 ### ServiceManager 原理
