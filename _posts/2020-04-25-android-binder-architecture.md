@@ -18,7 +18,8 @@ tags: [android, framework]
 `frameworks/native/libs/binder/include/binder/BpBinder.h`
 `frameworks/native/libs/binder/include/binder/Binder.h`
 `android/bionic/libc/kernel/uapi/linux/android/binder.h`
-
+`frameworks/native/cmds/servicemanager/service_manager.c`
+`frameworks/native/cmds/servicemanager/binder.c`
 
 ## binder 概述
 
@@ -885,10 +886,339 @@ status_t IPCThreadState::getAndExecuteCommand() {
 
 ![binder-transport-logic](/assets/android/binder-transport-logic.png)
 
-## service manager
+## 服务大总管 service manager 
+
+前面提到 defaultServiceMannager() 返回一个 BpServiceManager 对象，通过它可以把请求发送给
+handle 值为 0 的目的端，即 BnServiceManager 来处理请求，但是源码中并没有这样一个类；然而系统
+提供了一个 service_manager.c 程序，它完成的就是 BnServiceManager 的工作。
+
 ### ServiceManager 原理
+
+1、`service_manager.c::main()` 函数
+
+```cpp
+int main(int argc, char** argv) {
+    struct binder_state *bs;
+    union selinux_callback cb;
+    char *driver;
+    if (argc > 1) {
+        driver = argv[1];
+    } else {
+        driver = "/dev/binder";
+    }
+    // ①打开 binder 设备，mmap 大小为 128k
+    bs = binder_open(driver, 128*1024);
+    if (!bs) {
+        // 打开失败，打印 log 并返回
+        return -1;
+    }
+    // ②让自己成为大管家，是不是把自己的 handle 设置为 0 呢？
+    if (binder_become_context_manager(bs)) {
+        return -1;
+    }
+    
+    // selinux 配置项
+    cb.func_audit = audit_callback;
+    selinux_set_callback(SELINUX_CB_AUDIT, cb);
+    cb.func_log = selinux_log_callback;
+    selinux_set_callback(SELINUX_CB_LOG, cb);
+    sehandle = selinux_android_service_context_handle();
+    selinux_status_open(true);
+
+    if (sehandle == NULL) {
+        abort();
+    }
+    if (getcon(&service_manager_context) != 0) {
+        abort();
+    }
+
+    // ③开始干活儿，处理客户端发过来的请求
+    // 参数 func 是一个函数指针，指向 svcmgr_handler 函数，用于解析客户端请求
+    binder_loop(bs, svcmgr_handler/*binder_handler func*/);
+    return 0;
+}
+```
+
+2、打开 binder 设备：`service_manager.c::open_binder()`
+
+```cpp
+struct binder_state *binder_open(const char* driver, size_t mapsize) {
+    struct binder_state *bs;
+    //...
+    // 打开设备，返回文件句柄
+    bs->fd = open(driver, O_RDWR | O_CLOEXEC);
+    // ...
+    // 内存映射
+    bs->mapsize = mapsize;
+    bs->mapped = mmap(NULL, mapsize, PROT_READ, MAP_PRIVATE, bs->fd, 0);
+    // ...
+    return bs;
+}
+```
+
+3、成为老大：`service_manager.c::binder_become_context_manager()`
+
+```cpp
+int binder_become_context_manager(struct binder_state *bs) {
+    // 此处传递的参数是 0，指令是 BINDER_SET_CONTEXT_MGR
+    return ioctl(bs->fd, BINDER_SET_CONTEXT_MGR, 0);
+}
+```
+
+4、开始干活儿：`service_manager.c::binder_loop()`
+
+```cpp
+void binder_loop(struct binder_state *bs, binder_handler func) {
+    int res;
+    struct binder_write_read bwr;
+    uint32_t readbuf[32];
+    // 填充结构体参数
+    bwr.write_size = 0;
+    bwr.write_consumed = 0;
+    bwr.write_buffer = 0;
+
+    readbuf[0] = BC_ENTER_LOOPER;
+    // 先执行一个 BC_ENTER_LOOPER 指令
+    binder_write(bs, readbuf, sizeof(uint32_t));
+    // 开始无限循环
+    for (;;) {
+        // 继续填充参数
+        bwr.read_size = sizeof(readbuf);
+        bwr.read_consumed = 0;
+        bwr.read_buffer = (uintptr_t) readbuf;
+        // 向 binder 驱动要个事情来做
+        res = ioctl(bs->fd, BINDER_WRITE_READ, &bwr);
+        if (res < 0) {
+            break;
+        }
+        // 接收并解析请求，最终将调用 svcmgr_handler 函数
+        res = binder_parse(bs, 0, (uintptr_t) readbuf, bwr.read_consumed, func);
+        // ...
+    }
+}
+```
+
+4.1、解析请求：`service_manager.c::binder_parse()`
+
+```cpp
+int binder_parse(struct binder_state *bs, struct binder_io *bio,
+                 uintptr_t ptr, size_t size, binder_handler func) {
+    int r = 1;
+    uintptr_t end = ptr + (uintptr_t) size;
+
+    while (ptr < end) {
+        uint32_t cmd = *(uint32_t *) ptr;
+        ptr += sizeof(uint32_t);
+        switch(cmd) {
+        // ...
+        case BR_TRANSACTION: {
+            struct binder_transaction_data *txn = (struct binder_transaction_data *) ptr;
+            // ...
+            // 如果处理函数不为空
+            if (func) {
+                unsigned rdata[256/4];
+                struct binder_io msg;
+                struct binder_io reply;
+                int res;
+
+                bio_init(&reply, rdata, sizeof(rdata), 4);
+                bio_init_from_txn(&msg, txn);
+                // 处理请求
+                res = func(bs, txn, &msg, &reply);
+                // ...
+            }
+            break;
+        }
+        // ...
+        }
+    }
+    return r;
+}
+```
+
+5、处理请求：`service_manager.c::svcmgr_handler()`
+
+```cpp
+int svcmgr_handler(struct binder_state *bs,
+                   struct binder_transaction_data *txn,
+                   struct binder_io *msg,
+                   struct binder_io *reply) {
+    struct svcinfo *si;
+    uint16_t *s;
+    size_t len;
+    uint32_t handle;
+    uint32_t strict_policy;
+    int allow_isolated;
+    uint32_t dumpsys_priority;
+
+    // BINDER_SERVICE_MANAGER 魔数，定义为 0
+    if (txn->target.ptr != BINDER_SERVICE_MANAGER)
+        return -1;
+
+    if (txn->code == PING_TRANSACTION)
+        return 0;
+
+    // Equivalent to Parcel::enforceInterface(), reading the RPC
+    // header with the strict mode policy mask and the interface name.
+    // Note that we ignore the strict_policy and don't propagate it
+    // further (since we do no outbound RPCs anyway).
+    strict_policy = bio_get_uint32(msg);
+    s = bio_get_string16(msg, &len);
+    if (s == NULL) {
+        return -1;
+    }
+
+    if ((len != (sizeof(svcmgr_id) / 2)) ||
+        memcmp(svcmgr_id, s, sizeof(svcmgr_id))) {
+        fprintf(stderr,"invalid id %s\n", str8(s, len));
+        return -1;
+    }
+
+    if (sehandle && selinux_status_updated() > 0) {
+        struct selabel_handle *tmp_sehandle = selinux_android_service_context_handle();
+        if (tmp_sehandle) {
+            selabel_close(sehandle);
+            sehandle = tmp_sehandle;
+        }
+    }
+
+    switch(txn->code) {
+    case SVC_MGR_GET_SERVICE: // getService()
+    case SVC_MGR_CHECK_SERVICE: // checkService()
+        s = bio_get_string16(msg, &len);
+        if (s == NULL) {
+            return -1;
+        }
+        handle = do_find_service(s, len, txn->sender_euid, txn->sender_pid);
+        if (!handle)
+            break;
+        bio_put_ref(reply, handle);
+        return 0;
+
+    case SVC_MGR_ADD_SERVICE: // addService()
+        s = bio_get_string16(msg, &len);
+        if (s == NULL) {
+            return -1;
+        }
+        handle = bio_get_ref(msg);
+        allow_isolated = bio_get_uint32(msg) ? 1 : 0;
+        dumpsys_priority = bio_get_uint32(msg);
+        if (do_add_service(bs, s, len, handle, txn->sender_euid, allow_isolated, dumpsys_priority,
+                           txn->sender_pid))
+            return -1;
+        break;
+
+    case SVC_MGR_LIST_SERVICES: { // listService()
+        uint32_t n = bio_get_uint32(msg);
+        uint32_t req_dumpsys_priority = bio_get_uint32(msg);
+
+        if (!svc_can_list(txn->sender_pid, txn->sender_euid)) {
+            return -1;
+        }
+        si = svclist;
+        // walk through the list of services n times skipping services that
+        // do not support the requested priority
+        while (si) {
+            if (si->dumpsys_priority & req_dumpsys_priority) {
+                if (n == 0) break;
+                n--;
+            }
+            si = si->next;
+        }
+        if (si) {
+            bio_put_string16(reply, si->name);
+            return 0;
+        }
+        return -1;
+    }
+    default:
+        return -1;
+    }
+    bio_put_uint32(reply, 0);
+    // 以上，实现了所有在 IServiceManager 中定义的业务函数
+    return 0;
+}
+```
+
+**总结：**
+
+1、`svcmgr_handler` 函数实现了所有在 IServiceManager 中定义的业务函数
+
 ### service 注册
+
+1、`service_manager.c::do_add_service()` 函数
+
+```cpp
+int do_add_service(struct binder_state *bs, const uint16_t *s, size_t len,
+    uint32_t handle,uid_t uid, int allow_isolated, uint32_t dumpsys_priority,
+    pid_t spid) {
+    struct svcinfo *si;
+
+    if (!handle || (len == 0) || (len > 127))
+        return -1;
+
+    // ①检查服务是否可以注册
+    if (!svc_can_register(s, len, spid, uid)) {
+        return -1;
+    }
+    // ②检查服务是否已存在，根据服务名的长度和名字是否相同来判断
+    si = find_svc(s, len);
+    if (si) {
+        if (si->handle) {
+            // 通知 service 已挂
+            svcinfo_death(bs, si);
+        }
+        // 服务已存在，更新一下
+        si->handle = handle;
+    } else {
+        si = malloc(sizeof(*si) + (len + 1) * sizeof(uint16_t));
+        if (!si) {
+            return -1;
+        }
+        // ③保存服务
+        si->handle = handle;
+        si->len = len;
+        memcpy(si->name, s, (len + 1) * sizeof(uint16_t));
+        si->name[len] = '\0';
+        // service 退出的通知函数 svcinfo_death
+        si->death.func = (void*) svcinfo_death;
+        si->death.ptr = si;
+        si->allow_isolated = allow_isolated;
+        si->dumpsys_priority = dumpsys_priority;
+        // 当前 service 的 next 指针指向表头
+        si->next = svclist;
+        // 保存 service 到表头
+        svclist = si;
+    }
+    binder_acquire(bs, handle);
+    binder_link_to_death(bs, handle, &si->death);
+    return 0;
+}
+```
+
+2、检查服务是否可以注册： `service_manager.c::svc_can_register()`
+
+```cpp
+static int svc_can_register(const uint16_t *name, size_t name_len, pid_t spid,
+    uid_t uid) {
+    const char *perm = "add";
+    // 不允许 app 注册服务
+    if (multiuser_get_app_id(uid) >= AID_APP) {
+        return 0;
+    }
+    // 检查是否有某项权限（add/find）
+    // 高版本是通过 selinux 来检查的
+    // 低版本通过定义一个 allowed 数组来判断，如果没有达到 root 和 system 权限是无法添加的
+    return check_mac_perms_from_lookup(spid, uid, perm, str8(name, name_len)) ? 1 : 0;
+}
+```
+
 ### ServiceManager 存在的意义
+
+- 1、ServiceManager 能集中管理系统中的所有服务，能够施加权限控制，并不是所有的进程都可注册服务；
+- 2、ServiceManager 支持通过字符串名称来查找对应的 service，有点像 DNS；
+- 3、server 进程可能会挂掉，如果让每个 client 自己来检测的话压力会很大，现在只需向 ServiceManager
+  查询一下就能够轻松知道
 
 ## service 以及 client
 
