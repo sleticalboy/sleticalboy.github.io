@@ -20,7 +20,7 @@ tags: [android, framework]
 binder 是 Android 系统提供的一种 IPC 机制，Android 系统基本上可以看做是一个基于 binder 的
 C/S 架构，binder 像网络一样把系统的各个部分紧密地连接在一起
 
-![](/assets/android/binder-client-server-servicimanager.png)
+![binder-c-s-sm](/assets/android/binder-client-server-servicimanager.png)
 
 ## 从 mediaserver 看 binder
 
@@ -190,7 +190,7 @@ sp<IBinder> ProcessState::getStrongProxyForHandle(int32_t handle) {
 
 BpBinder 与 BBinder 都是 Android 中与 Binder 通信相关的代表，他们都由 IBinder 派生，如下
 是他们的族谱：
-![](这里欠一张图)
+![ibinder-family](/assets/android/bind-ibinder-family.png)
 
 - BpBinder 是客户端用来与 Server 交互的代理类（p 可理解为 proxy）；
 - BBinder 则是与 proxy 相对的一端，即 pxory 交互的目标（服务端代理）
@@ -340,7 +340,7 @@ IServiceManager::~IServiceManager() {}
 ```
 
 7、IServiceManager 家族族谱如下：
-![](欠图一张)
+![iservicemanager-family](/assets/android/binder-iservicemanager-family.png)
 
 可知：
 
@@ -349,6 +349,49 @@ IServiceManager::~IServiceManager() {}
 - BpServiceManager 虽然从 BpInterface 中派生，但是这条分支似乎与 BpBinder 没有关系
 - BnServiceManager 是一个虚类，它的业务函数最终需要子类来实现
 
+7.1、`IServiceManager.cpp::BpServiceManager` 类
+
+```cpp
+class BpServiceManager : public BpInterface<IServiceManager> {
+public:
+    explicit BpServiceManager(const sp<IBinder>& impl)
+        // 这里调用父类构造，impl 是 IBinder 类型与 Binder 相关，实际是 BpBinder 对象
+        : BpInterface<IServiceManager>(impl) { }
+        // 省略具体的业务函数: 
+        // checkService(), addService(), getService(), listService()
+}
+```
+
+7.2、`IInterface.h::BpInterface` 类
+
+```cpp
+template<typename INTERFACE>
+inline BpInterface<INTERFACE>::BpInterface(const sp<IBinder>& remote)
+    // 继续调用父类构造，其具体实现在 Binder.cpp 中
+    : BpRefBase(remote) {
+}
+```
+
+7.3、`Binder.cpp::BpRefBase` 类
+
+```cpp
+BpRefBase::BpRefBase(const sp<IBinder>& o)
+    // 此处的 mRemote 即上面创建的 BpBinder(0)
+    : mRemote(o.get()), mRefs(NULL), mState(0) {
+    extendObjectLifetime(OBJECT_LIFETIME_WEAK);
+    if (mRemote) {
+        mRemote->incStrong(this);           // Removed on first IncStrong().
+        mRefs = mRemote->createWeak(this);  // Held for our entire lifetime.
+    }
+    // 最终：BpServiceManager::mRemote 指向 BpBinder()
+}
+```
+
+8、总结一下 `defaultServiceManager()` 函数
+
+- 创建 BpBinder 对象，其 handle 值为 0
+- 创建 BpServiceManager 对象，其 mRemote 指向 BpBinder(0)
+- BpServiceManager 内部实现了 IServiceManager 中定义的业务接口
 
 ### 注册 MediaPlayerService （3）
 ### startThreadPool() 和 joinThreadPool() （4/5）
