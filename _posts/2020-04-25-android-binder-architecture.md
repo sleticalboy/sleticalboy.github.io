@@ -1367,7 +1367,20 @@ sp<IMediaPlayer> MediaPlayerService::create(const sp<IMediaPlayerClient>& client
 - XxxService：service 端真正实现业务逻辑的地方；
 
 ## 拓展思考
+
+binder 驱动的实现：
+
+- 驱动代码是在 kernel/drivers/staing/android/binder.c 中（Android 4.4），该目录下还有
+一个 binder.h 头文件
+- /proc/binder 目录下的内容可用来查看 binder 设备的运行情况
+
 ### binder 与线程的关系
+
+以 MediaService 为例，如果程序正常运行，则：
+
+- 通过 startThreadPool() 启动一个线程，这个线程在 talkWithDriver()；
+- 主线程通过 joinThreadPool() 也在 talkWithDriver()；
+
 ### DeathRecipient
 ### 匿名 service
 
