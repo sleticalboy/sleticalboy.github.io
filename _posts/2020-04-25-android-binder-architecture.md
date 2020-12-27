@@ -20,6 +20,8 @@ tags: [android, framework]
 `android/bionic/libc/kernel/uapi/linux/android/binder.h`
 `frameworks/native/cmds/servicemanager/service_manager.c`
 `frameworks/native/cmds/servicemanager/binder.c`
+`frameworks/av/media/libmedia/IMediaDeathNotifier.cpp`
+`frameworks/av/media/libmediaplayerservice/MediaPlayerService.cpp`
 
 ## binder 概述
 
@@ -1220,7 +1222,149 @@ static int svc_can_register(const uint16_t *name, size_t name_len, pid_t spid,
 - 3、server 进程可能会挂掉，如果让每个 client 自己来检测的话压力会很大，现在只需向 ServiceManager
   查询一下就能够轻松知道
 
-## service 以及 client
+## service 以及它的 client
+
+以 MediaPlayerService 和 它的 client 为例
+
+### client 查询 service
+
+一个 client 若想使用某个 service，就必须通过调用 ServiceManager 的 getService() 函数来查
+询该 service。比如：IMediaDeathNotifier.cpp 中 getMediaPlayerService()
+
+1、查询服务 `IMediaDeathNotifier.cpp::getMediaPlayerService()`
+
+```cpp
+const sp<IMediaPlayerService> IMediaDeathNotifier::getMediaPlayerService() {
+    Mutex::Autolock _l(sServiceLock);
+    if (sMediaPlayerService == 0) {
+        sp<IServiceManager> sm = defaultServiceManager();
+        sp<IBinder> binder;
+        // 查询 media.player service, 如果还没注册上则每隔 0.5s 查询一次，直到注册成功
+        do {
+            // 想要与 service 通信，必须拿到一个 BpBinder 对象
+            binder = sm->getService(String16("media.player"));
+            if (binder != 0) {
+                break;
+            }
+            usleep(500000); // 0.5 s
+        } while (true);
+
+        if (sDeathNotifier == NULL) {
+            sDeathNotifier = new DeathNotifier();
+        }
+        // 注册服务死亡通知，用于服务挂掉时接收通知
+        binder->linkToDeath(sDeathNotifier);
+        // 调用 asInterface() 方法拿到 BpMediaPlayerService 对象之后，就能够使用其中的业
+        // 务函数了，比如：createMetadataRetriever()/createMediaRecorder() 等，当然也
+        // 仅仅是交给其打包转发而已，具体的实现在 BnMediaPlayerService
+        sMediaPlayerService = interface_cast<IMediaPlayerService>(binder);
+    }
+    return sMediaPlayerService;
+}
+```
+
+2、转发业务码：`BnMediaPlayerService::onTransact()`
+
+```cpp
+status_t BnMediaPlayerService::onTransact(uint32_t code, const Parcel& data,
+    Parcel* reply, uint32_t flags) {
+    switch (code) {
+        case CREATE: {
+            CHECK_INTERFACE(IMediaPlayerService, data, reply);
+            sp<IMediaPlayerClient> client =
+                interface_cast<IMediaPlayerClient>(data.readStrongBinder());
+            audio_session_t audioSessionId = (audio_session_t) data.readInt32();
+            // 子类要实现 create() 虚函数
+            sp<IMediaPlayer> player = create(client, audioSessionId);
+            reply->writeStrongBinder(IInterface::asBinder(player));
+            return NO_ERROR;
+        } break;
+        case CREATE_MEDIA_RECORDER: {
+            CHECK_INTERFACE(IMediaPlayerService, data, reply);
+            const String16 opPackageName = data.readString16();
+            // 子类要实现 createMediaRecorder() 虚函数
+            sp<IMediaRecorder> recorder = createMediaRecorder(opPackageName);
+            reply->writeStrongBinder(IInterface::asBinder(recorder));
+            return NO_ERROR;
+        } break;
+        case CREATE_METADATA_RETRIEVER: {
+            CHECK_INTERFACE(IMediaPlayerService, data, reply);
+            // 子类要实现 createMetadataRetriever() 虚函数
+            sp<IMediaMetadataRetriever> retriever = createMetadataRetriever();
+            reply->writeStrongBinder(IInterface::asBinder(retriever));
+            return NO_ERROR;
+        } break;
+        case ADD_BATTERY_DATA: {
+            CHECK_INTERFACE(IMediaPlayerService, data, reply);
+            uint32_t params = data.readInt32();
+            // 子类要实现  addBatteryData() 虚函数
+            addBatteryData(params);
+            return NO_ERROR;
+        } break;
+        case PULL_BATTERY_DATA: {
+            CHECK_INTERFACE(IMediaPlayerService, data, reply);
+            // 子类要实现  pullBatteryData() 虚函数
+            pullBatteryData(reply);
+            return NO_ERROR;
+        } break;
+        case LISTEN_FOR_REMOTE_DISPLAY: {
+            CHECK_INTERFACE(IMediaPlayerService, data, reply);
+            const String16 opPackageName = data.readString16();
+            sp<IRemoteDisplayClient> client(
+                    interface_cast<IRemoteDisplayClient>(data.readStrongBinder()));
+            if (client == NULL) {
+                reply->writeStrongBinder(NULL);
+                return NO_ERROR;
+            }
+            String8 iface(data.readString8());
+            // 子类要实现 listenForRemoteDisplay() 虚函数
+            sp<IRemoteDisplay> display(listenForRemoteDisplay(opPackageName, client, iface));
+            reply->writeStrongBinder(IInterface::asBinder(display));
+            return NO_ERROR;
+        } break;
+        case GET_CODEC_LIST: {
+            CHECK_INTERFACE(IMediaPlayerService, data, reply);
+            // 子类要实现 getCodecList() 虚函数
+            sp<IMediaCodecList> mcl = getCodecList();
+            reply->writeStrongBinder(IInterface::asBinder(mcl));
+            return NO_ERROR;
+        } break;
+        default:
+            return BBinder::onTransact(code, data, reply, flags);
+    }
+}
+```
+
+### service 工作
+
+具体的业务逻辑是由 MediaPlayerService.cpp 来实现的，以 create() 为例来看一下
+
+```cpp
+sp<IMediaPlayer> MediaPlayerService::create(const sp<IMediaPlayerClient>& client,
+        audio_session_t audioSessionId) {
+    pid_t pid = IPCThreadState::self()->getCallingPid();
+    int32_t connId = android_atomic_inc(&mNextConnId);
+
+    // 创建 Client 对象
+    sp<Client> c = new Client(this, pid, connId, client, audioSessionId,
+            IPCThreadState::self()->getCallingUid());
+
+    wp<Client> w = c;
+    {
+        Mutex::Autolock lock(mLock);
+        // 记录 client
+        mClients.add(w);
+    }
+    // 返回 client 引用
+    return c;
+}
+```
+
+**总结：**
+
+- BpXxxService：client 端访问 service 时，service 端派出的代理；
+- BnXxxService：service 端负责转发 service 代理发送的请求；
+- XxxService：service 端真正实现业务逻辑的地方；
 
 ## 拓展思考
 ### binder 与线程的关系
