@@ -22,6 +22,7 @@ tags: [android, framework]
 `frameworks/native/cmds/servicemanager/binder.c`
 `frameworks/av/media/libmedia/IMediaDeathNotifier.cpp`
 `frameworks/av/media/libmediaplayerservice/MediaPlayerService.cpp`
+`frameworks/av/media/libmedia/mediaplayer.cpp`
 
 ## binder 概述
 
@@ -1403,7 +1404,7 @@ const sp<IMediaPlayerService> IMediaDeathNotifier::getMediaPlayerService() {
 }
 ```
 
-2、接收 DeathRecipient
+2、发送 service dead 通知
 
 ```cpp
 status_t IPCThreadState::executeCommand(int32_t cmd) {
@@ -1421,6 +1422,72 @@ status_t IPCThreadState::executeCommand(int32_t cmd) {
         // ...
     }
     return result;
+}
+```
+
+2.1、`BpBinder.cpp::sendObituary()`
+
+
+```cpp
+void BpBinder::sendObituary() {
+    // ...
+    if (obits != NULL) {
+        const size_t N = obits->size();
+        for (size_t i=0; i<N; i++) {
+            // 逐个发送报告
+            reportOneDeath(obits->itemAt(i));
+        }
+        delete obits;
+    }
+}
+```
+
+2.2、`BpBinder.cpp::reportOneDeath()`
+
+```cpp
+void BpBinder::reportOneDeath(const Obituary& obit) {
+    sp<DeathRecipient> recipient = obit.recipient.promote();
+    if (recipient == NULL) return;
+    // 回调 DeathRecipient 对象的 binderDied() 方法
+    recipient->binderDied(this);
+}
+```
+
+3、接收到 service dead 通知
+
+```cpp
+void IMediaDeathNotifier::DeathNotifier::binderDied(const wp<IBinder>& who __unused) {
+    // ...
+    for (size_t iter = 0; iter < list.size(); ++iter) {
+        sp<IMediaDeathNotifier> notifier = list[iter].promote();
+        if (notifier != 0) {
+            // 以 MediaPlayer 为例分析
+            notifier->died();
+        }
+    }
+}
+```
+
+4、MediaPlayer 内部处理
+
+```cpp
+void MediaPlayer::died() {
+    ALOGV("died");
+    // 公共的方法，其他的消息比如 MEDIA_PREPARED 等也会从 notify() 发出去
+    notify(MEDIA_ERROR, MEDIA_ERROR_SERVER_DIED, 0);
+}
+
+void MediaPlayer::notify(int msg, int ext1, int ext2, const Parcel *obj) {
+    ALOGV("message received msg=%d, ext1=%d, ext2=%d", msg, ext1, ext2);
+    switch (msg) {
+        // ...
+        case MEDIA_ERROR:
+            ALOGE("error (%d, %d)", ext1, ext2);
+            // 处理异常
+            break;
+            // ...
+    }
+    // ...
 }
 ```
 
