@@ -17,7 +17,7 @@ tags: [android, framework]
 `frameworks/native/libs/binder/include/binder/IBinder.h`
 `frameworks/native/libs/binder/include/binder/BpBinder.h`
 `frameworks/native/libs/binder/include/binder/Binder.h`
-`android/bionic/libc/kernel/uapi/linux/android/binder.h`
+`bionic/libc/kernel/uapi/linux/android/binder.h`
 `frameworks/native/cmds/servicemanager/service_manager.c`
 `frameworks/native/cmds/servicemanager/binder.c`
 `frameworks/av/media/libmedia/IMediaDeathNotifier.cpp`
@@ -1380,8 +1380,50 @@ binder 驱动的实现：
 
 - 通过 startThreadPool() 启动一个线程，这个线程在 talkWithDriver()；
 - 主线程通过 joinThreadPool() 也在 talkWithDriver()；
+- binder 设备把发起请求的线程牢牢地拴住，必须收到回复才会放它离开；
 
-### DeathRecipient
+### 关于 DeathRecipient
+
+字面意思翻译是‘死亡接收者’，也就是说，如果想要收到服务死亡的通知就必须要设置一个 DeathRecipient
+
+1、设置 DeathRecipient
+
+```cpp
+const sp<IMediaPlayerService> IMediaDeathNotifier::getMediaPlayerService() {
+    Mutex::Autolock _l(sServiceLock);
+    if (sMediaPlayerService == 0) {
+        // 伪代码
+        sp<IServiceManager> sm = defaultServiceManager();
+        sp<IBinder> binder = sm->getService(String16("media.player"));
+        // 注册服务死亡通知，用于服务挂掉时接收通知
+        binder->linkToDeath(sDeathNotifier);
+        sMediaPlayerService = interface_cast<IMediaPlayerService>(binder);
+    }
+    return sMediaPlayerService;
+}
+```
+
+2、接收 DeathRecipient
+
+```cpp
+status_t IPCThreadState::executeCommand(int32_t cmd) {
+    status_t result = NO_ERROR;
+    switch ((uint32_t)cmd) {
+        // ...
+        case BR_DEAD_BINDER: {
+            // 收到驱动的指示：service 挂掉了，BpBinder 要做一些事儿了
+            BpBinder *proxy = (BpBinder*)mIn.readPointer();
+            // 通知 service 挂掉了
+            proxy->sendObituary();
+            mOut.writeInt32(BC_DEAD_BINDER_DONE);
+            mOut.writePointer((uintptr_t)proxy);
+            } break;
+        // ...
+    }
+    return result;
+}
+```
+
 ### 匿名 service
 
 
