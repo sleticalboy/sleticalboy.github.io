@@ -26,8 +26,8 @@ tags: [android, framework]
 
 ## binder 概述
 
-binder 是 Android 系统提供的一种 IPC 机制，Android 系统基本上可以看做是一个基于 binder 的
-C/S 架构，binder 像网络一样把系统的各个部分紧密地连接在一起
+binder 是 Android 系统提供的一种 IPC 机制，Android 系统基本上可以看做是一个基
+于 binder 的 C/S 架构，binder 像网络一样把系统的各个部分紧密地连接在一起
 
 ![binder-c-s-sm](/assets/android/binder-client-server-servicimanager.png)
 
@@ -197,8 +197,8 @@ sp<IBinder> ProcessState::getStrongProxyForHandle(int32_t handle) {
 
 4、BpBinder 与 BBinder 是什么？
 
-BpBinder 与 BBinder 都是 Android 中与 Binder 通信相关的代表，他们都由 IBinder 派生，如下
-是他们的族谱：
+BpBinder 与 BBinder 都是 Android 中与 Binder 通信相关的代表，他们都由 IBinder
+派生，如下是他们的族谱：
 ![ibinder-family](/assets/android/bind-ibinder-family.png)
 
 - BpBinder 是客户端用来与 Server 交互的代理类（p 可理解为 proxy）；
@@ -212,8 +212,8 @@ BpBinder 与 BBinder 都是 Android 中与 Binder 通信相关的代表，他们
 - 还记得上述代码中的 `handle` 么，binder 系统是用 `handle` 来进行标识的
 
 ③ `handle = 0` 时，表示什么？
-- 0 在 binder 系统中有重要的含义，即 0 代表的就是 ServiceManager 所对应的 BBinder。可以理
-解为 0 号服务就是 ServiceManager，0 号服务管理其他服务
+- 0 在 binder 系统中有重要的含义，即 0 代表的就是 ServiceManager 所对应的 
+BBinder。可以理解为 0 号服务就是 ServiceManager，0 号服务管理其他服务
 
 4.1、`BpBinder` 构造
 
@@ -224,8 +224,8 @@ BpBinder::BpBinder(int32_t handle, int32_t trackedUid)
     , mObitsSent(0)
     , mObituaries(NULL)
     , mTrackedUid(trackedUid) {
-    // 怎么感觉这里什么也没做呢？回想代码是从 defaultServiceManager() 中开始的，回头看下我
-    // 们是不是有什么细节遗漏了？哦！原来是 interface_cast 这个宏
+    // 怎么感觉这里什么也没做呢？回想代码是从 defaultServiceManager() 中开始
+    // 的，回头看下我们是不是有什么细节遗漏了？哦！原来是 interface_cast 这个宏
     extendObjectLifetime(OBJECT_LIFETIME_WEAK);
     IPCThreadState::self()->incWeakHandle(handle, this);
     // 最终返回到 defaultServiceManager() 中
@@ -461,10 +461,10 @@ IPCThreadState* IPCThreadState::self() {
 restart:
         // 如果已经 set，则根据 key 获取相关内容
         const pthread_key_t k = gTLS;
-        // TLS 全称为 Thread Local Storage，线程本地存储，顾名思义这是线程内部的私有空间，
-        // 并不会与其他线程共享
-        // linux 内核提供了 pthread_set/getspecific() 函数来设置/获取线程私有空间的内容
-        // 所以有 get 的地方肯定有 set
+        // TLS 全称为 Thread Local Storage，线程本地存储，顾名思义这是线程内部
+        // 的私有空间，并不会与其他线程共享
+        // linux 内核提供了 pthread_set/getspecific() 函数来设置/获取线程私有
+        // 空间的内容所以有 get 的地方肯定有 set
         IPCThreadState* st = (IPCThreadState*)pthread_getspecific(k);
         if (st) return st;
         // 构造函数中会调用 set 方法
@@ -667,7 +667,8 @@ status_t IPCThreadState::executeCommand(int32_t cmd) {
                     // 将 tr.cookie 强转为 BBinder 指针后调用 transact() 方法
                     error = reinterpret_cast<BBinder*>(tr.cookie)->transact(
                         tr.code, buffer, &reply, tr.flags);
-                    // 将 tr.cookie 强转为 BBinder 指针后调用 decStrong() 方法减少一次强引用计数
+                    // 将 tr.cookie 强转为 BBinder 指针后调用 decStrong() 方法
+                    // 减少一次强引用计数
                     reinterpret_cast<BBinder*>(tr.cookie)->decStrong(this);
                 } else error = UNKNOWN_TRANSACTION;
             } else {
@@ -891,9 +892,10 @@ status_t IPCThreadState::getAndExecuteCommand() {
 
 ## 服务大总管 service manager 
 
-前面提到 defaultServiceMannager() 返回一个 BpServiceManager 对象，通过它可以把请求发送给
-handle 值为 0 的目的端，即 BnServiceManager 来处理请求，但是源码中并没有这样一个类；然而系统
-提供了一个 service_manager.c 程序，它完成的就是 BnServiceManager 的工作。
+前面提到 defaultServiceMannager() 返回一个 BpServiceManager 对象，通过它可以把
+请求发送给 handle 值为 0 的目的端，即 BnServiceManager 来处理请求，但是源码中
+并没有这样一个类；然而系统提供了一个 service_manager.c 程序，它完成的就是 
+BnServiceManager 的工作。
 
 ### ServiceManager 原理
 
@@ -1106,8 +1108,8 @@ int svcmgr_handler(struct binder_state *bs,
         handle = bio_get_ref(msg);
         allow_isolated = bio_get_uint32(msg) ? 1 : 0;
         dumpsys_priority = bio_get_uint32(msg);
-        if (do_add_service(bs, s, len, handle, txn->sender_euid, allow_isolated, dumpsys_priority,
-                           txn->sender_pid))
+        if (do_add_service(bs, s, len, handle, txn->sender_euid, allow_isolated,
+            dumpsys_priority, txn->sender_pid))
             return -1;
         break;
 
@@ -1211,17 +1213,19 @@ static int svc_can_register(const uint16_t *name, size_t name_len, pid_t spid,
     }
     // 检查是否有某项权限（add/find）
     // 高版本是通过 selinux 来检查的
-    // 低版本通过定义一个 allowed 数组来判断，如果没有达到 root 和 system 权限是无法添加的
+    // 低版本通过定义一个 allowed 数组来判断，如果没有达到 root 和 system 权
+    // 限是无法添加的
     return check_mac_perms_from_lookup(spid, uid, perm, str8(name, name_len)) ? 1 : 0;
 }
 ```
 
 ### ServiceManager 存在的意义
 
-- 1、ServiceManager 能集中管理系统中的所有服务，能够施加权限控制，并不是所有的进程都可注册服务；
+- 1、ServiceManager 能集中管理系统中的所有服务，能够施加权限控制，并不是所有
+的进程都可注册服务；
 - 2、ServiceManager 支持通过字符串名称来查找对应的 service，有点像 DNS；
-- 3、server 进程可能会挂掉，如果让每个 client 自己来检测的话压力会很大，现在只需向 ServiceManager
-  查询一下就能够轻松知道
+- 3、server 进程可能会挂掉，如果让每个 client 自己来检测的话压力会很大，现在
+只需向 ServiceManager查询一下就能够轻松知道
 
 ## service 以及它的 client
 
@@ -1229,8 +1233,8 @@ static int svc_can_register(const uint16_t *name, size_t name_len, pid_t spid,
 
 ### client 查询 service
 
-一个 client 若想使用某个 service，就必须通过调用 ServiceManager 的 getService() 函数来查
-询该 service。比如：IMediaDeathNotifier.cpp 中 getMediaPlayerService()
+一个 client 若想使用某个 service，就必须通过调用 ServiceManager::getService() 
+函数来查询该 service。比如：IMediaDeathNotifier.cpp::getMediaPlayerService()
 
 1、查询服务 `IMediaDeathNotifier.cpp::getMediaPlayerService()`
 
@@ -1240,7 +1244,8 @@ const sp<IMediaPlayerService> IMediaDeathNotifier::getMediaPlayerService() {
     if (sMediaPlayerService == 0) {
         sp<IServiceManager> sm = defaultServiceManager();
         sp<IBinder> binder;
-        // 查询 media.player service, 如果还没注册上则每隔 0.5s 查询一次，直到注册成功
+        // 查询 media.player service, 如果还没注册上则每隔 0.5s 查询一次，直到
+        // 注册成功
         do {
             // 想要与 service 通信，必须拿到一个 BpBinder 对象
             binder = sm->getService(String16("media.player"));
@@ -1255,9 +1260,10 @@ const sp<IMediaPlayerService> IMediaDeathNotifier::getMediaPlayerService() {
         }
         // 注册服务死亡通知，用于服务挂掉时接收通知
         binder->linkToDeath(sDeathNotifier);
-        // 调用 asInterface() 方法拿到 BpMediaPlayerService 对象之后，就能够使用其中的业
-        // 务函数了，比如：createMetadataRetriever()/createMediaRecorder() 等，当然也
-        // 仅仅是交给其打包转发而已，具体的实现在 BnMediaPlayerService
+        // 调用 asInterface() 方法拿到 BpMediaPlayerService 对象之后，就能够使
+        // 用其中的业务函数了，比如：createMetadataRetriever()、
+        // createMediaRecorder() 等，当然也仅仅是交给其打包转发而已，具体的实
+        // 现在 BnMediaPlayerService
         sMediaPlayerService = interface_cast<IMediaPlayerService>(binder);
     }
     return sMediaPlayerService;
@@ -1371,8 +1377,8 @@ sp<IMediaPlayer> MediaPlayerService::create(const sp<IMediaPlayerClient>& client
 
 binder 驱动的实现：
 
-- 驱动代码是在 kernel/drivers/staing/android/binder.c 中（Android 4.4），该目录下还有
-一个 binder.h 头文件
+- 驱动代码是在 kernel/drivers/staing/android/binder.c 中（Android 4.4），该目录
+下还有一个 binder.h 头文件
 - /proc/binder 目录下的内容可用来查看 binder 设备的运行情况
 
 ### binder 与线程的关系
@@ -1385,7 +1391,8 @@ binder 驱动的实现：
 
 ### 关于 DeathRecipient
 
-字面意思翻译是‘死亡接收者’，也就是说，如果想要收到服务死亡的通知就必须要设置一个 DeathRecipient
+字面意思翻译是‘死亡接收者’，也就是说，如果想要收到服务死亡的通知就必须要设
+置一个 DeathRecipient
 
 1、设置 DeathRecipient
 
