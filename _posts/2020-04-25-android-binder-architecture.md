@@ -1413,6 +1413,7 @@ status_t IPCThreadState::executeCommand(int32_t cmd) {
         // ...
         case BR_DEAD_BINDER: {
             // 收到驱动的指示：service 挂掉了，BpBinder 要做一些事儿了
+            // 至于驱动是如何实现的，则要去分析驱动源码，在此略过
             BpBinder *proxy = (BpBinder*)mIn.readPointer();
             // 通知 service 挂掉了
             proxy->sendObituary();
@@ -1453,7 +1454,7 @@ void BpBinder::reportOneDeath(const Obituary& obit) {
 }
 ```
 
-3、接收到 service dead 通知
+3、如何接收到 service dead 通知
 
 ```cpp
 void IMediaDeathNotifier::DeathNotifier::binderDied(const wp<IBinder>& who __unused) {
@@ -1468,12 +1469,12 @@ void IMediaDeathNotifier::DeathNotifier::binderDied(const wp<IBinder>& who __unu
 }
 ```
 
-4、MediaPlayer 内部处理
+4、接下来看 MediaPlayer 内部如何处理
 
 ```cpp
 void MediaPlayer::died() {
     ALOGV("died");
-    // 公共的方法，其他的消息比如 MEDIA_PREPARED 等也会从 notify() 发出去
+    // 通用方法，其他的消息比如 MEDIA_PREPARED 等也会从 notify() 发出去
     notify(MEDIA_ERROR, MEDIA_ERROR_SERVER_DIED, 0);
 }
 
@@ -1493,6 +1494,42 @@ void MediaPlayer::notify(int msg, int ext1, int ext2, const Parcel *obj) {
 
 ### 匿名 service
 
+所谓匿名 service 就是没有注册到 ServiceManager 中的 Service；但既然是一个
+Service，那就表明它确实是一个基于 Binder 通信的 C/S 结构。还是以 
+MediaPlayerService 分析。
+
+1、`IMediaPlayerService.cpp::onTransact()` CREATE 命令
+
+```cpp
+status_t BnMediaPlayerService::onTransact(uint32_t code, const Parcel& data,
+    Parcel* reply, uint32_t flags) {
+    switch (code) {
+        case CREATE: {
+            CHECK_INTERFACE(IMediaPlayerService, data, reply);
+            sp<IMediaPlayerClient> client =
+                interface_cast<IMediaPlayerClient>(data.readStrongBinder());
+            audio_session_t audioSessionId = (audio_session_t) data.readInt32();
+            // 子类实现 create() 虚函数创建一个 IMediaPlayer 对象
+            // 此后 client 就可以直接使用 IMediaPlayer 来跨进程执行函数调用
+            sp<IMediaPlayer> player = create(client, audioSessionId);
+            // 将 binder 作为一种特殊的数据类型来处理
+            reply->writeStrongBinder(IInterface::asBinder(player));
+            return NO_ERROR;
+        } break;
+        // ...
+    }
+}
+```
+
+以上代码所展示的 C/S 结构：
+- BpMediaPlayer：由 MediaPlayerClient 使用，调用 IMediaPlayer 提供的业务接口；
+- BnMediaPlayer：由 MediaPlayerService 使用，处理来自 client 端的业务请求；
+
+另外要注意一下 `reply->writeStrongBinder(IInterface::asBinder(player))` 这句，
+当 reply 写到 binder 驱动时，驱动可能会特殊处理这种 IBinder 类型的数据，比如
+为这个 BBinder 计算生成一个唯一的 handle 值，其实这就相当于在 binder 驱动中注
+册了一项服务。通过这种方式，MediaServer 输出了大量的服务，比如 IMediaPlayer、
+IMediaRecorder 等
 
 ## 实现一个 native service
 ### native 层
@@ -1531,7 +1568,7 @@ at com.android.settings.fuelgauge.BatteryInfo.getBatteryInfo(BatteryInfo.java:14
 【java 层 Binder】BinderProxy#transact() -> BinderProxy#transactNative() ->
 【native 层 BinderProxy】android_util_Binder.cpp::android_os_BinderProxy_transact() -> BpBinder.cpp::transact() -> 
 【native 层 IPCThreadState】IPCThreadState.cpp::transact() -> IPCThreadState.cpp::waitForResponse() -> IPCThreadState.cpp::talkWithDriver() -> 
-【native 层 Binde r驱动】通过 ioctl() 与 binder 驱动交互
+【native 层 Binder 驱动】通过 ioctl() 与 binder 驱动交互
 ```
 
 ## 参考资料
