@@ -57,3 +57,24 @@ libui-arm64-android libui-arm-android
   - mk 中可以有流程控制但 bp 中无流程控制；
 
 
+## 编译系统概述
+
+### 编译系统变化
+Android 7.0 之前是 makefile，之后引入 kati 将 makefile 转换成 ninja
+
+### 代码位置
+编译系统源码在 `${ANDROID_ROOT}/build` 下
+soong 在 `${ANDROID_ROOT}/build/soong` 下，与 `${ANDROID_ROOT}/build/blueprint`
+共同起作用：`Android.bp`->`blueprint>>soong`->`ninja file`
+
+### Android ninja 组织
+
+## 编译流程
+
+### make 流程
+
+### mm 流程
+
+### soong 流程
+
+## ninja 使用
