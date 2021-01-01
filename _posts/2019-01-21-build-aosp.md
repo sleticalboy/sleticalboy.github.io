@@ -63,11 +63,23 @@ libui-arm64-android libui-arm-android
 Android 7.0 之前是 makefile，之后引入 kati 将 makefile 转换成 ninja
 
 ### 代码位置
-编译系统源码在 `${ANDROID_ROOT}/build` 下
+
+编译系统整体源码在 `${ANDROID_ROOT}/build` 目录下
+kati 的位置在 `${ANDROID_ROOT}/build/kati/` 下
 soong 在 `${ANDROID_ROOT}/build/soong` 下，与 `${ANDROID_ROOT}/build/blueprint`
 共同起作用：`Android.bp`->`blueprint>>soong`->`ninja file`
 
+soong 是在 blueprint 的基础上进行扩展，基于 blueprint 的语法定制产生 Android.bp
+语法，然后通过解析 Android.bp 生成 ninja 文件（soong 和 bluepring 均由 go 编写）
+
 ### Android ninja 组织
+
+编译过程中，首先将所有的 Android.bp 文件搜集成 `out/soong/build.ninja.d`，并以
+此为基础生成 `out/soong/build.ninja` 文件；然后将所有的 Android.md 文件搜集生
+成 `out/build-aosp_arm.ninja` 文件；最后通过 `out/combined-aosp_arm.ninja` 文件
+将前两个文件组织起来，如下图所示：
+
+![bp-mk-relationship](/assets/android/aosp-build-bp-mk.png)
 
 ## 编译流程
 
