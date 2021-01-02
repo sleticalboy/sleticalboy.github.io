@@ -30,8 +30,8 @@ Android 平台提供三种指令来编译：
 
 开启编译选项：
 ```bash
-$ export SOONG_GEN_CMAKEFILES=1
-$ export SOONG_GEN_CMAKEFILES_DEBUG=1
+export SOONG_GEN_CMAKEFILES=1
+export SOONG_GEN_CMAKEFILES_DEBUG=1
 ```
 全量编译：
 ```bash
@@ -39,11 +39,11 @@ make -j 16
 ```
 编译单个目录，比如 `frameworks/native/libs/ui`
 ```bash
-$ mmm frameworks/native/libs/ui
+mmm frameworks/native/libs/ui
 ```
 生成文件：
 ```bash
-$ ls out/development/ide/clion/frameworks/native/libs/ui
+ls out/development/ide/clion/frameworks/native/libs/ui
 libui-arm64-android libui-arm-android
 ```
 
@@ -84,6 +84,32 @@ soong 是在 blueprint 的基础上进行扩展，基于 blueprint 的语法定�
 ## 编译流程
 
 ### make 流程
+
+当在 `${ANDROID_ROOT}` 目录下执行 `make` 时，默认会找到当前 Makefile 并找到
+all 目标进行编译操作，Makefile 文件主要内容只有一行：`include build/make/core/main.mk`，
+往下就执行到了 main.mk 文件中：
+```make
+ifndef KATI
+
+host_prebuilts := linux-x86
+ifeq ($(shell uname),Darwin)
+host_prebuilts := darwin-x86
+endif
+
+.PHONY: run_soong_ui
+run_soong_ui:
+    +@prebuilts/build-tools/$(host_prebuilts)/bin/makeparallel --ninja build/soong/soong_ui.bash --make-mode $(MAKECMDGOALS)
+
+.PHONY: $(MAKECMDGOALS)
+$(sort $(MAKECMDGOALS)) : run_soong_ui
+    @#empty
+
+else # KATI
+```
+
+`MAKECMDGOALS` 是执行 make 时后面的参数，也就是说执行任何命令的时候都是执行的
+`run_soong_ui`，即从 make 切换到了 soong 编译，之后跟 make 就没有关系了
+
 
 ### mm 流程
 
