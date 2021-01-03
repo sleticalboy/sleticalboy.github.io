@@ -110,8 +110,56 @@ else # KATI
 `MAKECMDGOALS` 是执行 make 时后面的参数，也就是说执行任何命令的时候都是执行的
 `run_soong_ui`，即从 make 切换到了 soong 编译，之后跟 make 就没有关系了
 
-
 ### mm 流程
+
+`mm` 是 aosp 中提供的一个函数，原型在 `build/envsetup.sh` 中：
+
+```bash
+function mm() {
+    local T=$(gettop)
+    # 如果是在源码根目录下，mm 等同于 make 命令
+    if [ -f build/soong/soong_ui.bash ]; then
+        _wrap_build $T/build/soong/soong_ui.bash --make-mode $@
+    else
+        # 找到 Android.mk 或者 Android.bp 文件
+        local M=$(findmakefile)
+        local MODULES=
+        local GET_INSTALL_PATH=
+        local ARGS=
+        # 替换掉 makefile 路径中根目录之前的内容
+        local M=`echo $M|sed 's:'$T'/::'`
+        if [ ! "$T" ]; then
+            echo "Couldn't locate the top of the tree.  Try setting TOP."
+            return 1
+        elif [ ! "$M" ]; then
+            echo "Couldn't locate a makefile from the current directory."
+            return 1
+        else
+            local ARG
+            for ARG in $@; do
+                case $ARG in
+                  GET-INSTALL-PATH) GET_INSTALL_PATH=$ARG;;
+                esac
+            done
+            if [ -n "$GET_INSTALL_PATH" ]; then
+              MODULES=
+              ARGS=GET-INSTALL-PATH-IN-$(dirname ${M})
+              ARGS=${ARGS//\//-}
+            else
+              MODULES=MODULES-IN-$(dirname ${M})
+              # Convert "/" to "-".
+              MODULES=${MODULES//\//-}
+              ARGS=$@
+            fi
+            if [ "1" = "${WITH_TIDY_ONLY}" -o "true" = "${WITH_TIDY_ONLY}" ]; then
+              MODULES=tidy_only
+            fi
+            # 执行编译命令
+            ONE_SHOT_MAKEFILE=$M _wrap_build $T/build/soong/soong_ui.bash --make-mode $MODULES $ARGS
+        fi
+    fi
+}
+```
 
 ### soong 流程
 
