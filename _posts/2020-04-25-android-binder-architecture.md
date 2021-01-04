@@ -1538,23 +1538,18 @@ status_t BnMediaPlayerService::onTransact(uint32_t code, const Parcel& data,
 册了一项服务。通过这种方式，MediaServer 输出了大量的服务，比如 IMediaPlayer、
 IMediaRecorder 等
 
-## 实践：如何实现一个 native service
-### native 层
-
-- 声明 service 接口和业务方法
-- 实现 service 接口和业务方法
-
-### java 层
-
-- aidl
+## 实践：[如何实现一个 native service](/android/2021/01/04/how-to-implement-a-native-service/)
 
 ## 总结
+
 ### 除了 binder 之外，Android 中的其他 IPC 手段
-pipe、socket、文件共享、共享内存
+
+1、pipe、socket、文件共享、共享内存
 
 ### binder 相较于其他 IPC 手段的优点
 
-- 一次 copy
+1、一次 copy；
+2、有校验，安全；
 
 ## 从一个 anr 实例看 binder 整体调用流程
 
