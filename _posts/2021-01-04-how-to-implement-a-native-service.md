@@ -32,7 +32,10 @@ public:
     virtual void read();
 };
 
-// BnTest 根据请求码 code 对客户端的请求进行转发，实际工作由 ITest 子类完成
+// BnTest 根据请求码 code 对客户端的请求进行转发，实际工作由 ITest 子类完成，
+// BnInterface 既是模板类又是多继承，其原型为：
+// template<typename INTERFACE>
+// class BnInterface : public INTERFACE, public BBinder {}
 class BnTest : public BnInterface<ITest> {
 public:
     virtual status_t onTransact(uint32_t code, const Parcel &data,
@@ -70,7 +73,7 @@ public:
         Parcel data, reply;
         data.writeInterfaceToken(ITest::getInterfaceDescriptor());
         // 转发到 BnTest::onTransact()
-        ALOGD("BpTest:: start transact %s cmd(%d)", "WRITE", CODE_WRITE);
+        ALOGD("BpTest::write() start transact %s cmd(%d)", "WRITE", CODE_WRITE);
         remote()->transact(CODE_WRITE, data, &reply);
     }
 
@@ -78,7 +81,7 @@ public:
         Parcel data, reply;
         data.writeInterfaceToken(ITest::getInterfaceDescriptor());
         // 转发到 BnTest::onTransact()
-        ALOGD("BpTest:: start transact %s cmd(%d)", "READ", CODE_READ);
+        ALOGD("BpTest::read() start transact %s cmd(%d)", "READ", CODE_READ);
         remote()->transact(CODE_READ, data, &reply);
     }
 };
@@ -143,8 +146,20 @@ int main(int count, char **argv) {
     sp<IServiceManager> sm(defaultServiceManager());
     ALOGI("defaultServiceManager(): %p", sm.get());
 
+    // 注意 BnTest 的继承关系如下：
+    //              IBinder
+    //                ^^
+    //                ||
+    //              BBinder
+    //                ^^
+    //                ||
+    //           BnInterface
+    //                ^^
+    //                ||
+    //              BnTest
+    // 即实际上 BnTest 就是一个 IBinder
     // 注册服务
-    sm->addService(String16("sample.service"), new BnTest());
+    sm->addService(String16("sample.service"), new BnTest()/*binder*/);
     ALOGI("add sample.service to service manager");
 
     // 开启工作线程
@@ -160,20 +175,25 @@ int main(int count, char **argv) {
 ```androidbp
 // 编译二进制可执行程序：sample_service
 cc_binary {
+    // 可执行程序的名字
     name: "sample_service",
+    // 使用哪些源文件来进行编译
     srcs: [
         "ITest.cpp",
         "TestServer.cpp",
     ],
+    // 包含的头文件所在的目录
     include_dirs: [
         "vendor/grandstream/test-service/native"
     ],
+    // 使用到哪些共享库
     shared_libs: [
         "libbinder",
         "libcutils",
         "liblog",
         "libutils",
     ],
+    // c flags
     cflags: [
         "-Werror",
         "-Wno-error=deprecated-declarations",
@@ -290,13 +310,17 @@ I/TestClient: sample client start count: 1, argv[0]: system/bin/sample_client
 I/TestClient: defaultServiceManager(): 0x76f023d180
 I/TestClient: sample service binder is 0x76f024b140
 I/TestClient: sample service is 0x76f023d1c0
-D/TestServer: BpTest:: start transact WRITE cmd(16)
+D/TestServer: BpTest::write() start transact WRITE cmd(16)
 D/TestServer: BnTest::onTransact() write(16), flags(16)
 D/TestServer: ITest::write() called, start do hard work
-D/TestServer: BpTest:: start transact READ cmd(17)
+D/TestServer: BpTest::read() start transact READ cmd(17)
 D/TestServer: BnTest::onTransact() read(17), flags(16)
 D/TestServer: ITest::read() called, start do hard work
 ```
+**总结：**
+
+从以上日志输出可以看出，当对某一 service 中的业务函数发起调用时，首先调用 BpXxx（即 
+BpInterface），接着调用 BnXxx（即 BnInterface），最终调用 IXxx（即 IInterface）
 
 ## 通过 java 层访问 `sample.service`
 
