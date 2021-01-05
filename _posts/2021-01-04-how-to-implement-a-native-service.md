@@ -1,13 +1,13 @@
 ---
 layout: post
-title: 如何实现一个 native service
+title: 实战：使用 Binder 机制实现 C/S 架构
 author: sleticalboy
 date: 2021-01-04 20:53:51 +0800
 category: android
 tags: [android, framework]
 ---
 
-## native 层实现
+## 第一种：native 层实现
 
 ### 声明 service 业务接口
 
@@ -216,8 +216,6 @@ cc_binary {
 adb push out/target/product/xxx/system/bin/sample_service /system/bin/sample_service
 ```
 
-## 第一种：通过 native 层访问 `sample.service`
-
 ### 编写 TestClient.cpp 文件实现 client 端
 
 ```cpp
@@ -322,10 +320,356 @@ D/TestServer: ITest::read() called, start do hard work
 从以上日志输出可以看出，当对某一 service 中的业务函数发起调用时，首先调用 BpXxx（即 
 BpInterface），接着调用 BnXxx（即 BnInterface），最终调用 IXxx（即 IInterface）
 
-## 通过 java 层访问 `sample.service`
+---
+## 第二种：java 层实现
 
-### 编写 aidl 文件定义访问接口
+### 实现 server 端
 
-### `aidl` 编译并生成中间类
+1、编写 AIDL 文件 `DataStruct.aidl` 和 `ITest.aidl`
 
-### 编写 java 文件进行访问
+1.1、 `ITest.aidl` 文件
+
+```aidl
+package com.sleticalboy.sample.service;
+// aidl 文件中，即使文件是在同一个 package 下，也要显示导入
+import com.sleticalboy.sample.service.DataStruct;
+
+interface ITest {
+    void doWrite(in DataStruct data);
+    void doRead(in String name, in boolean notify);
+}
+```
+
+1.2、 `ITest.aidl` 文件
+
+```aidl
+package com.sleticalboy.sample.service;
+// 切记，当 java 类实现 Parcelable 接口时，在 aidl 中要用 parcelable 关键字
+parcelable DataStruct;
+```
+
+可以使用 `aidl` 命令先生成对应的 java 文件以方便代码编写
+
+```bash
+aidl -Iaidl/ -osrc/ aidl/com/sleticalboy/sample/service/ITest.aidl
+```
+
+2、编写 server 端
+
+```java
+package com.sleticalboy.sample.service;
+
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.util.Log;
+
+public class SampleService extends Service {
+
+    private static final String TAG = "SampleService";
+
+    private final IBinder mBinder = new ITest.Stub() {
+        @Override
+        public void doWrite(DataStruct data) throws RemoteException {
+            Log.d(TAG, "doWrite() data = [" + data + "]");
+        }
+
+        @Override
+        public void doRead(String name, boolean notify) throws RemoteException {
+            Log.d(TAG, "doRead() name = [" + name + "], notify = [" + notify + "]");
+        }
+    };
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        return mBinder;
+    }
+}
+```
+
+3、编写 Android.bp 文件并编译出 SampleService apk
+
+3.1、Android.bp 文件内容如下：
+
+```androidbp
+// 编译 Android apk
+android_app {
+    // apk 名字
+    name: "SampleService",
+    // 源文件: .java/.aidl/.logtags/.proto
+    srcs: [
+        "aidl/com/sleticalboy/sample/service/ITest.aidl",
+        "src/com/sleticalboy/sample/service/**/*.java",
+    ],
+    aidl: {
+        // 本地目录（与 Android.bp 文件同级的目录）
+        local_include_dirs: ["aidl"],
+        // 猜测与日志输出相关
+        generate_traces: true,
+    },
+    // 签名文件，此处表示与平台使用相同的签名文件
+    certificate: "platform",
+    // 清单文件
+    manifest: "AndroidManifest.xml",
+    // 静态库，
+    static_libs: [
+        "android-common",
+    ],
+    // 优化开关
+    optimize: {
+        enabled: false,
+    },
+}
+```
+
+3.2、执行 mmm 命令进行编译
+
+```bash
+mmm vendor/sleticalboy/sample_service/java/
+```
+
+3.3、将编译出的 service apk 安装到设备中
+
+```bash
+adb install -r -d -t out/target/product/xxx/system/priv-app/SampleService/SampleService.apk
+```
+
+4、server 端目录结构如下：
+
+```filetree
+├── aidl
+│   └── com
+│       └── sleticalboy
+│           └── sample
+│               └── service
+│                   ├── DataStruct.aidl
+│                   └── ITest.aidl
+├── Android.bp
+├── AndroidManifest.xml
+├── build_manul.sh
+└── src
+    └── com
+        └── sleticalboy
+            └── sample
+                └── service
+                    ├── DataStruct.java
+                    └── SampleService.java
+```
+
+### 实现 client 端
+
+1、直接在 Activity 中访问服务端
+
+```java
+package com.sleticalboy.sample.client;
+
+import android.annotation.Nullable;
+import android.app.Activity;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.os.ServiceManager;
+import android.util.Log;
+import android.widget.Toast;
+
+import com.sleticalboy.sample.client.R;
+
+import com.sleticalboy.sample.service.DataStruct;
+import com.sleticalboy.sample.service.ITest;
+
+public class SampleClient extends Activity {
+
+    private static final String TAG = "SampleClient";
+
+    private ITest mService;
+    private final ServiceConnection mConn = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder binder) {
+            Log.d(TAG, "onServiceConnected() name: " + name + ", binder: " + binder);
+            mService = ITest.Stub.asInterface(binder);
+            SampleClient.this.onServiceConnected();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+        }
+    };
+
+    private void onServiceConnected() {
+        if (mService != null) {
+            Toast.makeText(this, R.string.service_bind_ok, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        setContentView(R.layout.sample_client);
+
+        doBindeService();
+
+        initViews();
+    }
+
+    private void initViews() {
+        findViewById(R.id.btn_write).setOnClickListener(v -> {
+            if (mService == null) {
+                return;
+            }
+            try {
+                DataStruct data = new DataStruct();
+                data.mName = "data to server";
+                data.mNotify = true;
+                mService.doWrite(data);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        });
+        findViewById(R.id.btn_read).setOnClickListener(v -> {
+            if (mService == null) {
+                return;
+            }
+            try {
+                mService.doRead("client", false);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        });
+        findViewById(R.id.btn_native).setOnClickListener(v -> {
+            // 只要有权限，是能查询到 ServiceManager 中注册的 service
+            IBinder service = ServiceManager.getService("sample.service");
+            Log.w(TAG, "sample.service: " + service);
+        });
+    }
+
+    private void doBindeService() {
+        Intent intent = new Intent();
+        intent.setClassName("com.sleticalboy.sample.service",
+                "com.sleticalboy.sample.service.SampleService");
+        boolean bound = bindService(intent, mConn, BIND_AUTO_CREATE);
+        Log.d(TAG, "bind service: " + bound);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unbindService(mConn);
+    }
+}
+```
+
+2、编写 Android.bp 文件并编译出 SampleClient apk
+
+2.1、Android.bp 文件内容如下
+
+```androidbp
+android_app {
+    name: "SampleClient",
+    srcs: [
+        "src/com/sleticalboy/sample/client/**/*.java",
+        "../sample_service/java/src/com/sleticalboy/sample/service/**/*.java",
+        "../sample_service/java/aidl/com/sleticalboy/sample/service/ITest.aidl",
+    ],
+    aidl: {
+        local_include_dirs: ["../sample_service/java/aidl"],
+        generate_traces: true,
+    },
+    certificate: "platform",
+    manifest: "AndroidManifest.xml",
+    static_libs: [
+        "android-common",
+    ],
+    optimize: {
+        enabled: false,
+    },
+}
+```
+
+2.2、执行 `mmm` 命令进行编译
+
+```bash
+mmm vendor/sleticalboy/sample_client/
+```
+
+2.3、将编译出的 client apk 安装到设备中
+
+```bash
+adb install -r -d -t out/target/product/xxx/system/priv-app/SampleClient/SampleClient.apk
+```
+
+3、client 端目录结构如下
+
+```
+├── Android.bp
+├── AndroidManifest.xml
+├── res
+│   ├── layout
+│   │   └── sample_client.xml
+│   └── values
+│       └── strings.xml
+└── src
+    └── com
+        └── sleticalboy
+            └── sample
+                └── client
+                    └── SampleClient.java
+```
+
+### client 访问 service 运行输出如下：
+
+```log
+// 待添加
+```
+
+---
+## 参考资料
+
+### aidl 使用文档
+
+`aidl` 工具的源码在 `${ANDROID_ROOT}/system/tools/aidl` 目录下，分为 java 和
+cpp 两类，分别可以通过输入 aidl 文件生成 java 文件和 cpp 文件
+
+```txt
+INPUT required
+usage: aidl OPTIONS INPUT [OUTPUT]
+       aidl --preprocess OUTPUT INPUT...
+
+OPTIONS:
+   -I<DIR>    search path for import statements.可以去哪个目录下寻找import文件
+   -d<FILE>   generate dependency file.
+   -a         generate dependency file next to the output file with the name based on the input file.
+   -ninja     generate dependency file in a format ninja understands.
+   -p<FILE>   file created by --preprocess to import.
+   -o<FOLDER> base output folder for generated files. 生成的java文件输出目录
+   -b         fail when trying to compile a parcelable.
+   -t         include tracing code for systrace. Note that if either the client or server code is not auto-generated by this tool, that part will not be traced.
+
+INPUT:
+   An aidl interface file.
+
+OUTPUT:
+   The generated interface files.
+   If omitted and the -o option is not used, the input filename is used, with the .aidl extension changed to a .java extension.
+   If the -o option is used, the generated files will be placed in the base output folder, under their package folder
+```
+
+### androidbp 文件格式
+
+编译源码时会自动生成相关的文档，文档具体路径在：
+`${ANDROID_ROOT}/out/soong/docs/soong_build.html`
