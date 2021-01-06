@@ -56,7 +56,60 @@ libui-arm64-android libui-arm-android
   - mk 中可以引用环境变量但 bp 中不能引用环境变量；
   - mk 中可以有流程控制但 bp 中无流程控制；
 
+## 如何使用 google 系统提供的驱动二进制文件来编译 pixel 2 xl
 
+1、进入
+[Driver Binaries for Nexus and Pixel Devices](https://developers.google.cn/android/drivers)
+页面，在右侧找到并点击‘Pixel 2 XL binaries for Android 9.0.0 (PQ3A.190801.002)’
+如下图所示：
+![pixel 2xl](/assets/android/google-drivers-bin-pixel2xl.png)
+然后点击‘Link’进行下载
+
+2、下载完成之后执行以下命令进行解压：
+
+```bash
+# 解压出 extract-google_devices-xxx.sh 可执行文件
+tar -zxvf google_devices-xxx.tgz
+```
+
+3、导出所需的文件文件
+
+执行 `./extract-google_devices-xxx.sh` 命令，根据提示阅读并接受条款，当出现以
+下提示时说明文件导出成功：
+
+```bash
+vendor/
+vendor/google_devices/
+vendor/google_devices/taimen/
+vendor/google_devices/taimen/BoardConfigPartial.mk
+vendor/google_devices/taimen/device-partial.mk
+vendor/google_devices/taimen/proprietary/
+vendor/google_devices/taimen/proprietary/device-vendor.mk
+vendor/google_devices/taimen/proprietary/vendor.img
+vendor/google_devices/taimen/proprietary/BoardConfigVendor.mk
+vendor/google_devices/taimen/android-info.txt
+
+Files extracted successfully.
+```
+
+4、将 `vendor` 目录拷贝到 Android 源码目录
+
+```bash
+cp -r vendor ${ANDROID_ROOT}/
+```
+
+5、再次整体编译源码：
+
+编译之前要选择正确的 combo，我这里选择的是 `47. aosp_taimen-userdebug`，
+
+```bash
+# 清理上次编译生成的 out 目录
+make clobber
+# 再次编译
+make
+```
+
+---
 ## 编译系统概述
 
 ### 编译系统变化
