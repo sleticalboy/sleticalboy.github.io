@@ -669,7 +669,7 @@ OUTPUT:
    If the -o option is used, the generated files will be placed in the base output folder, under their package folder
 ```
 
-### androidbp 文件格式
+### [androidbp 文件格式](/assets/android/soong_build.html)
 
 编译源码时会自动生成相关的文档，文档具体路径在：
 `${ANDROID_ROOT}/out/soong/docs/soong_build.html`
