@@ -634,7 +634,18 @@ adb install -r -d -t out/target/product/xxx/system/priv-app/SampleClient/SampleC
 ### client 访问 service 运行输出如下：
 
 ```log
-// 待添加
+// 1、客户端发起绑定服务
+sample.client D/SampleClient: bind service: true
+// 2、服务端开始创建
+sample.service D/SampleService: onCreate() called
+// 3、服务端收到客户端绑定请求
+sample.service D/SampleService: onBind() called
+// 4、客户端绑定服务成功
+sample.client D/SampleClient: onServiceConnected() name: ComponentInfo{}, binder: android.os.BinderProxy@1ff5453
+// 5、服务端收到客户端的 write 调用
+sample.service D/SampleService: doWrite() data = [DataStruct{mName='data to server', mNotify=true}]
+// 6、服务端收到客户端的 read 调用
+sample.service D/SampleService: doRead() name = [client], notify = [false]
 ```
 
 ---
