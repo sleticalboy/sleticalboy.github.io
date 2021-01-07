@@ -34,7 +34,7 @@ tags: [framework, android]
   然后由 ParallelPackageParser(内部有一个线程池)调用 PackageParser 解析每一个 apk 并缓存解析出来的 Package 文件等待下次使用。
 - PMS 初始化是在 SystemServer.main() 方法里执行的
 - 我们平时对 PMS 的调用都是跨进程调用
-  ```shell
+  ```bash
   # 可以看到，所有的文件属性都是 d 即目录，符合‘/data/app/包名-flag/’格式
   root@NX529J:/data/app # ls -al
   drwxr-xr-x          cn.nubia.accounts-1

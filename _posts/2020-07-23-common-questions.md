@@ -43,7 +43,7 @@ $ git config --global core.quotePath false
     ```
     - step 4: and the add the output's content to your GitHub see [this page](https://help.github.com/en/articles/adding-a-new-ssh-key-to-your-github-account)
 - Permission denied (publickey). fatal: Could not read from remote repository.
-```shell
+```bash
 binli@192.168.120.246: Permission denied (publickey).
 fatal: Could not read from remote repository.
 Please make sure you have the correct access rights
@@ -52,7 +52,7 @@ and the repository exists.
     - add ssh public key to remote repository, if you still have the problem, see next;
     - add your private key use `ssh-add` command like this: `ssh-add ~/.ssh/id_rsa`, now the problem is resolved.
 - no matching key exchange method found
-```shell
+```bash
 Unable to negotiate with 192.168.120.246 port 29418: no matching key exchange method found. Their offer: diffie-hellman-group1-sha1
 fatal: Could not read from remote repository.
 Please make sure you have the correct access rights
@@ -64,7 +64,7 @@ and the repository exists.
             KexAlgorithms +diffie-hellman-group1-sha1
         ```
 - 执行 git 命令长时间卡住，需要看详细日志
-```shell
+```bash
 GIT_TRACE=2 git [command]
 ```
 - git stash 备份部分文件

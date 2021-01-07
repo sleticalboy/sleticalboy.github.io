@@ -8,7 +8,7 @@ tags: [linux]
 ---
 
 ## installation log
-```shell
+```bash
 $ sudo apt-get install ruby-full build-essential zlib1g-dev
 [sudo] password for user_name: 
 Reading package lists... Done
@@ -137,7 +137,7 @@ Processing triggers for libc-bin (2.27-3ubuntu1) ...
 ```
 
 ## check installation result
-```shell
+```bash
 $ which ruby
 /usr/bin/ruby
 $ gem -v
@@ -145,7 +145,7 @@ $ gem -v
 ```
 
 ## install jekyll & bundler
-```shell
+```bash
 $ gem install jekyll bundler
 ERROR:  Could not find a valid gem 'jekyll' (>= 0), here is why:
           Unable to download data from https://api.rubygems.org/ - IOError: HTTP session not yet started (https://api.rubygems.org/specs.4.8.gz)

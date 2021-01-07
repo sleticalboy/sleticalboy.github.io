@@ -37,7 +37,7 @@ tags: [database, open-source]
     // 放到最后，不然会报一些奇怪的错误[类重复]
     apply plugin: 'io.objectbox'
   ```
-  ```shell
+  ```bash
   然后 `adb forward tcp:8090 tcp:8090`
   在手机浏览器打开 http://localhost:8090/index.html 即可查看数据库内容
   ```

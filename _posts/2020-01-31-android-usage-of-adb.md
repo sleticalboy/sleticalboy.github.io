@@ -28,7 +28,7 @@ dumpsys activity service package.name/.abs.YourService
 ```logcat --pid=xxx -v color```
 - logcat 查看蓝牙协议栈的日志
 ```logcat -v color time | grep -E "(bt_)"```
-```shell
+```bash
 $ getprop | grep init.svc 
 init.svc.cameraserver: [running]
 init.svc.installd]: [running]
@@ -62,7 +62,7 @@ private void updateLayoutBounds() {
 }
 ```
 - 系统空间达到阈值通知模拟
-```shell 
+```bash 
 $ dumpsys devicestoragemonitor help                                  
 Device storage monitor service (devicestoragemonitor) commands:
   help
@@ -78,14 +78,14 @@ Device storage monitor service (devicestoragemonitor) commands:
     -f: force a storage change broadcast be sent, prints new sequence.
 ```
 - 输入事件模拟：
-```shell
+```bash
 # 模拟按键事件
 [adb shell] input keyevent key_code (key_code 是KeyEvent.java里面的按键数值）
 # 模拟输入文本
 [adb shell] input text 'string'
 ```
 - 内存泄露检测
-```shell
+```bash
 $ dumpsys cpuinfo/meminfo
 dumpsys meminfo com.example.app
  Objects
@@ -99,7 +99,7 @@ dumpsys meminfo com.example.app
 - 卸载应用
 ```[adb shell] pm uninstall package.name```
 - 发送广播
-```shell
+```bash
 # 发送广播并携带数据
 [adb shell ] am broadcast -a com.android.action.XXX
 string： --es key value --es k2 v2 ...
@@ -109,14 +109,14 @@ long: --el key value
 bool: --ez key value
 ```
 - 启动activity
-```shell
+```bash
 # 通过指定包名和类来打开(原生设置主)页面
 [adb shell] am start -n com.android.settings/.Settings {携带数据同广播}
 # 通过 action 打开页面
 [adb shell] am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS {携带数据同广播}
 ```
 - 开启/停止服务 
-```shell
+```bash
 [adb shell] am stop/startservice com.example.xxx/.MyService
 ```
 - 清除数据
@@ -124,7 +124,7 @@ bool: --ez key value
 - 禁用组件
 ```pm disable com.android.bluetooth```
 - dump 服务
-```shell
+```bash
 $ dumpsys timezone_service                                           
 Priority TimeZone: America/Atikokan
 Current  TimeZone: America/Atikokan

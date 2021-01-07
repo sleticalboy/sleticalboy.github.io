@@ -156,7 +156,7 @@ chmod a+x ~/bin/repo
 
 ### Ubuntu 18.04 编译 Android 6.0 源码
 - flex-2.5.39: loadlocale.c:130: _nl_intern_locale_data: Assertioncnt < (sizeof (_nl_valu
-```shell
+```bash
 export LC_ALL=C
 ```
 - recipe for target 'out/host/linux-x86/obj/lib/libart.so' failed function.sh: line 44: sendemail: command not found
@@ -165,7 +165,7 @@ export LC_ALL=C
     $ sudo apt install sendemail
     ```
     - 2) 尝试关闭 clang 编译器
-    ```shell
+    ```bash
     # Host.
     ART_HOST_CLANG := false
     ifneq ($(WITHOUT_HOST_CLANG),true)
@@ -179,7 +179,7 @@ export LC_ALL=C
     # 原文链接：https://blog.csdn.net/u011444472/article/details/51463074
     ```
 - clang: error: linker command failed with exit code 1 (use -v to see invocation)
-```shell
+```bash
 # errors
 prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.15-4.8//x86_64-linux/bin/ld: error: out/host/linux-x86/obj/SHARED_LIBRARIES/libart_intermediates/arch/x86_64/quick_entrypoints_x86_64.o: unsupported reloc 42 against global symbol art::Runtime::instance_
 prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.15-4.8//x86_64-linux/bin/ld: error: out/host/linux-x86/obj/SHARED_LIBRARIES/libart_intermediates/arch/x86_64/quick_entrypoints_x86_64.o: unsupported reloc 42 against global symbol art::Runtime::instance_
@@ -198,17 +198,17 @@ cp /usr/bin/x86_64-linux-gnu-ld.gold ${AOSP_SRC}/prebuilts/gcc/linux-x86/host/x8
 
 ### Ubuntu 18.04 编译 Android 4.4 源码
 - make: *** [out/target/common/obj/PACKAGING/checkapi-current-timestamp] 错误 38 处理
-```shell
+```bash
 $ make update-api && make
  touch out/target/common/obj/PACKAGING/checkapi-last-timestamp
  touch out/target/common/obj/PACKAGING/checkapi-current-timestamp
 ```
 - frameworks/av/media/CedarX-Projects/CedarAndroidLib/LIB_KK44_/Android.mk: No such file or directory
-```shell
+```bash
 # https://blog.csdn.net/JAZZSOLDIER/article/details/78140554
 ```
 - out/target/product/mx3/obj/GYP/shared_intermediates/content/jni/HashSet_jni.h:10:26: error: extra tokens at end of #ifndef directive [-Werror]
-```shell
+```bash
 # 这个错误是由于之前使用sudo alternatives --install /usr/bin/javajava /usrjava/jdk1.7.0_25/bin/java 500这种方式设置的java jdk和javac环境，但是没有设置javap，因此出错。
 # 需要配置 javap 版本之后 make clean， make
 # 版权声明：本文为CSDN博主「疑是银河落九天」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。

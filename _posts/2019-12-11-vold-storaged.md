@@ -25,7 +25,7 @@ tags: [android, framework]
 
 ### native 层
 -  android/system/core/storaged/storaged.rc 文件
-    ```shell
+    ```bash
     service storaged /system/bin/storaged
     class main
     capabilities DAC_READ_SEARCH
@@ -37,7 +37,7 @@ tags: [android, framework]
     ```
 - 入口：android/system/core/storaged/main.c
 - 重要文件
-    ```shell
+    ```bash
     $ tree storaged/
     storaged/
     ├── binder
@@ -74,7 +74,7 @@ tags: [android, framework]
 
 ### native层
 - android/system/vold/vold.rc
-    ```shell
+    ```bash
     service vold /system/bin/vold \
         --blkid_context=u:r:blkid:s0 --blkid_untrusted_context=u:r:blkid_untrusted:s0 \
         --fsck_context=u:r:fsck:s0 --fsck_untrusted_context=u:r:fsck_untrusted:s0
@@ -86,7 +86,7 @@ tags: [android, framework]
     ```
 - 入口: android/system/vold/main.cpp
 - 重要文件
-    ```shell
+    ```bash
     ├── binder
     │   └── android
     │       └── os # java 层 aidl 接口

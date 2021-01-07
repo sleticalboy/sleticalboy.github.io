@@ -13,7 +13,7 @@ tags: [linux]
 - 安装相关的依赖包：curl, openssh-server, ca-certificates, postfix
     - ```$ sudo apt install curl ca-certificates```
     - ```$ sudo apt install openssh-server```
-    ```shell
+    ```bash
     # 可能会遇到版本不兼容的问题，解决办法是安装控制台输出推荐的版本, 然后重新执行此条命令
     The following information may help to resolve the situation:
     The following packages have unmet dependencies:
@@ -26,22 +26,22 @@ tags: [linux]
     ```
     - ```$ sudo apt install postfix```
 - 添加 gitlab 的 GPG 公钥
-    ```shell
+    ```bash
     $ curl https://packages.gitlab.com/gpg.key 2> /dev/null | sudo apt-key add - &>/dev/null
     ```
 - 使用清华大学镜像
-    ```shell
+    ```bash
     1, 先看 /etc/apt/source.list.d/ 目录下有没有 gitlab-ce.list 文件
     2, 没有的话 $ sudo touch gitlab-ce.list 创建
     3, 编辑添加 deb https://mirrors.tuna.tsinghua.edu.cn/gitlab-ce/ubuntu xenial main
     4, $ sudo apt update 更新软件
     ```
 - 安装 gitlab-ce
-    ```shell
+    ```bash
     $ sudo apt install gitlab-ce
     ```
 - 运行 gitlab
-    ```shell
+    ```bash
     # 运行之前要先配置下 external_url
     $ sudo vim /etc/gitlab/gitlab.rb
     找到 external_url 并修改为 'http://xxxxxx'[你自己的地址] 保存退出
@@ -49,7 +49,7 @@ tags: [linux]
     ```
 
 - 如何通过控制台修改密码
-    ```shell
+    ```bash
     gitlab-rails console production
     > u = User.where(id: 1).first
     > u.password = 'secret_pass'
@@ -62,7 +62,7 @@ tags: [linux]
 - web 端加载不了资源文件 参考[方案1](https://blog.csdn.net/pzlsun/article/details/54619832)，[方案2](https://blog.csdn.net/huangjinlong77/article/details/30510705) (对我来讲都没生效, 下面是我探索了许久才找到的方法)
     - 修改 nginx 配置：```$ sudo vim embedded/conf/nginx.conf```
     - 修改资源文件路径 ：```$ sudo vim ./embedded/lib/ruby/gems/2.5.0/gems/unicorn-5.1.0/examples/nginx.conf ```
-    ```shell
+    ```bash
         # path for static files
         root /opt/gitlab/embedded/service/gitlab-rails/public;
         location = /500.html {
@@ -71,7 +71,7 @@ tags: [linux]
         }
     ```
     - 重新配置并重启
-    ```shell
+    ```bash
     sudo gitlab-ctl reconfigure
     sudo gitlab-ctl start
     ```

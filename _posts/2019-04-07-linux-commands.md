@@ -14,7 +14,7 @@ tags: [linux]
 - cp：拷贝文件或目录
 - mv：移动或者重命名
 - rm：删除文件或者目录
-```shell
+```bash
 rm [-f --force][-r --recursive]
 ```
 - touch：创建文本文件
@@ -22,21 +22,21 @@ rm [-f --force][-r --recursive]
 - more：列出文件的内容，是全部内容
 - tail
 - find：查找文件
-```shell
+```bash
 # 在 dir 下查找 keyword
 find [dir] -name [keyword]
 ```
 - locate：字面意思定位文件位置，和 find 类似
 - tar：压缩/解压缩命令
 - rename
-```shell
+```bash
 # 文件名开头添加 smiley_ -n 表示预览修改结果，不实际修改
 rename -n 's/^/smiley_/' *.png
 # 替换非数字、字母、点
 rename -n 's/[^\d^\w^\.]//g' *.png
 ```
 - ln：创建链接
-```shell
+```bash
 # ln -s 源地址 目标地址 [最好使用绝对路径]
 ln -s src target
 # 修改已有链接
@@ -86,7 +86,7 @@ ln -s /src/dir /target/dir
     - `cat file | tail -n +100 | head -n 20` (从第100行开始，显示20行)
     - `cat file | head -n 100 | tail -n +20` (显示100到第120行)
 - 输入多行内容到文件中
-```shell
+```bash
 cat <<EOF >file
 #!/usr/bin/env sh
 
@@ -109,7 +109,7 @@ EOF
 - 执行历史命令 `!序号`
 
 - [查看系统快捷键]
-```shell
+```bash
 gsettings get/set org.gnome.desktop.wm.keybindings [key:switch-to-workspace-left]
 ```
 

@@ -13,7 +13,7 @@ tags: [linux]
 - 添加启动图标
   - 创建软连接 `ln -s target src`
   - 创建桌面启动文件 `touch xxx.desktop`
-    ```shell
+    ```bash
     [Desktop Entry]
     Encoding=UTF-8
     Name=anything u like

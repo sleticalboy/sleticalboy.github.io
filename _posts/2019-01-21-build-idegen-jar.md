@@ -7,7 +7,7 @@ category: aosp
 tags: [aosp, android]
 ---
 
-```shell
+```bash
 sleticalboy@Lee:/media/sleticalboy/android-os/AOSP$ mmm development/tools/idegen/
 make: Entering directory '/media/sleticalboy/android-os/AOSP'
 ============================================
