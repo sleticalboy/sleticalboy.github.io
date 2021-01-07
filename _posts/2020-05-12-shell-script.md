@@ -10,7 +10,7 @@ tags: [linux, tools]
 ## 变量
 
 1. 只读变量
-```shell
+```bash
 # 等号与变量名和值之间不能有空格
 # 只读变量，不能被重新赋值
 readonly name="\nbinli"
@@ -18,24 +18,43 @@ readonly name="\nbinli"
 echo -e $name
 ```
 2. 删除变量
-```shell
+```bash
 unset name
 ```
 
 ## 语句
 
 1. if 语句
-```shell
+
+```bash
 if condition; then
 	# do stuff
 fi
 ```
+
 2. for 循环
-```shell
+
+```bash
 for file in `ls /`; do
 	echo $file
 done
 ```
+
+3. while 循环
+
+```bash
+i=1
+max=20
+sum=0
+# 注意 [[ $i -le $max ]] 这里必须这么写，否则会报错
+while [[ $i -le $max ]]; do
+    echo $i
+    let sum+=$i
+    let i++
+done
+echo $sum
+```
+
 
 ## 数组
 
@@ -59,7 +78,7 @@ done
 6. `$?` 上个命令的退出状态或函数的返回值
 7. `$$` 当前 shell 进程 的 id （对于 shell 脚本，就是脚本所在的进程 id）
 8. 示例（保存以下脚本为 xxx.sh）
-```shell
+```bash
 #!/bin/bash
 echo "Process ID: $$"
 echo "File Name: $0"
@@ -74,7 +93,7 @@ echo "Total: $#"
 - `"$*"` 会将所有的参数从整体上看做一份数据，而不是把每个参数都看做一份数据
 - `"$@"` 仍然将每个参数都看作一份数据，彼此之间是独立的
 - 示例（保存以下脚本为 xxx.sh）
-```shell
+```bash
 #!/bin/bash
 echo "print each param from \"\$*\""
 # 只循环一次
