@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Android binder 架构
+title: Android binder 架构：native 层
 author: sleticalboy
 date: 2020-04-25 23:54:30
 category: android
