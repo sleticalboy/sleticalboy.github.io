@@ -9,20 +9,20 @@ tags: [android, framework]
 
 本文涉及到的源码路径：
 
-`frameworks/av/media/mediaserver/main_mediaserver.cpp`
-`frameworks/native/libs/binder/ProcessState.cpp`
-`frameworks/native/libs/binder/IServiceManager.cpp`
-`frameworks/native/libs/binder/include/binder/IInterface.h`
-`frameworks/native/libs/binder/Binder.cpp`
-`frameworks/native/libs/binder/include/binder/IBinder.h`
-`frameworks/native/libs/binder/include/binder/BpBinder.h`
-`frameworks/native/libs/binder/include/binder/Binder.h`
-`bionic/libc/kernel/uapi/linux/android/binder.h`
-`frameworks/native/cmds/servicemanager/service_manager.c`
-`frameworks/native/cmds/servicemanager/binder.c`
-`frameworks/av/media/libmedia/IMediaDeathNotifier.cpp`
-`frameworks/av/media/libmediaplayerservice/MediaPlayerService.cpp`
-`frameworks/av/media/libmedia/mediaplayer.cpp`
+`frameworks/av/media/mediaserver/main_mediaserver.cpp`<br/>
+`frameworks/native/libs/binder/ProcessState.cpp`<br/>
+`frameworks/native/libs/binder/IServiceManager.cpp`<br/>
+`frameworks/native/libs/binder/include/binder/IInterface.h`<br/>
+`frameworks/native/libs/binder/Binder.cpp`<br/>
+`frameworks/native/libs/binder/include/binder/IBinder.h`<br/>
+`frameworks/native/libs/binder/include/binder/BpBinder.h`<br/>
+`frameworks/native/libs/binder/include/binder/Binder.h`<br/>
+`bionic/libc/kernel/uapi/linux/android/binder.h`<br/>
+`frameworks/native/cmds/servicemanager/service_manager.c`<br/>
+`frameworks/native/cmds/servicemanager/binder.c`<br/>
+`frameworks/av/media/libmedia/IMediaDeathNotifier.cpp`<br/>
+`frameworks/av/media/libmediaplayerservice/MediaPlayerService.cpp`<br/>
+`frameworks/av/media/libmedia/mediaplayer.cpp`<br/>
 
 ## binder 概述
 
@@ -42,14 +42,12 @@ mediaserver 是一个由 c++ 实现的可执行程序，包括：
 mediaserver main 函数源码
 ```cpp
 int main(int argc __unused, char **argv __unused) {
-    // ...
     // 1、获取一个 ProcessState 实例
     sp<ProcessState> proc(ProcessState::self());
     // 2、获取 ServiceMananger 实例
     sp<IServiceManager> sm(defaultServiceManager());
     // 3、初始化 MediaPlayer 服务
     MediaPlayerService::instantiate();
-    // ....
     // 4、创建
     ProcessState::self()->startThreadPool();
     // 5、加入
