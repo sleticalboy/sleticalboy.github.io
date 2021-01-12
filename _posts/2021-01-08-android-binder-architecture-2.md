@@ -16,6 +16,8 @@ tags: [android, framework]
 `frameworks/base/core/jni/android_util_Binder.cpp`<br/>
 `frameworks/base/core/jni/android_os_Parcel.cpp`<br/>
 
+## Java 层 Binder 架构
+
 <pre>
 ----------     ----------------------------      -------------------------
 | Parcel |     |        IBinder           |      |      BinderInternal   |
@@ -45,3 +47,301 @@ tags: [android, framework]
   | -destroy()       |            
   --------------------            
 </pre>
+
+- 系统定义了一个 IBinder 接口和其内部的 DeathRecipient 接口
+- Binder 和 BinderProxy 分别实现了 IBinder 接口；Binder 作为服务端 Bn 的代表，而
+BinderProxy 则作为服务端 Bp 的代表
+- BinderInternal 类是仅供 Binder 架构使用的‘特供类’，其内部有一个 GcWatcher 类，
+专门用于处理和 Binder 架构相关的垃圾回收工作
+- Parcel 类用于承载数据通信的职责
+- 总体来看，Java 层 Binder 和 native 层 Binder 是很相似的，可以看做是 native 层
+的一个镜像
+
+**理解 FLAG_ONEWAY 标记：**</br>
+- 此标记位用于 transact 方法：单方面调用，意味着调用者在调用之后立即返回，不需要
+等待被调用方返回结果，仅用于调用者和被调用者处于不同的进程时
+- native 层中的 Binder 调用基本都是阻塞调用
+- Java 层可以使用此标记位实现‘非阻塞’调用，如果没有此标记位则是‘阻塞’调用，
+会一直等待直到被调用方返回结果
+- Java 层使用此标记位时一般都会给被调用方（server）注册一个回调，通过该回调告知
+调用方（client）该请求的处理结果
+
+## Java 层 Binder 初始化
+
+Java 层 Binder 的需要借助 native 层 Binder 才能展开工作，因此一定要在 Java 层
+Binder 正式开始工作之前建立与 native 层 Binder 的关系。在 Android 系统中，Java
+世界初始化时期（`AndroidRuntime.cpp::start()`），系统会提前注册一些 JNI 函数，
+其中 `android_util_Binder.cpp::register_android_os_Binder()` 专门用来负责建立起
+该联系：
+
+```cpp
+int register_android_os_Binder(JNIEnv* env) {
+    // 1、建立 Java Binder 和 native 层的关系
+    if (int_register_android_os_Binder(env) < 0) return -1;
+    // 2、建立 Java BinderInternal 和 native 层的关系
+    if (int_register_android_os_BinderInternal(env) < 0) return -1;
+    // 3、建立 Java BinderProxy 和 native 层的关系
+    if (int_register_android_os_BinderProxy(env) < 0) return -1;
+    // Log#e() 函数
+    jclass clazz = FindClassOrDie(env, "android/util/Log");
+    gLogOffsets.mClass = MakeGlobalRefOrDie(env, clazz);
+    gLogOffsets.mLogE = GetStaticMethodIDOrDie(env, clazz, "e",
+            "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I");
+    // PercelFileDescriptor#<init> 函数
+    clazz = FindClassOrDie(env, "android/os/ParcelFileDescriptor");
+    gParcelFileDescriptorOffsets.mClass = MakeGlobalRefOrDie(env, clazz);
+    gParcelFileDescriptorOffsets.mConstructor = 
+        GetMethodIDOrDie(env, clazz, "<init>", "(Ljava/io/FileDescriptor;)V");
+    // StrictMode#onBinderStrictModePolicyChange() 函数
+    clazz = FindClassOrDie(env, "android/os/StrictMode");
+    gStrictModeCallbackOffsets.mClass = MakeGlobalRefOrDie(env, clazz);
+    gStrictModeCallbackOffsets.mCallback = GetStaticMethodIDOrDie(env, clazz,
+            "onBinderStrictModePolicyChange", "(I)V");
+    // Thread#dispatchUncaughtException() 函数
+    clazz = FindClassOrDie(env, "java/lang/Thread");
+    gThreadDispatchOffsets.mClass = MakeGlobalRefOrDie(env, clazz);
+    gThreadDispatchOffsets.mDispatchUncaughtException = GetMethodIDOrDie(env, clazz,
+            "dispatchUncaughtException", "(Ljava/lang/Throwable;)V");
+    // Thread#currentThread() 函数
+    gThreadDispatchOffsets.mCurrentThread = GetStaticMethodIDOrDie(env, clazz,
+            "currentThread", "()Ljava/lang/Thread;");
+    return 0;
+}
+```
+
+### 建立 Java Binder 和 native 层的关系
+
+```cpp
+// 用于存放 Java 层 Binder 类在 native 层中使用到的信息
+static struct bindernative_offsets_t {
+    jclass mClass; // android.os.Binder class
+    jmethodID mExecTransact; // execTransact() method
+    jfieldID mObject; // Object state.
+} gBinderOffsets;
+const char* const kBinderPathName = "android/os/Binder";
+// Java Binder 类中的 native 函数
+static const JNINativeMethod gBinderMethods[] = {
+     /* name, signature, funcPtr */
+    { "getCallingPid", "()I", (void*)android_os_Binder_getCallingPid },
+    { "getCallingUid", "()I", (void*)android_os_Binder_getCallingUid },
+    { "clearCallingIdentity", "()J", (void*)android_os_Binder_clearCallingIdentity },
+    { "restoreCallingIdentity", "(J)V", (void*)android_os_Binder_restoreCallingIdentity },
+    { "setThreadStrictModePolicy", "(I)V", (void*)android_os_Binder_setThreadStrictModePolicy },
+    { "getThreadStrictModePolicy", "()I", (void*)android_os_Binder_getThreadStrictModePolicy },
+    { "flushPendingCommands", "()V", (void*)android_os_Binder_flushPendingCommands },
+    { "getNativeBBinderHolder", "()J", (void*)android_os_Binder_getNativeBBinderHolder },
+    { "getNativeFinalizer", "()J", (void*)android_os_Binder_getNativeFinalizer },
+    { "blockUntilThreadAvailable", "()V", (void*)android_os_Binder_blockUntilThreadAvailable }
+};
+static int int_register_android_os_Binder(JNIEnv* env) {
+    // 找到 android.os.Binder 类
+    jclass clazz = FindClassOrDie(env, kBinderPathName);
+    gBinderOffsets.mClass = MakeGlobalRefOrDie(env, clazz);
+    // Binder#execTransact() 方法
+    gBinderOffsets.mExecTransact = GetMethodIDOrDie(env, clazz, "execTransact", "(IJJI)Z");
+    // Binder#mObject 字段
+    gBinderOffsets.mObject = GetFieldIDOrDie(env, clazz, "mObject", "J");
+    // 注册 Binder 类中 native 函数的实现
+    return RegisterMethodsOrDie(env, kBinderPathName, gBinderMethods,
+        NELEM(gBinderMethods));
+}
+```
+
+### 建立 Java BinderInternal 和 native 层的关系
+
+```cpp
+// Java BinderInternal 中的 native 函数
+static const JNINativeMethod gBinderInternalMethods[] = {
+     /* name, signature, funcPtr */
+    { "getContextObject", "()Landroid/os/IBinder;", (void*)android_os_BinderInternal_getContextObject },
+    { "joinThreadPool", "()V", (void*)android_os_BinderInternal_joinThreadPool },
+    { "disableBackgroundScheduling", "(Z)V", (void*)android_os_BinderInternal_disableBackgroundScheduling },
+    { "setMaxThreads", "(I)V", (void*)android_os_BinderInternal_setMaxThreads },
+    { "handleGc", "()V", (void*)android_os_BinderInternal_handleGc },
+    { "nSetBinderProxyCountEnabled", "(Z)V", (void*)android_os_BinderInternal_setBinderProxyCountEnabled },
+    { "nGetBinderProxyPerUidCounts", "()Landroid/util/SparseIntArray;", (void*)android_os_BinderInternal_getBinderProxyPerUidCounts },
+    { "nGetBinderProxyCount", "(I)I", (void*)android_os_BinderInternal_getBinderProxyCount },
+    { "nSetBinderProxyCountWatermarks", "(II)V", (void*)android_os_BinderInternal_setBinderProxyCountWatermarks}
+};
+// 用于存放 Java 层 BinderInternal 类在 native 层中使用到的信息
+static struct binderinternal_offsets_t {
+    jclass mClass; // com.android.internal.os.BinderInternal class
+    jmethodID mForceGc; // forceBinderGc() method
+    jmethodID mProxyLimitCallback; // binderProxyLimitCallbackFromNative() method
+} gBinderInternalOffsets;
+const char* const kBinderInternalPathName = "com/android/internal/os/BinderInternal";
+static int int_register_android_os_BinderInternal(JNIEnv* env) {
+    // 找到 com.android.internal.os.BinderInteral 类
+    jclass clazz = FindClassOrDie(env, kBinderInternalPathName);
+    gBinderInternalOffsets.mClass = MakeGlobalRefOrDie(env, clazz);
+    // BinderInternal#forceBinderGc() 方法
+    gBinderInternalOffsets.mForceGc = GetStaticMethodIDOrDie(env, clazz,
+        "forceBinderGc", "()V");
+    // BinderInternal#binderProxyLimitCallbackFromNative() 方法
+    gBinderInternalOffsets.mProxyLimitCallback = GetStaticMethodIDOrDie(env,
+        clazz, "binderProxyLimitCallbackFromNative", "(I)V");
+    // 注册回调
+    BpBinder::setLimitCallback(android_os_BinderInternal_proxyLimitcallback);
+    // 注册 BinderInternal 中的 native 方法
+    return RegisterMethodsOrDie(env, kBinderInternalPathName,
+        gBinderInternalMethods, NELEM(gBinderInternalMethods));
+}
+```
+
+### 建立 Java BinderProxy 和 native 层的关系
+
+```cpp
+// Java BinderProxy 中的 native 方法 
+static const JNINativeMethod gBinderProxyMethods[] = {
+     /* name, signature, funcPtr */
+    {"pingBinder",          "()Z", (void*)android_os_BinderProxy_pingBinder},
+    {"isBinderAlive",       "()Z", (void*)android_os_BinderProxy_isBinderAlive},
+    {"getInterfaceDescriptor", "()Ljava/lang/String;", (void*)android_os_BinderProxy_getInterfaceDescriptor},
+    {"transactNative",      "(ILandroid/os/Parcel;Landroid/os/Parcel;I)Z", (void*)android_os_BinderProxy_transact},
+    {"linkToDeath",         "(Landroid/os/IBinder$DeathRecipient;I)V", (void*)android_os_BinderProxy_linkToDeath},
+    {"unlinkToDeath",       "(Landroid/os/IBinder$DeathRecipient;I)Z", (void*)android_os_BinderProxy_unlinkToDeath},
+    {"getNativeFinalizer",  "()J", (void*)android_os_BinderProxy_getNativeFinalizer},
+};
+// 用于存放 Java 层 BinderProxy 类在 native 层中使用到的信息
+static struct binderproxy_offsets_t {
+    jclass mClass; // android.os.BinderProxy class
+    jmethodID mGetInstance; // getInstance() method
+    jmethodID mSendDeathNotice; // sendDeathNotice() method
+    jmethodID mDumpProxyDebugInfo; // dumpProxyDebugInfo() method
+    jfieldID mNativeData;  // Field holds native pointer to BinderProxyNativeData.
+} gBinderProxyOffsets;
+const char* const kBinderProxyPathName = "android/os/BinderProxy";
+static int int_register_android_os_BinderProxy(JNIEnv* env) {
+    // 找到 android.os.BinderProxy 类
+    clazz = FindClassOrDie(env, kBinderProxyPathName);
+    gBinderProxyOffsets.mClass = MakeGlobalRefOrDie(env, clazz);
+    // BinderProxy#getInstance() 静态方法
+    gBinderProxyOffsets.mGetInstance = GetStaticMethodIDOrDie(env, clazz,
+        "getInstance", "(JJ)Landroid/os/BinderProxy;");
+    // BinderProxy#sendDeathNotice() 静态方法
+    gBinderProxyOffsets.mSendDeathNotice = GetStaticMethodIDOrDie(env, clazz,
+        "sendDeathNotice", "(Landroid/os/IBinder$DeathRecipient;)V");
+    // BinderProxy#dumpProxyDebugInfo() 静态方法
+    gBinderProxyOffsets.mDumpProxyDebugInfo = GetStaticMethodIDOrDie(env, clazz,
+        "dumpProxyDebugInfo", "()V");
+    // BinderProxy#mNativeData 字段
+    gBinderProxyOffsets.mNativeData = GetFieldIDOrDie(env, clazz, "mNativeData", "J");
+    // 注册 BinderProxy 中的静态方法
+    return RegisterMethodsOrDie(env, kBinderProxyPathName, gBinderProxyMethods,
+        NELEM(gBinderProxyMethods));
+}
+```
+
+### 建立 Java Parcel 和 native 层的关系
+
+`android_os_Parcel.cpp::register_android_os_Parcel()`
+```cpp
+// 用于存放 Java 层 Parcel 类在 native 层中使用到的信息
+static struct parcel_offsets_t {
+    jclass clazz; // android.os.Parcel class
+    jfieldID mNativePtr; // mNativePre field
+    jmethodID obtain; // obtain() method
+    jmethodID recycle; // recycle() method
+} gParcelOffsets;
+// Java Parcel 中的 native 方法
+static const JNINativeMethod gParcelMethods[] = {
+    // @CriticalNative
+    {"nativeDataSize",            "(J)I", (void*)android_os_Parcel_dataSize},
+    // @CriticalNative
+    {"nativeDataAvail",           "(J)I", (void*)android_os_Parcel_dataAvail},
+    // @CriticalNative
+    {"nativeDataPosition",        "(J)I", (void*)android_os_Parcel_dataPosition},
+    // @CriticalNative
+    {"nativeDataCapacity",        "(J)I", (void*)android_os_Parcel_dataCapacity},
+    // @FastNative
+    {"nativeSetDataSize",         "(JI)J", (void*)android_os_Parcel_setDataSize},
+    // @CriticalNative
+    {"nativeSetDataPosition",     "(JI)V", (void*)android_os_Parcel_setDataPosition},
+    // @FastNative
+    {"nativeSetDataCapacity",     "(JI)V", (void*)android_os_Parcel_setDataCapacity},
+
+    // @CriticalNative
+    {"nativePushAllowFds",        "(JZ)Z", (void*)android_os_Parcel_pushAllowFds},
+    // @CriticalNative
+    {"nativeRestoreAllowFds",     "(JZ)V", (void*)android_os_Parcel_restoreAllowFds},
+
+    {"nativeWriteByteArray",      "(J[BII)V", (void*)android_os_Parcel_writeByteArray},
+    {"nativeWriteBlob",           "(J[BII)V", (void*)android_os_Parcel_writeBlob},
+    // @FastNative
+    {"nativeWriteInt",            "(JI)V", (void*)android_os_Parcel_writeInt},
+    // @FastNative
+    {"nativeWriteLong",           "(JJ)V", (void*)android_os_Parcel_writeLong},
+    // @FastNative
+    {"nativeWriteFloat",          "(JF)V", (void*)android_os_Parcel_writeFloat},
+    // @FastNative
+    {"nativeWriteDouble",         "(JD)V", (void*)android_os_Parcel_writeDouble},
+    {"nativeWriteString",         "(JLjava/lang/String;)V", (void*)android_os_Parcel_writeString},
+    {"nativeWriteStrongBinder",   "(JLandroid/os/IBinder;)V", (void*)android_os_Parcel_writeStrongBinder},
+    {"nativeWriteFileDescriptor", "(JLjava/io/FileDescriptor;)J", (void*)android_os_Parcel_writeFileDescriptor},
+
+    {"nativeCreateByteArray",     "(J)[B", (void*)android_os_Parcel_createByteArray},
+    {"nativeReadByteArray",       "(J[BI)Z", (void*)android_os_Parcel_readByteArray},
+    {"nativeReadBlob",            "(J)[B", (void*)android_os_Parcel_readBlob},
+    // @CriticalNative
+    {"nativeReadInt",             "(J)I", (void*)android_os_Parcel_readInt},
+    // @CriticalNative
+    {"nativeReadLong",            "(J)J", (void*)android_os_Parcel_readLong},
+    // @CriticalNative
+    {"nativeReadFloat",           "(J)F", (void*)android_os_Parcel_readFloat},
+    // @CriticalNative
+    {"nativeReadDouble",          "(J)D", (void*)android_os_Parcel_readDouble},
+    {"nativeReadString",          "(J)Ljava/lang/String;", (void*)android_os_Parcel_readString},
+    {"nativeReadStrongBinder",    "(J)Landroid/os/IBinder;", (void*)android_os_Parcel_readStrongBinder},
+    {"nativeReadFileDescriptor",  "(J)Ljava/io/FileDescriptor;", (void*)android_os_Parcel_readFileDescriptor},
+
+    {"openFileDescriptor",        "(Ljava/lang/String;I)Ljava/io/FileDescriptor;", (void*)android_os_Parcel_openFileDescriptor},
+    {"dupFileDescriptor",         "(Ljava/io/FileDescriptor;)Ljava/io/FileDescriptor;", (void*)android_os_Parcel_dupFileDescriptor},
+    {"closeFileDescriptor",       "(Ljava/io/FileDescriptor;)V", (void*)android_os_Parcel_closeFileDescriptor},
+
+    {"nativeCreate",              "()J", (void*)android_os_Parcel_create},
+    {"nativeFreeBuffer",          "(J)J", (void*)android_os_Parcel_freeBuffer},
+    {"nativeDestroy",             "(J)V", (void*)android_os_Parcel_destroy},
+
+    {"nativeMarshall",            "(J)[B", (void*)android_os_Parcel_marshall},
+    {"nativeUnmarshall",          "(J[BII)J", (void*)android_os_Parcel_unmarshall},
+    {"nativeCompareData",         "(JJ)I", (void*)android_os_Parcel_compareData},
+    {"nativeAppendFrom",          "(JJII)J", (void*)android_os_Parcel_appendFrom},
+    // @CriticalNative
+    {"nativeHasFileDescriptors",  "(J)Z", (void*)android_os_Parcel_hasFileDescriptors},
+    {"nativeWriteInterfaceToken", "(JLjava/lang/String;)V", (void*)android_os_Parcel_writeInterfaceToken},
+    {"nativeEnforceInterface",    "(JLjava/lang/String;)V", (void*)android_os_Parcel_enforceInterface},
+
+    {"getGlobalAllocSize",        "()J", (void*)android_os_Parcel_getGlobalAllocSize},
+    {"getGlobalAllocCount",       "()J", (void*)android_os_Parcel_getGlobalAllocCount},
+
+    // @CriticalNative
+    {"nativeGetBlobAshmemSize",       "(J)J", (void*)android_os_Parcel_getBlobAshmemSize},
+};
+const char* const kParcelPathName = "android/os/Parcel";
+int register_android_os_Parcel(JNIEnv* env) {
+    // 找到 android.os.Percel 类
+    jclass clazz = FindClassOrDie(env, kParcelPathName);
+    gParcelOffsets.clazz = MakeGlobalRefOrDie(env, clazz);
+    // 获取 Percel#mNativePtr 字段
+    gParcelOffsets.mNativePtr = GetFieldIDOrDie(env, clazz, "mNativePtr", "J");
+    // 获取 Percel#obtain() 静态方法
+    gParcelOffsets.obtain = GetStaticMethodIDOrDie(env, clazz, "obtain", "()Landroid/os/Parcel;");
+    // 获取 Percel#recycle() 方法
+    gParcelOffsets.recycle = GetMethodIDOrDie(env, clazz, "recycle", "()V");
+    // 注册 Parcel 类中的 native 方法
+    return RegisterMethodsOrDie(env, kParcelPathName, gParcelMethods, NELEM(gParcelMethods));
+}
+```
+
+### 小结
+
+- 以上过成都是类似的，包括以下两方面内容：
+  - 获取 Java 类中一些有用的 methodId 和 fieldId 存储起来，这说明 JNI 层会向上调
+用到 Java 层中的函数或字段
+  - 注册 Java 类中 native 函数的实现
+- 框架的初始化其实就是提前获取一些 JNI 层使用的信息，比如类的成员函数/字段 id
+等，这么做的好处是提前获取，等使用的时候就节省掉了 Binder 频繁调用时的查找时间
+
+## addService 方法源码分析
+
+## 总结
