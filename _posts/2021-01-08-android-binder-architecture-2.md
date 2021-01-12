@@ -13,8 +13,16 @@ tags: [android, framework]
 `frameworks/base/core/java/android/os/Binder.java`<br/>
 `frameworks/base/core/java/android/os/IInterface.java`<br/>
 `frameworks/base/core/java/com/android/internal/os/BinderInternal.java`<br/>
+`frameworks/base/services/java/com/android/server/SystemServer.java`<br/>
+`frameworks/base/services/core/java/com/android/server/am/ActivityManagerService.java`<br/>
+`frameworks/base/services/core/java/com/android/server/SystemServiceManager.java`<br/>
+`frameworks/base/core/java/android/os/IServiceManager.java`<br/>
+`frameworks/base/core/java/android/os/ServiceManager.java`<br/>
+`frameworks/base/core/java/android/os/ServiceManagerNative.java`<br/>
 `frameworks/base/core/jni/android_util_Binder.cpp`<br/>
 `frameworks/base/core/jni/android_os_Parcel.cpp`<br/>
+`frameworks/base/core/jni/AndroidRuntime.cpp`
+
 
 ## Java 层 Binder 架构
 
@@ -57,7 +65,7 @@ BinderProxy 则作为服务端 Bp 的代表
 - 总体来看，Java 层 Binder 和 native 层 Binder 是很相似的，可以看做是 native 层
 的一个镜像
 
-**理解 FLAG_ONEWAY 标记：**</br>
+**理解 FLAG_ONEWAY 标记：**<br/>
 - 此标记位用于 transact 方法：单方面调用，意味着调用者在调用之后立即返回，不需要
 等待被调用方返回结果，仅用于调用者和被调用者处于不同的进程时
 - native 层中的 Binder 调用基本都是阻塞调用
@@ -208,7 +216,8 @@ static struct binderproxy_offsets_t {
     jmethodID mGetInstance; // getInstance() method
     jmethodID mSendDeathNotice; // sendDeathNotice() method
     jmethodID mDumpProxyDebugInfo; // dumpProxyDebugInfo() method
-    jfieldID mNativeData;  // Field holds native pointer to BinderProxyNativeData.
+    // BinderProxy#mNativeData 字段，指向 native 层 BinderProxyNativeData 的指针
+    jfieldID mNativeData;
 } gBinderProxyOffsets;
 const char* const kBinderProxyPathName = "android/os/BinderProxy";
 static int int_register_android_os_BinderProxy(JNIEnv* env) {
@@ -343,5 +352,259 @@ int register_android_os_Parcel(JNIEnv* env) {
 等，这么做的好处是提前获取，等使用的时候就节省掉了 Binder 频繁调用时的查找时间
 
 ## addService 方法源码分析
+
+以 `ActivityManagerService(AMS)` 如何将自身添加到 `ServiceManager(SM)` 为例来分析</br>
+
+**代码调用流程如下**：
+<pre>
+SystemServer#main() -> run() -> startBootstrapService() ->
+a, AMS#&lt;init&gt; // AMS 初始化 mActivityManagerService
+b, AMS#setSystemProcess() -> // 从这里开始分析
+SM#addService("activity", mActivityManagerService) 
+...
+</pre>
+
+大致分为两个步骤来分析：
+- AMS 如何将自身添加到 SM 中
+- AMS 如何响应客户端的 Binder 请求
+
+### AMS 将自己添加到 SM 中
+
+1、`AMS#setSystemProcess()`
+
+```java
+public void setSystemProcess() {
+    // 将 AMS 注册到 SM 中，服务名为 activity
+    ServiceManager.addService(Context.ACTIVITY_SERVICE, this, /* allowIsolated= */ true,
+            DUMP_FLAG_PRIORITY_CRITICAL | DUMP_FLAG_PRIORITY_NORMAL | DUMP_FLAG_PROTO);
+    // ...
+}
+```
+
+2、`SM#addService() & SM#getIServiceManager()`
+
+```java
+public static void addService(String name, IBinder service, boolean allowIsolated,
+        int dumpPriority) {
+    // 获取到 IServiceManager 并将服务注册到其中，其实就是将服务注册到 native
+    // 层的 ServiceManager 中
+    getIServiceManager().addService(name, service, allowIsolated, dumpPriority);
+}
+
+private static IServiceManager getIServiceManager() {
+    if (sServiceManager != null) {
+        return sServiceManager;
+    }
+    // 接下来分析 BinderInternal.getContextObject() 函数
+    sServiceManager = ServiceManagerNative.asInterface(/*IBinder*/
+        Binder.allowBlocking(BinderInternal.getContextObject()));
+    // 这里的 asInterface() 方法与 native 层的 interface_cast 宏有异曲同工之处
+    // 第 4 小节进行分析
+    return sServiceManager;
+}
+```
+
+3、`BinderInternal#getContextObject()`
+
+3.1、BinderInternal#getContextObject() 是一个 native 函数，其实现为
+`android_os_util_Binder.cpp::android_os_BinderInternal_getContextObject()`
+
+```cpp
+static jobject android_os_BinderInternal_getContextObject(JNIEnv* env, jobject clazz) {
+    // 获取 native 层 ServiceManager 代理对象 BpServiceManager
+    sp<IBinder> b = ProcessState::self()->getContextObject(NULL/*0*/);
+    // 这里继续调用 javaObjectForIBinder() 函数利用 native 层 ServiceManager 的
+    // 代理对象来创建一个 Java 层的 ServiceManager 代理对象
+    return javaObjectForIBinder(env, b/*BpBinder*/);
+}
+```
+
+3.2、`android_os_util_Binder.cpp::javaObjectForIBinder()`
+
+```cpp
+// If the argument is a JavaBBinder, return the Java object that was used to create it.
+// Otherwise return a BinderProxy for the IBinder. If a previous call was passed the
+// same IBinder, and the original BinderProxy is still alive, return the same BinderProxy.
+jobject javaObjectForIBinder(JNIEnv* env, const sp<IBinder>& val) {
+    // val 实际是 sp<BpServiceManager>
+    if (val == NULL) return NULL;
+    if (val->checkSubclass(&gBinderOffsets)) {
+        // It's a JavaBBinder created by ibinderForJavaObject. Already has Java object.
+        jobject object = static_cast<JavaBBinder*>(val.get())->object();
+        LOGDEATH("objectForBinder %p: it's our own %p!\n", val.get(), object);
+        return object;
+    }
+
+    // For the rest of the function we will hold this lock, to serialize
+    // looking/creation/destruction of Java proxies for native Binder proxies.
+    AutoMutex _l(gProxyLock);
+
+    // gNativeDataCahe 为缓存数据
+    BinderProxyNativeData* nativeData = gNativeDataCache;
+    if (nativeData == nullptr) {
+        // 缓存数据为 nullptr，创建对象
+        nativeData = new BinderProxyNativeData();
+    }
+    // gNativeDataCache is now logically empty.
+    // 调用 Java 层 BinderProxy#getInstance() 方法生成 BinderProxy 对象
+    // 3.3 小节分析
+    jobject object = env->CallStaticObjectMethod(gBinderProxyOffsets.mClass,
+            gBinderProxyOffsets.mGetInstance, (jlong) nativeData, (jlong) val.get());
+    if (env->ExceptionCheck()) {
+        // In the exception case, getInstance still took ownership of nativeData.
+        gNativeDataCache = nullptr;
+        return NULL;
+    }
+    // 获取 Java 层 BinderProxy#mNativeData 字段，即 nativeData 指针
+    BinderProxyNativeData* actualNativeData = getBPNativeData(env, object);
+    if (actualNativeData == nativeData) {
+        // New BinderProxy; we still have exclusive access.
+        nativeData->mOrgue = new DeathRecipientList;
+        nativeData->mObject = val;
+        gNativeDataCache = nullptr;
+        ++gNumProxies;
+        if (gNumProxies >= gProxiesWarned + PROXY_WARN_INTERVAL) {
+            ALOGW("Unexpectedly many live BinderProxies: %d\n", gNumProxies);
+            gProxiesWarned = gNumProxies;
+        }
+    } else {
+        // 首次调用时：
+        // nativeData = new BinderProxyNativeData, gNativeDataCache = nullptr
+        // 将 nativeData 缓存起来，下次使用
+        gNativeDataCache = nativeData;
+    }
+    return object;
+}
+```
+
+3.3、`BinderProxy#getInstance()`
+
+```java
+private static BinderProxy getInstance(long nativeData, long iBinder) {
+    // nativeDate 是指向 native 层 BinderProxyNativeData 结构体的指针
+    // iBinder 是指向 native 层 BpServiceManager 对象的指针
+    BinderProxy result;
+    try {
+        // 查一下缓存中是否有 iBinder 指针对应的 Java 层 BinderProxy 对象
+        result = sProxyMap.get(iBinder);
+        if (result != null) {
+            return result;
+        }
+        // 创建一个 BinderProxy 对象，并将 mNativeData 字段指向 native 层 
+        // nativeData 指针
+        result = new BinderProxy(nativeData);
+    } catch (Throwable e) {
+        // We're throwing an exception (probably OOME); don't drop nativeData.
+        NativeAllocationRegistry.applyFreeFunction(NoImagePreloadHolder.sNativeFinalizer,
+                nativeData);
+        throw e;
+    }
+    // 为 BinderProxy 对象分配 native 内存，并与 Java 层的对象建立关联
+    // registerNativeAllocation 函数内部使用到了 Reference 对象，猜测可能与 GC
+    // 有关，这里不做详细分析
+    NoImagePreloadHolder.sRegistry.registerNativeAllocation(result, nativeData);
+    // The registry now owns nativeData, even if registration threw an exception.
+    // 缓存数据
+    sProxyMap.set(iBinder, result);
+    return result;
+}
+```
+
+3.4、`BinderInternal#getContextObject()` 方法小结：
+
+- 通过 JNI 调用，创建一个 Java 层的 BinderProxy 对象；
+- 通过 JNI 调用，将 BinderProxy 对象与 native 层的 BpProxy 对象建立关联，该
+BpProxy 就是 BpServiceManager，其通信目标就是 ServiceManager
+
+4、`ServiceManagerNative#asInterface()`
+
+```java
+static public IServiceManager asInterface(IBinder obj) {
+    // obj 是一个 BinderProxy 对象的实例
+    if (obj == null) {
+        return null;
+    }
+    // descriptor = "android.os.IServiceManager" 与 native 层是保持一致的
+    IServiceManager in = (IServiceManager)obj.queryLocalInterface(descriptor);
+    if (in != null) {
+        return in;
+    }
+    // 以 obj 为参数，创建 ServiceManagerProxy 对象，赋值给 mRemote 字段
+    return new ServiceManagerProxy(obj);
+}
+```
+
+5、`ServiceManagerProxy#addService()`
+
+```java
+public void addService(String name, IBinder service, boolean allowIsolated,
+    int dumpPriority) throws RemoteException {
+    Parcel data = Parcel.obtain();
+    Parcel reply = Parcel.obtain();
+    // descriptor = "android.os.IServiceManager"
+    data.writeInterfaceToken(IServiceManager.descriptor);
+    data.writeString(name); // service name
+    // writeStrongBinder() 最终会调用 nativeWriteStrongBinder()，其具体实现在
+    // android_os_Parcel.cpp::android_os_Parcel_writeStrongBinder() 中，后续
+    // 再进行分析
+    data.writeStrongBinder(service); // service 对象（IBinder）
+    data.writeInt(allowIsolated ? 1 : 0);
+    data.writeInt(dumpPriority);
+    // 调用 BinderProxy#transact() 函数
+    mRemote.transact(ADD_SERVICE_TRANSACTION, data, reply, 0);
+    reply.recycle();
+    data.recycle();
+}
+```
+
+将数据打包成 Parcel 对象之后发送给 remote 端
+
+6、`BinderProxy#transact()`
+
+该函数最终会调用到 `BinderProxy#transactNative()` 函数，该 函数为 native 函数，
+其具体实现为 `android_util_Binder.cpp::android_os_BinderProxy_transact()`
+
+```cpp
+static jboolean android_os_BinderProxy_transact(JNIEnv* env, jobject obj,
+        jint code, jobject dataObj, jobject replyObj, jint flags) { // throws RemoteException
+    if (dataObj == NULL) {
+        jniThrowNullPointerException(env, NULL);
+        return JNI_FALSE;
+    }
+    // 将 Java 层 Parcel 对象装换为 native 层 Parcel 对象
+    Parcel* data = parcelForJavaObject(env, dataObj);
+    if (data == NULL) {
+        return JNI_FALSE;
+    }
+    Parcel* reply = parcelForJavaObject(env, replyObj);
+    if (reply == NULL && replyObj != NULL) {
+        return JNI_FALSE;
+    }
+
+    // getBPNativeData(env, obj) 获取指向 gNativeDataCache 的指针，然后获取
+    // BinderProxyNativeData 中 mObject 成员，该字段指向 native 层 IBinder
+    // 此处即 BpServiceManager 对象
+    IBinder* target = getBPNativeData(env, obj)->mObject.get();
+    if (target == NULL) {
+        jniThrowException(env, "java/lang/IllegalStateException", "Binder has been finalized!");
+        return JNI_FALSE;
+    }
+
+    // 通过 native BpBinder 对象将数据发送给 ServiceManager
+    status_t err = target->transact(code, *data, reply, flags);
+
+    if (err == NO_ERROR) {
+        return JNI_TRUE;
+    } else if (err == UNKNOWN_TRANSACTION) {
+        return JNI_FALSE;
+    }
+
+    signalExceptionForError(env, obj, err, true /*canThrowRemoteException*/, data->dataSize());
+    return JNI_FALSE;
+}
+```
+
+
+### AMS 响应客户端的 Binder 请求
 
 ## 总结
