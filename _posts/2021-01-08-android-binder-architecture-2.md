@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Android binder java 层
+title: Android binder 架构： java 层
 author: sleticalboy
 date: 2021-01-08 13:09:34 +0800
 category: android
@@ -22,7 +22,6 @@ tags: [android, framework]
 `frameworks/base/core/jni/android_util_Binder.cpp`<br/>
 `frameworks/base/core/jni/android_os_Parcel.cpp`<br/>
 `frameworks/base/core/jni/AndroidRuntime.cpp`
-
 
 ## Java 层 Binder 架构
 
@@ -603,7 +602,6 @@ static jboolean android_os_BinderProxy_transact(JNIEnv* env, jobject obj,
     return JNI_FALSE;
 }
 ```
-
 
 ### AMS 响应客户端的 Binder 请求
 
