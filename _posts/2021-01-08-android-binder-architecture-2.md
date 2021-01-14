@@ -25,35 +25,7 @@ tags: [android, framework]
 
 ## Java 层 Binder 架构
 
-<pre>
-----------     ----------------------------      -------------------------
-| Parcel |     |        IBinder           |      |      BinderInternal   |
-----------     ----------------------------      -------------------------
-               | +FLAG_ONEWAY = 0x0000001 |      | +getContextObject()   |
-               |--------------------------|      | +forceBinderGc()      |
-               | +transact()              |      | +handleGc()           |
-               | +queryLocalInterface()   |      | +joinThreadPool()     |
-               |    ------------------    |      |   ----------------    |
-               |    | DeathRecipient |    |      |   | GcWatcher    |    |
-               |    ------------------    |      |   ----------------    |
-               |    | +binderDied()  |    |      |   | +finalize()  |
-               |    ------------------    |      |   ----------------    |
-               |--------------------------|      -------------------------
-                             ^
-                             |
-           ---------------------------------------
-           |                                     |
-  --------------------            ------------------------------
-  |      Binder      |            |         BinderProxy        |
-  --------------------            ------------------------------
-  | +getCallingId()  |            | +transact()                |
-  | +getCallingUid() |            | -destroy()                 |
-  | +init()          |            | +linkToDeath()             |
-  | +transact()      |            ------------------------------
-  | -execTransact()  |            
-  | -destroy()       |            
-  --------------------            
-</pre>
+![java binder arch](/assets/android/java-binder-arch.png)
 
 - 系统定义了一个 IBinder 接口和其内部的 DeathRecipient 接口
 - Binder 和 BinderProxy 分别实现了 IBinder 接口；Binder 作为服务端 Bn 的代表，而
@@ -350,7 +322,7 @@ int register_android_os_Parcel(JNIEnv* env) {
 - 框架的初始化其实就是提前获取一些 JNI 层使用的信息，比如类的成员函数/字段 id
 等，这么做的好处是提前获取，等使用的时候就节省掉了 Binder 频繁调用时的查找时间
 
-## addService 方法源码分析
+## ServiceManager#addService 方法源码分析
 
 以 `ActivityManagerService(AMS)` 如何将自身添加到 `ServiceManager(SM)` 为例来分析</br>
 
@@ -375,7 +347,7 @@ SM#addService("activity", mActivityManagerService)
 public void setSystemProcess() {
     // 将 AMS 注册到 SM 中，服务名为 activity
     ServiceManager.addService(Context.ACTIVITY_SERVICE, this, /* allowIsolated= */ true,
-            DUMP_FLAG_PRIORITY_CRITICAL | DUMP_FLAG_PRIORITY_NORMAL | DUMP_FLAG_PROTO);
+        DUMP_FLAG_PRIORITY_CRITICAL | DUMP_FLAG_PRIORITY_NORMAL | DUMP_FLAG_PROTO);
     // ...
 }
 ```
@@ -463,7 +435,6 @@ jobject javaObjectForIBinder(JNIEnv* env, const sp<IBinder>& val) {
         gNativeDataCache = nullptr;
         ++gNumProxies;
         if (gNumProxies >= gProxiesWarned + PROXY_WARN_INTERVAL) {
-            ALOGW("Unexpectedly many live BinderProxies: %d\n", gNumProxies);
             gProxiesWarned = gNumProxies;
         }
     } else {
@@ -494,8 +465,8 @@ private static BinderProxy getInstance(long nativeData, long iBinder) {
         result = new BinderProxy(nativeData);
     } catch (Throwable e) {
         // We're throwing an exception (probably OOME); don't drop nativeData.
-        NativeAllocationRegistry.applyFreeFunction(NoImagePreloadHolder.sNativeFinalizer,
-                nativeData);
+        NativeAllocationRegistry.applyFreeFunction(
+            NoImagePreloadHolder.sNativeFinalizer, nativeData);
         throw e;
     }
     // 为 BinderProxy 对象分配 native 内存，并与 Java 层的对象建立关联
@@ -544,8 +515,8 @@ public void addService(String name, IBinder service, boolean allowIsolated,
     data.writeInterfaceToken(IServiceManager.descriptor);
     data.writeString(name); // service name
     // writeStrongBinder() 最终会调用 nativeWriteStrongBinder()，其具体实现在
-    // android_os_Parcel.cpp::android_os_Parcel_writeStrongBinder() 中，后续
-    // 再进行分析
+    // android_os_Parcel.cpp::android_os_Parcel_writeStrongBinder() 中，在下一节
+    // 进行分析
     data.writeStrongBinder(service); // service 对象（IBinder）
     data.writeInt(allowIsolated ? 1 : 0);
     data.writeInt(dumpPriority);
@@ -602,6 +573,131 @@ static jboolean android_os_BinderProxy_transact(JNIEnv* env, jobject obj,
     return JNI_FALSE;
 }
 ```
+
+### 揭开 `Parcel#writeStrongBinder()` 神秘的面纱
+
+1、Parcel#writeStrongBinder() 最终会调用到 Parcel#nativeWriteStrongBinder()，这是
+个 native 方法，实现为 `android_os_Parcel.cpp::android_os_Parcel_writeStrongBinder()`
+
+```cpp
+static void android_os_Parcel_writeStrongBinder(JNIEnv* env, jclass clazz,
+    jlong nativePtr, jobject object) {
+    // 此处的 object 为 Java 层的 Binder 对象
+    Parcel* parcel = reinterpret_cast<Parcel*>(nativePtr);
+    if (parcel != NULL) {
+        // 接下来会调用 ibinderForJavaObject() 返回一个 native 层的 IBinder 对象
+        const status_t err = parcel->writeStrongBinder(ibinderForJavaObject(env, object));
+        if (err != NO_ERROR) {
+            signalExceptionForError(env, clazz, err);
+        }
+    }
+}
+```
+
+2、`android_util_Binder.cpp::ibinderForJavaObject()`
+
+见名知意，此方法为 Java 层 Binder 生成一个 native 层 IBinder 对象，下面分析这里是
+如何实现的：
+
+```cpp
+sp<IBinder> ibinderForJavaObject(JNIEnv* env, jobject obj) {
+    // obj 为 Java 层的 Binder 对象
+    if (obj == NULL) return NULL;
+    // Instance of Binder?
+    if (env->IsInstanceOf(obj, gBinderOffsets.mClass)) {
+        // 通过 JNI 向上调用 Java 类中的字段得到 JavaBBinderHolder 对象
+        JavaBBinderHolder* jbh = (JavaBBinderHolder*)
+            env->GetLongField(obj, gBinderOffsets.mObject);
+        // get() 方法，返回 JavaBBinder 对象
+        // 注意：JavaBBinder 继承自 BBinder，而 BBinder 继承自 IBinder
+        return jbh->get(env, obj);
+    }
+    // Instance of BinderProxy?
+    if (env->IsInstanceOf(obj, gBinderProxyOffsets.mClass)) {
+        // 直接取出
+        return getBPNativeData(env, obj)->mObject;
+    }
+    return NULL;
+}
+```
+
+从这里可以推断 Java 层 Binder#mObject 字段对应 native 层 JavaBBinderHolder 对象，
+对象，那么 mObject 字段是何时赋值的呢？答案就在 Binder 的构造器中！
+
+3、Java 层 Binder 构造
+
+```java
+public Binder() {
+    // native 方法，实现为 android_os_Binder_getNativeBBinderHolder()
+    mObject = getNativeBBinderHolder();
+    NoImagePreloadHolder.sRegistry.registerNativeAllocation(this, mObject);
+}
+```
+
+```cpp
+static jlong android_os_Binder_getNativeBBinderHolder(JNIEnv* env,
+    jobject clazz) {
+    // 直接实例化一个 JavaBBinderHolder 对象返回给 Java 层 Binder#mObject 字段
+    JavaBBinderHolder* jbh = new JavaBBinderHolder();
+    return (jlong) jbh;
+}
+```
+
+从类的名字来看，JavaBBinderHolder 只是一层外衣，真正的数据是其内部的 “JavaBBinder”
+那么 JavaBBinderHolder 又是何方与 JavaBBinder 建立联系的呢？答案就在其 get() 方法
+
+4、`android_util_Binder.cpp::JavaBBinderHolder::get()`
+
+```cpp
+sp<JavaBBinder> get(JNIEnv* env, jobject obj) {
+    // obj 为 Java 层的 Binder 对象
+    AutoMutex _l(mLock);
+    sp<JavaBBinder> b = mBinder.promote();
+    // 如果还没有与 JavaBBinder 建立关联，则创建 JavaBBinder 对象并赋值给 mBinder
+    if (b == NULL) {
+        // 简单分析 JavaBBinder 类
+        b = new JavaBBinder(env, obj);
+        mBinder = b;
+    }
+    // 已建立关联，直接返回
+    return b;
+}
+```
+
+5、`android_util_Binder.cpp::JavaBBinder`
+
+```cpp
+class JavaBBinder : public BBinder {
+private:
+    JavaVM* const   mVM;
+    jobject const   mObject;  // Java Binder 全局引用
+
+public:
+    JavaBBinder(JNIEnv* env, jobject /* Java Binder */ object)
+        : mVM(jnienv_to_javavm(env)), mObject(env->NewGlobalRef(object)) {
+        // new 一个全局引用并赋值给 mObject 字段
+    }
+
+    // 返回 Java Binder
+    jobject object() const {
+        return mObject;
+    }
+
+protected:
+    virtual status_t onTransact(uint32_t code, const Parcel& data, Parcel* reply,
+        uint32_t flags = 0) {
+        // 执行 Binder#execTransact() 方法响应客户端 Binder 请求，下节分析
+        jboolean res = env->CallBooleanMethod(mObject, gBinderOffsets.mExecTransact,
+            code, reinterpret_cast<jlong>(&data), reinterpret_cast<jlong>(reply), flags);
+        return res != JNI_FALSE ? NO_ERROR : UNKNOWN_TRANSACTION;
+    }
+};
+```
+
+**小结**:</br>
+Java Binder、JavaBBinderHolder、JavaBBinder、BBinder 之间的关系如下：
+
+![缺图一张]()
 
 ### AMS 响应客户端的 Binder 请求
 
