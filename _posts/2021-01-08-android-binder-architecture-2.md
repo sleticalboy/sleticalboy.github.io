@@ -719,4 +719,36 @@ native 层的 JavaBBinder。
 
 ## AMS 响应客户端的 Binder 请求
 
+<pre>
+========client========
+ClientActivity#startActivity() ->
+Activity#startActivity() ->
+ContextImpl#startActivity() ->
+Instrumentation#execStartActivity() ->
+========service manager========
+ActivityManager.getService().startActivity() ->
+  1. ActivityManager.getService() -> IActivityManagerSingleton.get() ->
+    android.util.Singleton.get() -> Singleton.create() ->
+  2. return IActivityManager.Stub.asInterface(ServiceManager.getService("activity"))
+    // JNI 调用从 service manager 中获取
+    ServiceManager.getService("activity") => BinderProxy
+  3. IActivityManager.Stub.asInterface(b) -> new IActivityManager.Stub.Proxy(b)
+    mRemote => b => BinderProxy
+------- java 层 --------
+IActivityManager.Stub.Proxy().startActivity() ->
+mRemote.transact(Stub.TRANSACTION_startActivity) ->
+BinderProxy#transact() -> transactNative() ->
+------- jni 层 --------
+android_util_Binder.cpp::android_os_BinderProxy_transact() -> target::transact()
+native IBinder::transact() -> BBinder::transact() -> Binder.cpp::transact() -> Binder.cpp::onTransact() ->
+android_util_Binder.cpp::JavaBBinder::onTransact() ->
+------- java 层 --------
+Binder#execTransact() -> onTransact() ->
+IActivitymanager.Stub#onTransact() -> onTransact() => TRANSACTION_startActivity
+IActivityManager.Stub#onTransact$startActivity$() ->
+========AMS========
+ActivityManagerService#startActivity()
+  ActivityManagerService 继承自IActivityManager.Stub.Proxy， 而 Proxy 又继承自 IActivityManager
+</pre>
+
 ## 总结
