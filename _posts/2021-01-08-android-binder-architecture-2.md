@@ -25,7 +25,7 @@ tags: [android, framework]
 
 ## Java 层 Binder 架构
 
-![java binder arch](/assets/android/java-binder-arch.png)
+![java binder arch](/assets/android/binder-java-arch.png)
 
 - 系统定义了一个 IBinder 接口和其内部的 DeathRecipient 接口
 - Binder 和 BinderProxy 分别实现了 IBinder 接口；Binder 作为服务端 Bn 的代表，而
@@ -666,6 +666,8 @@ sp<JavaBBinder> get(JNIEnv* env, jobject obj) {
 
 5、`android_util_Binder.cpp::JavaBBinder`
 
+JavaBBinder 继承自 BBinder
+
 ```cpp
 class JavaBBinder : public BBinder {
 private:
@@ -695,10 +697,26 @@ protected:
 ```
 
 **小结**:<br/>
-Java Binder、JavaBBinderHolder、JavaBBinder、BBinder 之间的关系如下：
 
-![缺图一张]()
+通过上面的分析，Java 层 SM#addService() 实际添加到 native 层 ServiceManager 的其
+实并不是 AMS 本身，而是一个 JavaBBinder 对象，addService() 的本质是将这个对象传
+递给 binder 驱动。
 
-### AMS 响应客户端的 Binder 请求
+Java Binder、JavaBBinderHolder、JavaBBinder、BBinder 之间的关系如下：<br/>
+![缺图一张](/assets/android/binder-java-b-binder-holder.png)<br/>
+从上图我们可以看出：
+- Java 层 Binder 通过 mObject 字段指向 native 层的 JavaBBinderHolder 对象；
+- native 层 JavaBBinderHolder 又通过 mBinder 字段指向 native 层 JavaBBinder 对象；
+- native 层 JavaBBinder 又通过 mObject 字段指向 Java 层的 Binder 对象；
+
+**思考**：<br/>
+
+- 为什么不直接让 Java 层的 Binder 对象指向 native 层的 JavaBBinder 对象呢？分析
+上述三个类，发现 JavaBBinderHolder 中用到了 sp<T> 弱引用，因此可以猜测应该和内存
+管理有关。
+- Java 层添加到 native 层 ServiceManager 中的 service（Binder） 其实都对应着一个
+native 层的 JavaBBinder。
+
+## AMS 响应客户端的 Binder 请求
 
 ## 总结
