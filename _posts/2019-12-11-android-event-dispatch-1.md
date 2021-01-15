@@ -8,15 +8,15 @@ tags: [android, framework]
 ---
 
 涉及到的源代码及路径：
-`frameworks/base/core/java/android/app/Activity.java`</br>
-`frameworks/base/core/java/com/android/internal/policy/PhoneWindow.java`</br>
-`frameworks/base/core/java/com/android/internal/policy/DecorView.java`</br>
-`frameworks/base/core/java/android/view/InputEventSender.java`</br>
-`frameworks/base/core/java/android/view/InputEventSender.java`</br>
-`frameworks/base/core/java/android/view/InputFilter.java`</br>
-`frameworks/base/core/java/android/view/InputQueue.java`</br>
-`frameworks/base/core/java/android/view/InputDevice.java`</br>
-`frameworks/base/core/java/android/view/InputChannel.java`</br>
+`frameworks/base/core/java/android/app/Activity.java`<br/>
+`frameworks/base/core/java/com/android/internal/policy/PhoneWindow.java`<br/>
+`frameworks/base/core/java/com/android/internal/policy/DecorView.java`<br/>
+`frameworks/base/core/java/android/view/InputEventSender.java`<br/>
+`frameworks/base/core/java/android/view/InputEventSender.java`<br/>
+`frameworks/base/core/java/android/view/InputFilter.java`<br/>
+`frameworks/base/core/java/android/view/InputQueue.java`<br/>
+`frameworks/base/core/java/android/view/InputDevice.java`<br/>
+`frameworks/base/core/java/android/view/InputChannel.java`<br/>
 
 ## 按键事件：KeyEvent
 - Activity.dispatchKeyEvent():  Windown.Callback.dispatchKeyEvent()

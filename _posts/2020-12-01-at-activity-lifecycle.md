@@ -8,8 +8,8 @@ tags: [android, framework]
 ---
 
 # ActivityThread 中 Activity 生命周期
-> handleLaunchActivity() -> handleStartActivity() -> handleResumeActivity() -></br>
-  handlePauseActivity() -> handleStopActivity() -> handleDestroyActivity()</br>
+> handleLaunchActivity() -> handleStartActivity() -> handleResumeActivity() -><br/>
+  handlePauseActivity() -> handleStopActivity() -> handleDestroyActivity()<br/>
   performRestartActivity()
 
 ## handleLaunchActivity
@@ -270,7 +270,7 @@ if (r.pendingResults != null) {
   ```
 
 ## handlePauseActivity
-> (IBinder token, boolean finished, boolean userLeaving, int configChanges,</br>
+> (IBinder token, boolean finished, boolean userLeaving, int configChanges,<br/>
   PendingTransactionActions pendingActions, String reason)
 
 ### performUserLeaving()
@@ -309,7 +309,7 @@ if (shouldSaveState) {
 
 ## handleStopActivity
 
-> (IBinder token, boolean show, int configChanges,</br>
+> (IBinder token, boolean show, int configChanges,<br/>
   PendingTransactionActions pendingActions, boolean finalStateRequest, String reason)
 
 ### 从缓存 mActivityes 获取 Activity
@@ -319,7 +319,7 @@ final ActivityClientRecord r = mActivities.get(token);
 
 ### performStopActivityInner
 
-> (ActivityClientRecord r, StopInfo info, boolean keepShown,</br>
+> (ActivityClientRecord r, StopInfo info, boolean keepShown,<br/>
   boolean saveState, boolean finalStateRequest, String reason)
 
 #### 检查是否已执行过 onStop
@@ -417,11 +417,11 @@ performPauseActivityIfNeeded(r, reason);
   ```
 
 ## handleDestroyActivity
-> (IBinder token, boolean finishing, int configChanges,</br>
+> (IBinder token, boolean finishing, int configChanges,<br/>
   boolean getNonConfigInstance, String reason)
 
 ### performDestroyActivity
-> (IBinder token, boolean finishing, int configChanges,</br>
+> (IBinder token, boolean finishing, int configChanges,<br/>
   boolean getNonConfigInstance, String reason)
 
 #### 从缓存 mActivities 获取 Activity

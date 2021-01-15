@@ -324,7 +324,7 @@ int register_android_os_Parcel(JNIEnv* env) {
 
 ## ServiceManager#addService 方法源码分析
 
-以 `ActivityManagerService(AMS)` 如何将自身添加到 `ServiceManager(SM)` 为例来分析</br>
+以 `ActivityManagerService(AMS)` 如何将自身添加到 `ServiceManager(SM)` 为例来分析<br/>
 
 **代码调用流程如下**：
 <pre>
@@ -694,7 +694,7 @@ protected:
 };
 ```
 
-**小结**:</br>
+**小结**:<br/>
 Java Binder、JavaBBinderHolder、JavaBBinder、BBinder 之间的关系如下：
 
 ![缺图一张]()
