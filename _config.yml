@@ -185,6 +185,7 @@ exclude:
   - LICENSE
   - Rakefile
   - .github
+  - assets/static
 
 jekyll-archives:
   enabled: [categories, tags]
