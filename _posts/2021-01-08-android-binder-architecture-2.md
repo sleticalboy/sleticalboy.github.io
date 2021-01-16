@@ -696,11 +696,11 @@ protected:
 };
 ```
 
-**小结**:<br/>
+### 小结
 
 通过上面的分析，Java 层 SM#addService() 实际添加到 native 层 ServiceManager 的其
-实并不是 AMS 本身，而是一个 JavaBBinder 对象，addService() 的本质是将这个对象传
-递给 binder 驱动。
+实并不是 AMS 本身，而是一个 JavaBBinder 对象，addService() 的本质是将此对象传递给
+binder 驱动。
 
 Java Binder、JavaBBinderHolder、JavaBBinder、BBinder 之间的关系如下：<br/>
 ![缺图一张](/assets/android/binder-java-b-binder-holder.png)<br/>
@@ -719,6 +719,8 @@ native 层的 JavaBBinder。
 
 ## AMS 响应客户端的 Binder 请求
 
+以 Activity#startActivity() 方法为例分析 AMS 如何响应客户端的 Binder 请求，具体调用
+流程如下：
 <pre>
 ========client========
 ClientActivity#startActivity() ->
@@ -751,4 +753,115 @@ ActivityManagerService#startActivity()
   ActivityManagerService 继承自IActivityManager.Stub.Proxy， 而 Proxy 又继承自 IActivityManager
 </pre>
 
+### 客户端发起 Binder 请求
+
+当客户端 Activity 发起 startActivity() 请求时，最终会从 app 进程调用到 system_server
+进程，不过在使用系统服务之前必须要先通过 SM 获取到该服务。
+
+### 通过 SM 获取 AMS
+
+系统获取 AMS 的过程就不详细分析了
+
+```java
+@Override
+protected IActivityManager create() {
+    // 这里返回的 IBinder 对象其实就是 BinderProxy
+    final IBinder b = ServiceManager.getService("activity");
+    // 这里实际创建的是 IActivityManager.Stub.Proxy() 对象，IActivityManager.Stub
+    // 是抽象类并继承自 IActivityManager，其实际实现子类是 AMS
+    // 这里的 ibinder 最终传给了 IActivityManager.Stub.Proxy 的 mRemote 字段
+    return IActivityManager.Stub.asInterface(b);
+}
+```
+
+### AMS 响应客户端请求
+
+1、客户端发起的 startActivity() 调用最先到达 IActivityManager.Stub.Proxy#startActivity()，
+然后通过调用 `mRemote.transact(Stub.TRANSACTION_startActivity)` 进行转发，那么下一
+步会调用到 `BinderProxy#transact()` 方法，并进一步通过 transactNative() 调用到 native
+层 `android_util_Binder.cpp::android_os_BinderProxy_transact()` 方法：
+
+2、`android_util_Binder.cpp::android_os_BinderProxy_transact()`
+
+```cpp
+static jboolean android_os_BinderProxy_transact(JNIEnv* env, jobject obj,
+        jint code, jobject dataObj, jobject replyObj, jint flags) { // throws RemoteException
+    // ...
+    // 这里获取到的是 JavaBBinder 对象，该对象继承自 native IBinder
+    IBinder* target = getBPNativeData(env, obj)->mObject.get();
+    // 此方法会调用父类 transact() 方法并最终调用 Binder.cpp::onTransact() 方法，
+    // 这里其子类为 JavaBBinder，所以会调用 JavaBBinder::onTransact() 方法
+    status_t err = target->transact(code, *data, reply, flags);
+    // ...
+    return JNI_FALSE;
+}
+```
+
+3、`android_util_Binder.cpp::JavaBBinder::onTransact()`
+
+```cpp
+virtual status_t onTransact(uint32_t code, const Parcel& data, Parcel* reply,
+    uint32_t flags = 0) {
+    // 通过 JNI 向上调用 Java Binder#execTransact() 方法
+    jboolean res = env->CallBooleanMethod(mObject, gBinderOffsets.mExecTransact,
+        code, reinterpret_cast<jlong>(&data), reinterpret_cast<jlong>(reply), flags);
+    // ....
+    return res != JNI_FALSE ? NO_ERROR : UNKNOWN_TRANSACTION;
+}
+```
+
+4、Java `Binder#execTransact()`
+
+```java
+private boolean execTransact(int code, long dataObj, long replyObj, int flags) {
+    // 从 native Parcel 转换成 Java Parcel
+    Parcel data = Parcel.obtain(dataObj);
+    Parcel reply = Parcel.obtain(replyObj);
+    boolean res;
+    try {
+        // 直接调用 onTransact() 方法，一般都是由子类实现，在 AIDL 中都是由
+        // IXxx.Stub#onTransact() 来进行分发给实现类的各种业务调用，比如此处调用的
+        // startActivity() 最终会调用到 AMS#startActivity()
+        res = onTransact(code, data, reply, flags);
+    } catch (RemoteException|RuntimeException e) {
+        if ((flags & FLAG_ONEWAY) != 0) {
+            if (e instanceof RemoteException) {
+                Log.w(TAG, "Binder call failed.", e);
+            } else {
+                Log.w(TAG, "Caught a RuntimeException from the binder stub implementation.", e);
+            }
+        } else {
+            // Clear the parcel before writing the exception
+            reply.setDataSize(0);
+            reply.setDataPosition(0);
+            reply.writeException(e);
+        }
+        res = true;
+    }
+    // 释放资源
+    reply.recycle();
+    data.recycle();
+    return res;
+}
+```
+
+### 小结
+
+通过以上的分析发现 Java 层 Binder 架构中 JavaBBinder 并不承担处理实际业务的职责；
+- 当收到请求时，JavaBBinder 通过 JNI 向上调用其绑定的 Java Binder 对象的 execTransact();
+- Java Binder#execTransact() 最终调用子类实现的 onTransact() 函数；
+- 子类通过 onTransact() 函数将任务派发给最终的子类来完成
+
+以下是 AMS 响应 Binder 请求的整个流程：
+![ams-response-binder-request](/assets/android/binder-ams-response-request.png)
+
 ## 总结
+
+![android-binder-arch](/assets/android/binder-java-natice-arch.png)
+
+- 对于客户端的 BinderProxy 来讲，Java 层的 BinderProxy 在 native 层对应着一个 BpBinder
+对象；凡是从 Java 层发出的请求，首先从 BinderProxy 传递到 native 层的 BpBinder，继而
+由 BpBinder 将请求发送到 binder 驱动
+- 对于代表服务端的 Service 来讲，Java 层的 Binder 在 native 层有一个 JavaBBinder 对
+象；但 JavaBBinder 只起到中转作用，即把来自客户端的请求从 native 层传递到 Java 层
+- 无论是 Java 层还是 native 层，自始至终都只有一个 ServiceManager
