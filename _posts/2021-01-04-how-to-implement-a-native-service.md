@@ -320,6 +320,8 @@ D/TestServer: ITest::read() called, start do hard work
 从以上日志输出可以看出，当对某一 service 中的业务函数发起调用时，首先调用 BpXxx（即 
 BpInterface），接着调用 BnXxx（即 BnInterface），最终调用 IXxx（即 IInterface）
 
+本例源码：[binder server(native)](https://github.com/sleticalboy/DailyLearning/tree/master/binder-demo/server/native)
+
 ---
 ## 第二种：java 层实现
 
@@ -466,6 +468,8 @@ adb install -r -d -t out/target/product/xxx/system/priv-app/SampleService/Sample
                     ├── DataStruct.java
                     └── SampleService.java
 ```
+
+本例源码：[binder server(java)](https://github.com/sleticalboy/DailyLearning/tree/master/binder-demo/server/java)
 
 ### 实现 client 端
 
@@ -647,6 +651,8 @@ sample.service D/SampleService: doWrite() data = [DataStruct{mName='data to serv
 // 6、服务端收到客户端的 read 调用
 sample.service D/SampleService: doRead() name = [client], notify = [false]
 ```
+
+本例源码：[binder client](https://github.com/sleticalboy/DailyLearning/tree/master/binder-demo/client)
 
 ---
 ## 参考资料
