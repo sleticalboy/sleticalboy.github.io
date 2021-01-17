@@ -865,3 +865,6 @@ private boolean execTransact(int code, long dataObj, long replyObj, int flags) {
 - 对于代表服务端的 Service 来讲，Java 层的 Binder 在 native 层有一个 JavaBBinder 对
 象；但 JavaBBinder 只起到中转作用，即把来自客户端的请求从 native 层传递到 Java 层
 - 无论是 Java 层还是 native 层，自始至终都只有一个 ServiceManager
+
+## 参考资料
+- 《深入理解Android卷1》（邓凡平）第六章：深入理解 Binder
