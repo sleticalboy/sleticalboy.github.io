@@ -25,6 +25,9 @@ rm [-f --force][-r --recursive]
 ```bash
 # 在 dir 下查找 keyword
 find [dir] -name [keyword]
+# 排除文件夹：-name 指定文件 -prune 排除 -o 输出文件名还是衔接，没弄清楚
+# -name xxx -prune -o 为一组，如果有其他要排除的文件再写
+find . -name .git -prune -o -name vendor -prune -o -type f -name '*.md'
 ```
 - locate：字面意思定位文件位置，和 find 类似
 - tar：压缩/解压缩命令
