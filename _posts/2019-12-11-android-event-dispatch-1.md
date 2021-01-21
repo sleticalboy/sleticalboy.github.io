@@ -27,3 +27,9 @@ tags: [android, framework]
 - Activity.dispatchTouchEvent(): Window.Callback.dispatchTouchEvent()
 - activity.getWindow().superDispatchTouchEvent(): PhoneWindow.superDispatchTouchEvent()
 - mDecor.superDispatchTouchEvent() -> DecorView.superDispatchTouchEvent() -> ViewGroup.dispatchTouchEvent()
+
+## Activity 的事件分发
+
+## ViewGroup 的事件分发
+
+## View 的事件分发

@@ -49,6 +49,8 @@ SystemService#main() -> run() -> startOtherServices() 方法中启动 InputManag
 对象作为参数传递给 WMS，最后将依次启动 WMS 和 IMS
 
 
+## WindowManagerService
+
 WMS 初始化：
 ```java
 InputChannel inputChannel = mInputManager.monitorInput(TAG_WM);
@@ -59,7 +61,216 @@ mPointerEventDispatcher = new PointerEventDispatcher(inputChannel);
 InputEventReceiver#dispatchInputEvent() 此方法由 native 层调用，事件由 native 层
 传递到 Java 层
 
+WMS#addWindow() 方法
+
+```java
+public void addWindow() {
+    boolean openInputChannels = outInputChannel != null
+        && (attrs.inputFeatures & INPUT_FEATURE_NO_INPUT_CHANNEL) == 0;
+    if  (openInputChannels) {
+        // 打开输入管道
+        win.openInputChannel(outInputChannel);
+    }
+}
+```
+
+WMS#openInputChannel() 方法
+
+```java
+void openInputChannel() {
+    // 打开一对管道
+    InputChannel[] inputChannels = InputChannel.openInputChannelPair(getName());
+    // 输入管道
+    mInputChannel = inputChannels[0];
+    mClientChannel = inputChannels[1];
+    mInputWindowHandle.inputChannel = inputChannels[0];
+    if (outInputChannel != null) {
+        mClientChannel.transferTo(outInputChannel);
+        mClientChannel.dispose();
+        mClientChannel = null;
+    } else {
+        // If the window died visible, we setup a dummy input channel, so that taps
+        // can still detected by input monitor channel, and we can relaunch the app.
+        // Create dummy event receiver that simply reports all events as handled.
+        mDeadWindowEventReceiver = new DeadWindowEventReceiver(mClientChannel);
+    }
+    // 向 IMS 注册管道
+    mService.mInputManager.registerInputChannel(mInputChannel, mInputWindowHandle);
+}
+```
+
+## InputManagerService
+
 IMS 初始化
-## WindowManager
 
 ## EventHub
+
+事件中心
+
+## ViewRootImpl
+
+setView() 方法中会初始化 InputChannel
+
+```java
+public void setView() {
+    if ((mWindowAttributes.inputFeatures & WindowManager.LayoutParams
+            .INPUT_FEATURE_NO_INPUT_CHANNEL) == 0) {
+        mInputChannel = new InputChannel();
+    }
+    // 下面的方法实际上是调用了 WMS#addWindow() 方法
+    res = mWindowSession.addToDisplay(mWindow, mSeq, mWindowAttributes,
+        getHostVisibility(), mDisplay.getDisplayId(), mWinFrame,
+        mAttachInfo.mContentInsets, mAttachInfo.mStableInsets,
+        mAttachInfo.mOutsets, mAttachInfo.mDisplayCutout, mInputChannel
+    );
+}
+```
+
+## InputReader
+
+1、`InputReader::loopOnce()`
+```cpp
+void InputReader::loopOnce() {
+    // 1、从EventHub 获取事件，返回事件个数
+    size_t count = mEventHub->getEvents(timeout, mEventBuffer, event_buffer_size);
+    // 2、处理事件
+    if (count) {
+        processEventsLocked(mEventBuffer, count);
+    }
+    // 告诉 listener 开始干活
+    mQueuedListener->flush();
+}
+```
+
+2、`InputReader::processEventsLocked`
+```cpp
+void InputReader::processEventsLocked(const RawEvent* rawEvents, size_t count) {
+    // 循环判断事件类型并处理之
+    for (const RawEvent* rawEvent = rawEvents; count;) {
+        int32_t type = rawEvent->type;
+        size_t batchSize = 1;
+        // 1、type < EventHubInterface::FIRST_SYNTHETIC_EVENT
+        // 处理事件，最终会调用到 InputDevice::process()
+        processEventsForDeviceLocked(deviceId, rawEvent, batchSize);
+        // 2、type == EventHubInterface::DEVICE_ADDED
+        // 添加输入设备
+        addDeviceLocked(rawEvent->when, rawEvent->deviceId);
+        // 3、type == EventHubInterface::DEVICE_REMOVED
+        // 移除输入设备
+        removeDeviceLocked(rawEvent->when, rawEvent->deviceId);
+        // 4、type == EventHubInterface::FINISHED_DEVICE_SCAN
+        // 配置改变
+        handleConfigurationChangedLocked(rawEvent->when);
+    }
+}
+```
+
+3、`InputDevice::process`
+```cpp
+void InputDevice::process(const RawEvent* rawEvents, size_t count) {
+    // 根据 event 的 class 不同，有不一样的 Mapper，大致有以下12种不同的输入设备：
+    // External devices：外接设备，比如鼠标、键盘等
+    // Devices with mics：具有 mic 的设备
+    // Switch-like devices：类开关设备，对应 SwitchInputMapper
+    // Scroll wheel-like devices：带滚轮的设备，对应  RotaryEncoderInputMapper
+    // Vibrator-like devices：类震动设备，对应 VibratorInputMapper
+    // Keyboard-like devices：类键盘设备，对应 KeyboardInputMapper
+    // Cursor-like devices：光标设备，比如轨迹球或鼠标，对应 CursorInputMapper
+    // Mouser-like devices：带有鼠标的输入设备，对应 KeyMouseInputMapper
+    // Touchscreens and touchpad devices：触摸屏和触摸板设备，分为多点触控和单点触控
+    //   分别对应 MultiTouchInputMapper 和 SingleTouchInputMapper
+    // Joystick-like devices：类似操纵杆的设备，对应 JoystickInputMapper
+    // External stylus-like devices：外部笔式设备，对应 ExternalStylusInputMapper
+    size_t numMappers = mMappers.size();
+    for (const RawEvent* rawEvent = rawEvents; count != 0; rawEvent++) {
+        if (mDropUntilNextSync) {
+            if (rawEvent->type == EV_SYN && rawEvent->code == SYN_REPORT) {
+                mDropUntilNextSync = false;
+            }
+        } else if (rawEvent->type == EV_SYN && rawEvent->code == SYN_DROPPED) {
+            mDropUntilNextSync = true;
+            reset(rawEvent->when);
+        } else {
+            for (size_t i = 0; i < numMappers; i++) {
+                InputMapper* mapper = mMappers[i];
+                // 调用不同的 Mapper 进行处理
+                mapper->process(rawEvent);
+            }
+        }
+        --count;
+    }
+}
+```
+
+`void QueuedInputListener::flush()`
+
+```cpp
+void QueuedInputListener::flush() {
+    // NotifyArgs 有 5 个实现子类：
+    // NotifyConfigurationChangedArgs：配置更改事件
+    // NotifyDeviceResetArgs：设备重置事件，比如添加、移除或重新配置
+    // NotifyKeyArgs：按键事件，多用于电视机
+    // NotifyMotionArgs：手势事件，多用于只能手机或平板、车载等手持设备
+    // NotifySwitchArgs：切换事件
+    // 这里以 NotityMotionArgs 为例
+    size_t count = mArgsQueue.size();
+    for (size_t i = 0; i < count; i++) {
+        NotifyArgs* args = mArgsQueue[i];
+        // NotifyMotionArgs::notify() -> InputDispatcher::notifyMotion()
+        args->notify(mInnerListener);
+        delete args;
+    }
+    mArgsQueue.clear();
+}
+```
+
+`InputDispatcher::notifyMotion()`
+```cpp
+void InputDispatcher::notifyMotion(const NotifyMotionArgs* args) {
+    if (!validateMotionEvent(args->action, args->actionButton,
+            args->pointerCount, args->pointerProperties)) {
+        return;
+    }
+    uint32_t policyFlags = args->policyFlags;
+    policyFlags |= POLICY_FLAG_TRUSTED;
+
+    android::base::Timer t;
+    // 这里 interceptMotionBeforeQueueing() 最终会通过 jni 回调到 Java 层 IMS 中
+    mPolicy->interceptMotionBeforeQueueing(args->eventTime, /*byref*/ policyFlags);
+
+    bool needWake;
+    { // acquire lock
+        mLock.lock();
+        if (shouldSendMotionToInputFilterLocked(args)) {
+            mLock.unlock();
+            MotionEvent event;
+            event.initialize(args->deviceId, args->source, args->action,
+                args->actionButton, args->flags, args->edgeFlags,
+                args->metaState, args->buttonState, 0, 0, args->xPrecision,
+                args->yPrecision, args->downTime, args->eventTime,
+                args->pointerCount, args->pointerProperties, args->pointerCoords);
+            policyFlags |= POLICY_FLAG_FILTERED;
+            // 同样 filterInputEvent() 会通过 jni 回调到 Java 层 IMS 中
+            if (!mPolicy->filterInputEvent(&event, policyFlags)) {
+                return; // event was consumed by the filter
+            }
+            mLock.lock();
+        }
+        // Just enqueue a new motion event.
+        MotionEntry* newEntry = new MotionEntry(args->eventTime, args->deviceId,
+            args->source, policyFlags, args->action, args->actionButton,
+            args->flags, args->metaState, args->buttonState, args->edgeFlags,
+            args->xPrecision, args->yPrecision, args->downTime, args->displayId,
+            args->pointerCount, args->pointerProperties, args->pointerCoords, 0, 0);
+        // 将一个新的 MotionEvent 加入队列等待处理
+        needWake = enqueueInboundEventLocked(newEntry);
+        mLock.unlock();
+    } // release lock
+    if (needWake) {
+        // 需要唤醒时唤醒对端
+        mLooper->wake();
+    }
+}
+```
+
+## InputDispatcher
