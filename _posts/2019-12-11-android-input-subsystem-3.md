@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Android 事件分发：Java 层
+title: Android 输入子系统3：Java 层事件分发
 author: sleticalboy
 date: 2019-12-11 18:31:44
 category: android

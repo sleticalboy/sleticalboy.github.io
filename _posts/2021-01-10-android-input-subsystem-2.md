@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Android 事件分发：native 层
+title: Android 输入子系统2：native 事件分发
 author: sleticalboy
 date: 2021-01-10 20:40:13 +0800
 category: android
@@ -127,20 +127,6 @@ public void setView() {
 ```
 
 ## InputReader
-
-1、`InputReader::loopOnce()`
-```cpp
-void InputReader::loopOnce() {
-    // 1、从EventHub 获取事件，返回事件个数
-    size_t count = mEventHub->getEvents(timeout, mEventBuffer, event_buffer_size);
-    // 2、处理事件
-    if (count) {
-        processEventsLocked(mEventBuffer, count);
-    }
-    // 告诉 listener 开始干活
-    mQueuedListener->flush();
-}
-```
 
 2、`InputReader::processEventsLocked`
 ```cpp
