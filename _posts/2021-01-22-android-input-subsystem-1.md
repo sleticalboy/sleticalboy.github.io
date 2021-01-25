@@ -57,9 +57,58 @@ com_android_server_input_InputManagerService.cpp::nativeStart() ->
 
 ## inputflinger
 
-### `InputReader::loopOnce()`
+### EventHub 初始化 `EventHub::EventHub()`
 
-EventHub、InputReader、InputReaderThread
+```cpp
+EventHub::EventHub(void) :
+        mBuiltInKeyboardId(NO_BUILT_IN_KEYBOARD), mNextDeviceId(1),
+        mIRDeviceId(NO_IR_KEYBOARD), mControllerNumbers(),
+        mOpeningDevices(0), mClosingDevices(0),
+        mNeedToSendFinishedDeviceScan(false),
+        mNeedToReopenDevices(false), mNeedToScanDevices(true),
+        mPendingEventCount(0), mPendingEventIndex(0), mPendingINotify(false) {
+    acquire_wake_lock(PARTIAL_WAKE_LOCK, WAKE_LOCK_ID);
+    // 创建 epoll 对象
+    mEpollFd = epoll_create(EPOLL_SIZE_HINT);
+    // 创建 inotify 对象
+    mINotifyFd = inotify_init();
+    // 监听 /dev/path/ 目录的删除和创建事件，即输入设备的增删事件
+    // 当目录下的设备节点发生增删事件时，可已通过 read(fd) 获取事件的详细信息
+    int result = inotify_add_watch(mINotifyFd, "/dev/path", IN_DELETE | IN_CREATE);
+
+    struct epoll_event eventItem;
+    memset(&eventItem, 0, sizeof(eventItem));
+    eventItem.events = EPOLLIN; // 监听 write 事件
+    eventItem.data.u32 = EPOLL_ID_INOTIFY; // 自定义值
+    // 把 inotify 添加到 epoll 监听队列中，当 inotify 事件到来时，epoll_wait() 会
+    // 立即返回，EventHub 可以从 fd 中读取设备节点的增删信息并进行处理
+    result = epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mINotifyFd, &eventItem);
+
+    int wakeFds[2];
+    // 创建管道，fds[0] 表示管道的读端，fds[1] 表示管道的写端
+    result = pipe(wakeFds);
+    mWakeReadPipeFd = wakeFds[0];
+    mWakeWritePipeFd = wakeFds[1];
+    
+    // 设置唤醒读端为非阻塞式
+    result = fcntl(mWakeReadPipeFd, F_SETFL, O_NONBLOCK);
+    // 设置唤醒写端为非阻塞式
+    result = fcntl(mWakeWritePipeFd, F_SETFL, O_NONBLOCK);
+
+    eventItem.data.u32 = EPOLL_ID_WAKE;
+    // 把唤醒读端的 fd 添加到 epoll 监听队列中，目的是在必要时唤醒 reader 线程
+    result = epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mWakeReadPipeFd, &eventItem);
+}
+```
+
+以上代码：
+1、利用 inotify 机制去监听 /dev/input/ 目录下输入设备的移除或添加；
+2、当监听到设备增删时通过 epoll 通知EventHub::getEvents() 去读取 /dev/input/ 目录下
+所有设备，并产生原始事件
+
+### InputReader 一次执行 `InputReader::loopOnce()`
+
+EventHub、InputReader、InputReaderThread、InputMapper
 从 EventHub 读取事件
 预处理事件
 通知 dispatcher 进行分发
@@ -70,31 +119,47 @@ void InputReader::loopOnce() {
     size_t count = mEventHub->getEvents(timeout, mEventBuffer, EVENT_BUFFER_SIZE/*256*/);
     // 2、预处理事件
     if (count) processEventsLocked(mEventBuffer, count);
-    // 通知 dispatcher 进行分发
+    // 3、通知 dispatcher 进行分发
     mQueuedListener->flush();
 }
 ```
 
-1、从EventHub 获取事件，返回事件个数
+InputReaderThread 执行一次一共做了三件事：
+
+- 通过 getEvents() 从 EventHub 获取未处理的事件，这些事件分为两类：一类是原始输入事
+件即从设备节点中读取出的原始事件；一类是设备事件即输入设备可用性变化事件
+- 通过 processEventsLocked() 对事件进行预处理
+- 预处理之后通过 flush() 将事件交给 InputDispatcher 进行分发
+
+1、从 EventHub 获取事件并返回事件个数 `EventHub::getEvents()`
 
 ```cpp
 size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer,
     size_t bufferSize) {
-    // 获取锁，防止其他线程进入
     AutoMutex _l(mLock);
     struct input_event readBuffer[bufferSize]; // 数组长度为 256
+    // event 指针指向在 buffer 中下一个可用于存储事件的 RawEvent 结构体，每存储一个
+    // 事件，指针后移一个元素
     RawEvent* event = buffer; // buffer 长度为 256
     size_t capacity = bufferSize; // 数组剩余可以装入多少个元素
     bool awoken = false; // 是否需要唤醒 dispatcher 端
+    // 先将可用事件放入 buffer 中并返回，如没有可用事件则调用 epoll_wait() 等待事件
+    // 到来；事件到来后会重新执行循环
     for (;;) {
         nsecs_t now = systemTime(SYSTEM_TIME_MONOTONIC);
-        if (mNeedToReopenDevices) { // 如果需要重新打开设备则先关闭再打开
+        // ① 处理与设备相关的工作，包括：
+        // a、重新打开设备
+        // b、移除设备
+        // c、扫描设备
+        // d、新增设备
+        // e、扫描完成
+        if (mNeedToReopenDevices) { // a、如果需要重新打开设备则先关闭再打开
             mNeedToReopenDevices = false;
             closeAllDevicesLocked();
             mNeedToScanDevices = true;
             break; // return to the caller before we actually rescan
         }
-        while (mClosingDevices) { // 移除设备时会产生 DEVICE_REMOCED 事件
+        while (mClosingDevices) { // b、移除设备时会产生 DEVICE_REMOCED 事件
             Device* device = mClosingDevices;
             mClosingDevices = device->next;
             event->when = now;
@@ -105,12 +170,12 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer,
             mNeedToSendFinishedDeviceScan = true;
             if (--capacity == 0) break; // 如果缓冲区已满，则退出循环
         }
-        if (mNeedToScanDevices) { // 需要扫描设备并读取全部事件
+        if (mNeedToScanDevices) { // c、需要扫描设备并读取全部事件
             mNeedToScanDevices = false;
             scanDevicesLocked();
             mNeedToSendFinishedDeviceScan = true;
         }
-        while (mOpeningDevices != NULL) { // 添加设备会产生 DEVICE_ADD 事件
+        while (mOpeningDevices != NULL) { // d、添加设备会产生 DEVICE_ADD 事件
             Device* device = mOpeningDevices;
             mOpeningDevices = device->next;
             event->when = now;
@@ -120,6 +185,7 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer,
             mNeedToSendFinishedDeviceScan = true;
             if (--capacity == 0) break; // 如果缓冲区已满，则退出循环
         }
+         // e、扫描完成会产生 FINISHED_DEVICE_SCAN 事件
         if (mNeedToSendFinishedDeviceScan) {
             mNeedToSendFinishedDeviceScan = false;
             event->when = now;
@@ -127,109 +193,56 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer,
             event += 1;
             if (--capacity == 0) break; // 如果缓冲区已满，则退出循环
         }
-        // Grab the next input event.
+        // ② 处理未被 InputReader 取走的输入事件与设备事件
         bool deviceChanged = false;
         while (mPendingEventIndex < mPendingEventCount) {
+            // 取出 epoll 事件并根据事件类型做出相应处理
             const struct epoll_event& eventItem = mPendingEventItems[mPendingEventIndex++];
+            // inotify 事件，设置 mPendingINotify 为 true，后面根据此标记位读取
+            // notify fd 中的事件，执行加载或卸载设备的操作
             if (eventItem.data.u32 == EPOLL_ID_INOTIFY) {
                 if (eventItem.events & EPOLLIN) {
                     mPendingINotify = true;
-                } else {
-                    ALOGW("Received unexpected epoll event 0x%08x for INotify.", eventItem.events);
                 }
                 continue;
             }
-
+            // 管道读端有数据可读事件，则设置 awoken 为 true，后面会根据此标记跳出外
+            // 层循环，即无论 getEvents() 是否读到事件，都不调用 epoll_wait() 等待
             if (eventItem.data.u32 == EPOLL_ID_WAKE) {
                 if (eventItem.events & EPOLLIN) {
-                    ALOGV("awoken after wake()");
                     awoken = true;
                     char buffer[16];
                     ssize_t nRead;
                     do {
                         nRead = read(mWakeReadPipeFd, buffer, sizeof(buffer));
                     } while ((nRead == -1 && errno == EINTR) || nRead == sizeof(buffer));
-                } else {
-                    ALOGW("Received unexpected epoll event 0x%08x for wake read pipe.",
-                            eventItem.events);
                 }
                 continue;
             }
-
+            // eventItem.data.u32 字段存储的是设备 id
             ssize_t deviceIndex = mDevices.indexOfKey(eventItem.data.u32);
-            if (deviceIndex < 0) {
-                ALOGW("Received unexpected epoll event 0x%08x for unknown device id %d.",
-                        eventItem.events, eventItem.data.u32);
-                continue;
-            }
-
+            // 未知设备，跳过继续循环
+            if (deviceIndex < 0) continue;
             Device* device = mDevices.valueAt(deviceIndex);
             if (eventItem.events & EPOLLIN) {
+                // 从设备 fd 中读取原始事件
                 int32_t readSize = read(device->fd, readBuffer,
                         sizeof(struct input_event) * capacity);
+                // 返回 0 表示无事件，负数表示出错了
                 if (readSize == 0 || (readSize < 0 && errno == ENODEV)) {
                     // Device was removed before INotify noticed.
                     deviceChanged = true;
                     closeDeviceLocked(device);
                 } else if (readSize < 0) {
+                    // 出错了
                 } else if ((readSize % sizeof(struct input_event)) != 0) {
+                    // 事件不完整？
                 } else {
                     int32_t deviceId = device->id == mBuiltInKeyboardId ? 0 : device->id;
+                    // 准备遍历获取原始事件 input_event 并加工成 RawEvent
                     size_t count = size_t(readSize) / sizeof(struct input_event);
                     for (size_t i = 0; i < count; i++) {
                         struct input_event& iev = readBuffer[i];
-                        // Some input devices may have a better concept of the time
-                        // when an input event was actually generated than the kernel
-                        // which simply timestamps all events on entry to evdev.
-                        // This is a custom Android extension of the input protocol
-                        // mainly intended for use with uinput based device drivers.
-                        if (iev.type == EV_MSC) {
-                            if (iev.code == MSC_ANDROID_TIME_SEC) {
-                                device->timestampOverrideSec = iev.value;
-                                continue;
-                            } else if (iev.code == MSC_ANDROID_TIME_USEC) {
-                                device->timestampOverrideUsec = iev.value;
-                                continue;
-                            }
-                        }
-                        if (device->timestampOverrideSec || device->timestampOverrideUsec) {
-                            iev.time.tv_sec = device->timestampOverrideSec;
-                            iev.time.tv_usec = device->timestampOverrideUsec;
-                            if (iev.type == EV_SYN && iev.code == SYN_REPORT) {
-                                device->timestampOverrideSec = 0;
-                                device->timestampOverrideUsec = 0;
-                            }
-                        }
-
-                        // Use the time specified in the event instead of the current time
-                        // so that downstream code can get more accurate estimates of
-                        // event dispatch latency from the time the event is enqueued onto
-                        // the evdev client buffer.
-                        //
-                        // The event's timestamp fortuitously uses the same monotonic clock
-                        // time base as the rest of Android.  The kernel event device driver
-                        // (drivers/input/evdev.c) obtains timestamps using ktime_get_ts().
-                        // The systemTime(SYSTEM_TIME_MONOTONIC) function we use everywhere
-                        // calls clock_gettime(CLOCK_MONOTONIC) which is implemented as a
-                        // system call that also queries ktime_get_ts().
-                        event->when = nsecs_t(iev.time.tv_sec) * 1000000000LL
-                                + nsecs_t(iev.time.tv_usec) * 1000LL;
-
-                        // Bug 7291243: Add a guard in case the kernel generates timestamps
-                        // that appear to be far into the future because they were generated
-                        // using the wrong clock source.
-                        //
-                        // This can happen because when the input device is initially opened
-                        // it has a default clock source of CLOCK_REALTIME.  Any input events
-                        // enqueued right after the device is opened will have timestamps
-                        // generated using CLOCK_REALTIME.  We later set the clock source
-                        // to CLOCK_MONOTONIC but it is already too late.
-                        //
-                        // Invalid input event timestamps can result in ANRs, crashes and
-                        // and other issues that are hard to track down.  We must not let them
-                        // propagate through the system.
-                        //
-                        // Log a warning so that we notice the problem and recover gracefully.
                         if (event->when >= now + 10 * 1000000000LL) {
                             // Double-check.  Time may have moved on.
                             nsecs_t time = systemTime(SYSTEM_TIME_MONOTONIC);
@@ -245,74 +258,50 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer,
                         capacity -= 1;
                     }
                     if (capacity == 0) {
-                        // The result buffer is full.  Reset the pending event index
-                        // so we will try to read the device again on the next iteration.
+                        // 数组填充满了，跳出此次循环；下面会重置 mPendingEventIndex
+                        // 等下次循环再读取事件
                         mPendingEventIndex -= 1;
                         break;
                     }
                 }
             } else if (eventItem.events & EPOLLHUP) {
-                ALOGI("Removing device %s due to epoll hang-up event.",
-                        device->identifier.name.string());
                 deviceChanged = true;
                 closeDeviceLocked(device);
-            } else {
-                ALOGW("Received unexpected epoll event 0x%08x for device %s.",
-                        eventItem.events, device->identifier.name.string());
             }
         }
-
-        // readNotify() will modify the list of devices so this must be done after
-        // processing all other events to ensure that we read all remaining events
-        // before closing the devices.
+        // ③ 设备节点发生增删事件，将 deviceChanged 设为 true 并重新执行循环体
         if (mPendingINotify && mPendingEventIndex >= mPendingEventCount) {
             mPendingINotify = false;
             readNotifyLocked();
             deviceChanged = true;
         }
+        // 立即上报设备增删事件，从这里看增删事件的优先级是高于其他事件的
+        if (deviceChanged) continue;
 
-        // Report added or removed devices immediately.
-        if (deviceChanged) {
-            continue;
-        }
+        // 如果此次 getEvents() 成功获取了一些事件或者要求唤醒 InputReader，则退出
+        // 循环并结束此次调用，使 InputReader 可以立即处理事件
+        if (event != buffer || awoken) break;
 
-        // Return now if we have collected any events or if we were explicitly awoken.
-        if (event != buffer || awoken) {
-            break;
-        }
-
-        // Poll for events.  Mind the wake lock dance!
-        // We hold a wake lock at all times except during epoll_wait().  This works due to some
-        // subtle choreography.  When a device driver has pending (unread) events, it acquires
-        // a kernel wake lock.  However, once the last pending event has been read, the device
-        // driver will release the kernel wake lock.  To prevent the system from going to sleep
-        // when this happens, the EventHub holds onto its own user wake lock while the client
-        // is processing events.  Thus the system can only sleep if there are no events
-        // pending or currently being processed.
-        //
-        // The timeout is advisory only.  If the device is asleep, it will not wake just to
-        // service the timeout.
+        // ④ 若此次循环没有取到事件，则执行 epoll_wait() 等待事件到来，并将事件存储
+        // 到 mPendingEventItems 中且重置 mPendingEventIndex 为 0
         mPendingEventIndex = 0;
         mLock.unlock(); // release lock before poll, must be before release_wake_lock
-        release_wake_lock(WAKE_LOCK_ID);
+        // 释放电源锁
+        release_wake_lock(WAKE_LOCK_ID/*KeyEvents*/);
+        
+        // 调用 epoll_wait() 等待事件到来
         int pollResult = epoll_wait(mEpollFd, mPendingEventItems, EPOLL_MAX_EVENTS, timeoutMillis);
-        acquire_wake_lock(PARTIAL_WAKE_LOCK, WAKE_LOCK_ID);
+        // 获取电源锁，PARTIAL_WAKE_LOCK: 屏幕熄灭但 CPU 保持工作
+        acquire_wake_lock(PARTIAL_WAKE_LOCK, WAKE_LOCK_ID/*KeyEvents*/);
         mLock.lock(); // reacquire lock after poll, must be after acquire_wake_lock
-        if (pollResult == 0) {
-            // Timed out.
+        if (pollResult == 0) { // 没有取到事件，跳出循环
             mPendingEventCount = 0;
             break;
         }
-        if (pollResult < 0) {
-            // An error occurred.
+        if (pollResult < 0) { // 出错了
             mPendingEventCount = 0;
-            // Sleep after errors to avoid locking up the system.
-            // Hopefully the error is transient.
-            if (errno != EINTR) {
-                usleep(100000);
-            }
-        } else {
-            // Some events occurred.
+            if (errno != EINTR) usleep(100000);
+        } else { // 取到事件了，进入下次循环
             mPendingEventCount = size_t(pollResult);
         }
     }
@@ -321,10 +310,383 @@ size_t EventHub::getEvents(int timeoutMillis, RawEvent* buffer,
 }
 ```
 
-2、预处理事件
+通过 getEvents() 方法可以提取到以下关键信息：
+
+- mPendingEventItems 数组是一个 epoll 事件池，getEvents() 会优先从这个事件池中获取 
+epoll 事件处理，并将读取到的事件返回给调用者；
+- 当事件池无事件时，调用 epoll_wait() 等待事件到来并将事件存放到事件池中；
+- getEvents() 的过程其实可以看做是消费事件池中事件的过程；
+- 可将从 epoll_wait() 调用开始到将事件消费完毕的过程理解为 EventHub 的一个监听周期
+
+当有 inotify 事件可以从 ifd 中读取时会产生一个 epoll 事件，EventHub 就知道设备节点
+发生了增删操作。等事件池中的事件处理完毕之后，就会从 ifd 中读取 inotify 事件，进行设
+备的加载/卸载操作，然后生成对应的 RawEvent 机构提返回给调用者。
+
+getEvents() 包含原始事件读取、输入设备加载/卸载等操作
+
+2、预处理事件 `InputReader::processEventsLocked`
+
+InputReader::processEventsLocked() -> processEventsForDeviceLocked() -> 
+InputDevice::process() -> InputMapper::process()
+
+Device 结构体中：
+EV_KEY：按键类型事件
+EV_ABS：绝对坐标事件
+EV_REL：相对坐标事件
+EV_SW：开关类型事件
+
+```cpp
+void InputReader::processEventsLocked(const RawEvent* rawEvents, size_t count) {
+    // 遍历所有事件
+    for (const RawEvent* rawEvent = rawEvents; count;) {
+        int32_t type = rawEvent->type;
+        size_t batchSize = 1;
+        // 根据事件类型区分是增删事件还是原始输入事件
+        if (type < EventHubInterface::FIRST_SYNTHETIC_EVENT) {
+            int32_t deviceId = rawEvent->deviceId;
+            while (batchSize < count) {
+                if (rawEvent[batchSize].type >= EventHubInterface::FIRST_SYNTHETIC_EVENT
+                        || rawEvent[batchSize].deviceId != deviceId) {
+                    break;
+                }
+                batchSize += 1;
+            }
+            // 批处理某一设备的一批事件
+            processEventsForDeviceLocked(deviceId, rawEvent, batchSize);
+        } else { // 设备的增删事件
+            switch (rawEvent->type) {
+            case EventHubInterface::DEVICE_ADDED:
+                addDeviceLocked(rawEvent->when, rawEvent->deviceId);
+                break;
+            case EventHubInterface::DEVICE_REMOVED:
+                removeDeviceLocked(rawEvent->when, rawEvent->deviceId);
+                break;
+            case EventHubInterface::FINISHED_DEVICE_SCAN:
+                handleConfigurationChangedLocked(rawEvent->when);
+                break;
+            default:
+                ALOG_ASSERT(false); // can't happen
+                break;
+            }
+        }
+        count -= batchSize;
+        rawEvent += batchSize;
+    }
+}
+```
+
+```cpp
+void InputReader::processEventsForDeviceLocked(int32_t deviceId,
+    const RawEvent* rawEvents, size_t count) {
+    // 根据 deviceId 找到 index
+    ssize_t deviceIndex = mDevices.indexOfKey(deviceId);
+    if (deviceIndex < 0) return;
+    // 根据 index 获取 Device 对象
+    InputDevice* device = mDevices.valueAt(deviceIndex);
+    if (device->isIgnored()) return;
+    // 调用 Device::process() 处理事件
+    device->process(rawEvents, count);
+}
+```
+
+```cpp
+void InputDevice::process(const RawEvent* rawEvents, size_t count) {
+    size_t numMappers = mMappers.size();
+    for (const RawEvent* rawEvent = rawEvents; count != 0; rawEvent++) {
+        // ... 其他处理
+        for (size_t i = 0; i < numMappers; i++) {
+            // mMappers 是 InputDevice 中的一个 list
+            InputMapper* mapper = mMappers[i];
+            // 调用 InputMapper 处理 事件
+            mapper->process(rawEvent);
+        }
+        --count;
+    }
+}
+```
+
+通过 InputMapper 处理后的事件就可以提交给 InputDispatcher 来进行分发了
 
 3、通知 dispatcher 进行分发
 
-### ### `InputDispatcher::dispatchOnce()`
+执行完 `mQueuedListener->flush()` 后，工作重心将从 InputReader 转移到 InputDispatcher
+
+这是为什么呢？看下面：
+```cpp
+// InputManager 实例化时
+mDispatcher = new InputDispatcher(dispatcherPolicy);
+mReader = new InputReader(eventHub, readerPolicy, mDispatcher/*listener*/);
+// InputReader 实例化时
+mQueuedListener = new QueuedInputListener(listener/*mDispatcher*/);
+// QueuedInputListener 实例化时
+mInnerListener = innerListener/*mDispatcher*/;
+
+// 所以 mQueuedLister->flush() ->
+void QueuedInputListener::flush() {
+    size_t count = mArgsQueue.size();
+    for (size_t i = 0; i < count; i++) {
+        NotifyArgs* args = mArgsQueue[i];
+        // mInnerListeren 即 mDispatcher
+        args->notify(mInnerListener);
+        delete args;
+    }
+    mArgsQueue.clear();
+}
+```
+
+NotifyArgs 有多个子类，会注意尝试让子类就行处理，如果不满足子类约定的事件类型则会立即
+尝试下一个子类来处理：notifyConfigurationChanged、notifyKey、notifyMotion、notifySwitch、notifyDeviceReset
+
+
+## InputDispatcher
+
 InputDispatcher、InputDispatcherThread、InputChannel
-InputMapper
+
+### `InputDispatcher::notifyMotion()`
+
+```cpp
+void InputDispatcher::notifyMotion(const NotifyMotionArgs* args) {
+    // 校验事件是否合法，若果非法则直接返回
+    if (!validateMotionEvent(args->action, args->actionButton,
+            args->pointerCount, args->pointerProperties)) return;
+
+    uint32_t policyFlags = args->policyFlags;
+    policyFlags |= POLICY_FLAG_TRUSTED;
+
+    android::base::Timer t;
+    // mPolicy 的实际执行者是 Java 层的 PhoneWindowManager，其实现了WindowManagerPolicy 接口
+    mPolicy->interceptMotionBeforeQueueing(args->eventTime, /*byref*/ policyFlags);
+    if (t.duration() > SLOW_INTERCEPTION_THRESHOLD) {
+        // 方法执行时长超过 50ms 则打印一条 W 级别的警告日志
+    }
+
+    bool needWake;
+    { // acquire lock
+        mLock.lock();
+
+        if (shouldSendMotionToInputFilterLocked(args)) {
+            mLock.unlock();
+
+            MotionEvent event;
+            // 将 MotionEntry 转化成一个 MotionEvent 对象
+            event.initialize(...);
+
+            policyFlags |= POLICY_FLAG_FILTERED;
+            // 转发给 Java 层去执行，返回 true 表示事件未被修改需要继续向下传递
+            // 返回 false 表示事件被消费了，不需要向下传递
+            if (!mPolicy->filterInputEvent(&event, policyFlags)) {
+                return; // event was consumed by the filter
+            }
+
+            mLock.lock();
+        }
+
+        // 使用 NotifyMotionArgs 创建一个新的 MotionEntry 对象并放入派发队列中
+        MotionEntry* newEntry = new MotionEntry(...);
+        needWake = enqueueInboundEventLocked(newEntry);
+        mLock.unlock();
+    } // release lock
+    // 唤醒 dispatcher 线程
+    if (needWake) mLooper->wake();
+}
+```
+
+事件入队 `enqueueInboundEventLocked()`
+
+```cpp
+bool InputDispatcher::enqueueInboundEventLocked(EventEntry* entry) {
+    // 队列为空，表示 dispatcher 线程处于休眠状态，需要唤醒
+    bool needWake = mInboundQueue.isEmpty();
+    // 将事件放到队尾
+    mInboundQueue.enqueueAtTail(entry);
+    // ...
+    return needWake;
+}
+```
+
+mInboundQueue 为空时，dispatcher 线程将进入休眠状态
+
+### InputDispatcher dispatch 线程循环
+
+```cpp
+void InputDispatcher::dispatchOnce() {
+    nsecs_t nextWakeupTime = LONG_LONG_MAX;
+    { // acquire lock
+        AutoMutex _l(mLock);
+        mDispatcherIsAliveCondition.broadcast();
+        // 通过 dispatchOnceInnerLocked 进行事件分发，nextWakeupTime 表示下次分发
+        // 执行的时间
+        if (!haveCommandsLocked()) {
+            dispatchOnceInnerLocked(&nextWakeupTime);
+        }
+        // 执行队列中的命令
+        if (runCommandsLockedInterruptible()) {
+            // 当把 nextWakeupTime 设置为 LONG_LONG_MIN 时将立即开始下次分发
+            nextWakeupTime = LONG_LONG_MIN;
+        }
+    } // release lock
+
+    // 如果有必要，让分发线程陷入休眠状态，由 nextWakeupTime 来指定休眠时间
+    nsecs_t currentTime = now();
+    int timeoutMillis = toMillisecondTimeoutDelay(currentTime, nextWakeupTime);
+    // pollOnce() 的本质就是 epoll_wait()
+    mLooper->pollOnce(timeoutMillis);
+}
+```
+
+```cpp
+void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
+    nsecs_t currentTime = now();
+
+    // Reset the key repeat timer whenever normal dispatch is suspended while the
+    // device is in a non-interactive state.  This is to ensure that we abort a key
+    // repeat if the device is just coming out of sleep.
+    if (!mDispatchEnabled) {
+        resetKeyRepeatLocked();
+    }
+
+    // If dispatching is frozen, do not process timeouts or try to deliver any new events.
+    if (mDispatchFrozen) {
+        return;
+    }
+
+    // Optimize latency of app switches.
+    // Essentially we start a short timeout when an app switch key (HOME / ENDCALL) has
+    // been pressed.  When it expires, we preempt dispatch and drop all other pending events.
+    bool isAppSwitchDue = mAppSwitchDueTime <= currentTime;
+    if (mAppSwitchDueTime < *nextWakeupTime) {
+        *nextWakeupTime = mAppSwitchDueTime;
+    }
+
+    // Ready to start a new event.
+    // If we don't already have a pending event, go grab one.
+    if (! mPendingEvent) {
+        if (mInboundQueue.isEmpty()) {
+            if (isAppSwitchDue) {
+                // The inbound queue is empty so the app switch key we were waiting
+                // for will never arrive.  Stop waiting for it.
+                resetPendingAppSwitchLocked(false);
+                isAppSwitchDue = false;
+            }
+
+            // Synthesize a key repeat if appropriate.
+            if (mKeyRepeatState.lastKeyEntry) {
+                if (currentTime >= mKeyRepeatState.nextRepeatTime) {
+                    mPendingEvent = synthesizeKeyRepeatLocked(currentTime);
+                } else {
+                    if (mKeyRepeatState.nextRepeatTime < *nextWakeupTime) {
+                        *nextWakeupTime = mKeyRepeatState.nextRepeatTime;
+                    }
+                }
+            }
+
+            // Nothing to do if there is no pending event.
+            if (!mPendingEvent) {
+                return;
+            }
+        } else {
+            // Inbound queue has at least one entry.
+            mPendingEvent = mInboundQueue.dequeueAtHead();
+            traceInboundQueueLengthLocked();
+        }
+
+        // Poke user activity for this event.
+        if (mPendingEvent->policyFlags & POLICY_FLAG_PASS_TO_USER) {
+            pokeUserActivityLocked(mPendingEvent);
+        }
+
+        // Get ready to dispatch the event.
+        resetANRTimeoutsLocked();
+    }
+
+    // Now we have an event to dispatch.
+    // All events are eventually dequeued and processed this way, even if we intend to drop them.
+    ALOG_ASSERT(mPendingEvent != NULL);
+    bool done = false;
+    DropReason dropReason = DROP_REASON_NOT_DROPPED;
+    if (!(mPendingEvent->policyFlags & POLICY_FLAG_PASS_TO_USER)) {
+        dropReason = DROP_REASON_POLICY;
+    } else if (!mDispatchEnabled) {
+        dropReason = DROP_REASON_DISABLED;
+    }
+
+    if (mNextUnblockedEvent == mPendingEvent) {
+        mNextUnblockedEvent = NULL;
+    }
+
+    switch (mPendingEvent->type) {
+    case EventEntry::TYPE_CONFIGURATION_CHANGED: {
+        ConfigurationChangedEntry* typedEntry =
+                static_cast<ConfigurationChangedEntry*>(mPendingEvent);
+        done = dispatchConfigurationChangedLocked(currentTime, typedEntry);
+        dropReason = DROP_REASON_NOT_DROPPED; // configuration changes are never dropped
+        break;
+    }
+
+    case EventEntry::TYPE_DEVICE_RESET: {
+        DeviceResetEntry* typedEntry =
+                static_cast<DeviceResetEntry*>(mPendingEvent);
+        done = dispatchDeviceResetLocked(currentTime, typedEntry);
+        dropReason = DROP_REASON_NOT_DROPPED; // device resets are never dropped
+        break;
+    }
+
+    case EventEntry::TYPE_KEY: {
+        KeyEntry* typedEntry = static_cast<KeyEntry*>(mPendingEvent);
+        if (isAppSwitchDue) {
+            if (isAppSwitchKeyEventLocked(typedEntry)) {
+                resetPendingAppSwitchLocked(true);
+                isAppSwitchDue = false;
+            } else if (dropReason == DROP_REASON_NOT_DROPPED) {
+                dropReason = DROP_REASON_APP_SWITCH;
+            }
+        }
+        if (dropReason == DROP_REASON_NOT_DROPPED
+                && isStaleEventLocked(currentTime, typedEntry)) {
+            dropReason = DROP_REASON_STALE;
+        }
+        if (dropReason == DROP_REASON_NOT_DROPPED && mNextUnblockedEvent) {
+            dropReason = DROP_REASON_BLOCKED;
+        }
+        done = dispatchKeyLocked(currentTime, typedEntry, &dropReason, nextWakeupTime);
+        break;
+    }
+
+    case EventEntry::TYPE_MOTION: {
+        MotionEntry* typedEntry = static_cast<MotionEntry*>(mPendingEvent);
+        if (dropReason == DROP_REASON_NOT_DROPPED && isAppSwitchDue) {
+            dropReason = DROP_REASON_APP_SWITCH;
+        }
+        if (dropReason == DROP_REASON_NOT_DROPPED
+                && isStaleEventLocked(currentTime, typedEntry)) {
+            dropReason = DROP_REASON_STALE;
+        }
+        if (dropReason == DROP_REASON_NOT_DROPPED && mNextUnblockedEvent) {
+            dropReason = DROP_REASON_BLOCKED;
+        }
+        done = dispatchMotionLocked(currentTime, typedEntry,
+                &dropReason, nextWakeupTime);
+        break;
+    }
+
+    default:
+        ALOG_ASSERT(false);
+        break;
+    }
+
+    if (done) {
+        if (dropReason != DROP_REASON_NOT_DROPPED) {
+            dropInboundEventLocked(mPendingEvent, dropReason);
+        }
+        mLastDropReason = dropReason;
+
+        releasePendingEventLocked();
+        *nextWakeupTime = LONG_LONG_MIN;  // force next poll to wake up immediately
+    }
+}
+```
+
+
+## 参考资料
+
+[《深入理解Android卷3（张大伟）第5章：深入理解 Android 输入系统》]()
