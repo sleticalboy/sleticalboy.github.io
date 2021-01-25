@@ -7,6 +7,8 @@ category: linux
 tags: [technology]
 ---
 
+一次监听多个 fd 的可读/可写状态
+
 ## 基本概念
 
 epoll：是一种 I/O 时间通信机制，是 Linux 内核实现 IO 多路复用的一种方式。
@@ -100,8 +102,9 @@ struct epoll_event {
 
 等待监听的事件到来，返回值表示到来事件的个数，返回的事件存储在 events 数组中
 
-当此方法调用时，观察 eventpoll->rdllist 链表中是否有数据即可，有数据就返回无数据则休
-眠，等 timeout 事件到后即使链表没数据也返回，因此 epoll_wait 是高效的
+当此方法调用时，观察 eventpoll->rdllist 链表中是否有数据即可，有数据就返回无数据则陷
+入等待状态，等 timeout 事件到后即使链表没数据也返回，因此 epoll_wait 是高效的
+
 
 ## 触发机制
 
@@ -114,12 +117,16 @@ struct epoll_event {
 
 2、边缘触发：edge trigger（ET）
 
-读：缓冲区由不可读变为可读（空->非空）、有新数据到达时、缓冲区有数据可读且使用 EPOLL_CTL_MODE 修改 EPOLLIN 事件时
-写：缓冲区由不可写变为可写（满->非满）、旧数据被送走时、缓冲区有空间可写且使用 EPOLL_CTL_MODE 修改 EPOLLOUT 事件时
+读：缓冲区由不可读变为可读（空->非空）、有新数据到达时、缓冲区有数据可读且使用 
+EPOLL_CTL_MODE 修改 EPOLLIN 事件时
+写：缓冲区由不可写变为可写（满->非满）、旧数据被送走时、缓冲区有空间可写且使用 
+EPOLL_CTL_MODE 修改 EPOLLOUT 事件时
 
-即：只有数据到来才触发，不管缓冲区中是否有数据，缓冲区剩余未读尽的数据不会导致 epoll_wait() 返回
+即：只有数据到来才触发，不管缓冲区中是否有数据，缓冲区剩余未读尽的数据不会导致 
+epoll_wait() 返回
 
-通过上面的对比，ET 模式的效率是高于 LT 模式的，但不知为何 epoll 默认的工作模式是 LT 模式
+通过上面的对比，ET 模式的效率是高于 LT 模式的，但不知为何 epoll 默认的工作模式是 LT 
+模式
 
 ## epoll 与 select 和 poll 对比
 
