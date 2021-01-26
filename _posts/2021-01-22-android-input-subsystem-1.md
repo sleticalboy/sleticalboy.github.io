@@ -560,7 +560,7 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
 
     // Ready to start a new event.
     // If we don't already have a pending event, go grab one.
-    if (! mPendingEvent) {
+    if (!mPendingEvent) {
         if (mInboundQueue.isEmpty()) {
             if (isAppSwitchDue) {
                 // The inbound queue is empty so the app switch key we were waiting
@@ -580,14 +580,13 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
                 }
             }
 
-            // Nothing to do if there is no pending event.
+            // 队列为空
             if (!mPendingEvent) {
                 return;
             }
         } else {
-            // Inbound queue has at least one entry.
+            // 取出队列头
             mPendingEvent = mInboundQueue.dequeueAtHead();
-            traceInboundQueueLengthLocked();
         }
 
         // Poke user activity for this event.
@@ -601,7 +600,6 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
 
     // Now we have an event to dispatch.
     // All events are eventually dequeued and processed this way, even if we intend to drop them.
-    ALOG_ASSERT(mPendingEvent != NULL);
     bool done = false;
     DropReason dropReason = DROP_REASON_NOT_DROPPED;
     if (!(mPendingEvent->policyFlags & POLICY_FLAG_PASS_TO_USER)) {
@@ -613,74 +611,28 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
     if (mNextUnblockedEvent == mPendingEvent) {
         mNextUnblockedEvent = NULL;
     }
-
-    switch (mPendingEvent->type) {
-    case EventEntry::TYPE_CONFIGURATION_CHANGED: {
-        ConfigurationChangedEntry* typedEntry =
-                static_cast<ConfigurationChangedEntry*>(mPendingEvent);
-        done = dispatchConfigurationChangedLocked(currentTime, typedEntry);
-        dropReason = DROP_REASON_NOT_DROPPED; // configuration changes are never dropped
-        break;
-    }
-
-    case EventEntry::TYPE_DEVICE_RESET: {
-        DeviceResetEntry* typedEntry =
-                static_cast<DeviceResetEntry*>(mPendingEvent);
-        done = dispatchDeviceResetLocked(currentTime, typedEntry);
-        dropReason = DROP_REASON_NOT_DROPPED; // device resets are never dropped
-        break;
-    }
-
-    case EventEntry::TYPE_KEY: {
-        KeyEntry* typedEntry = static_cast<KeyEntry*>(mPendingEvent);
-        if (isAppSwitchDue) {
-            if (isAppSwitchKeyEventLocked(typedEntry)) {
-                resetPendingAppSwitchLocked(true);
-                isAppSwitchDue = false;
-            } else if (dropReason == DROP_REASON_NOT_DROPPED) {
+    if (mPendingEvent->type == EventEntry::TYPE_MOTION) {
+        MotionEntry* typedEntry = static_cast<MotionEntry*>(mPendingEvent);
+            if (dropReason == DROP_REASON_NOT_DROPPED && isAppSwitchDue) {
                 dropReason = DROP_REASON_APP_SWITCH;
             }
-        }
-        if (dropReason == DROP_REASON_NOT_DROPPED
-                && isStaleEventLocked(currentTime, typedEntry)) {
-            dropReason = DROP_REASON_STALE;
-        }
-        if (dropReason == DROP_REASON_NOT_DROPPED && mNextUnblockedEvent) {
-            dropReason = DROP_REASON_BLOCKED;
-        }
-        done = dispatchKeyLocked(currentTime, typedEntry, &dropReason, nextWakeupTime);
-        break;
-    }
-
-    case EventEntry::TYPE_MOTION: {
-        MotionEntry* typedEntry = static_cast<MotionEntry*>(mPendingEvent);
-        if (dropReason == DROP_REASON_NOT_DROPPED && isAppSwitchDue) {
-            dropReason = DROP_REASON_APP_SWITCH;
-        }
-        if (dropReason == DROP_REASON_NOT_DROPPED
-                && isStaleEventLocked(currentTime, typedEntry)) {
-            dropReason = DROP_REASON_STALE;
-        }
-        if (dropReason == DROP_REASON_NOT_DROPPED && mNextUnblockedEvent) {
-            dropReason = DROP_REASON_BLOCKED;
-        }
-        done = dispatchMotionLocked(currentTime, typedEntry,
-                &dropReason, nextWakeupTime);
-        break;
-    }
-
-    default:
-        ALOG_ASSERT(false);
-        break;
-    }
-
-    if (done) {
+            if (dropReason == DROP_REASON_NOT_DROPPED
+                    && isStaleEventLocked(currentTime, typedEntry)) {
+                dropReason = DROP_REASON_STALE;
+            }
+            if (dropReason == DROP_REASON_NOT_DROPPED && mNextUnblockedEvent) {
+                dropReason = DROP_REASON_BLOCKED;
+            }
+            done = dispatchMotionLocked(currentTime, typedEntry,
+                    &dropReason, nextWakeupTime);
+    }// ...
+    if (done) { // 分发完成，准备分发下一个事件
         if (dropReason != DROP_REASON_NOT_DROPPED) {
             dropInboundEventLocked(mPendingEvent, dropReason);
         }
         mLastDropReason = dropReason;
-
         releasePendingEventLocked();
+        // 立即唤醒分发线程
         *nextWakeupTime = LONG_LONG_MIN;  // force next poll to wake up immediately
     }
 }
