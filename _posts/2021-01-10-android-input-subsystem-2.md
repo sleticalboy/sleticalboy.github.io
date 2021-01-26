@@ -260,3 +260,55 @@ void InputDispatcher::notifyMotion(const NotifyMotionArgs* args) {
 ```
 
 ## InputDispatcher
+
+
+### native 事件分发
+
+---> native 层
+InputDispatcherThread::threadLoop() ->
+InputDispatcher::dispatchOnce() -> dispatchOnceInnerLocked() ->
+dispatchMotionLocked() -> findTouchedWindowTargetsLocked() ->
+dispatchEventLocked() -> prepareDispatchCycleLocked() ->
+startDispatchCycleLocked() ->
+InputPublisher::publishMotionEvent() ->
+InputChannel::sendMessage(InputMessage msg) -> 通过 socket 将 msg 发送给接收端
+
+所以要弄清接收端是谁？
+
+---> Java 层，Activity 启动时：
+ActivityThread#handleResumeActivity() ->
+WindowManagerImpl#addView() ->
+WindowManagerGlobal#addView() ->
+ViewRootImpl#setView() ->
+Session#addToDisplay() ->
+WMS#addWindow() ->
+WindowState#openInputChannel() ->
+InputChannel#openInputChannelPair() -> nativeOpenInputChannelPair() ->
+---> jni 层
+android_view_InputChannel.cpp::android_view_InputChannel_nativeOpenInputChannelPair() ->
+InputTransport.cpp::InputChannel::openInputChannelPair() -> [0] server [1]client
+
+最终被保存到 ViewRootImpl#mInputChannel 中，而 ViewRootImpl$WindowInputEventReceiver
+是用 ViewRootImpl#mInputChannel 来初始化的，所以：
+--> 接收端：ViewRootImpl$WindowInputEventReceiver
+
+---> java 层
+WindowInputEventReceiver#<init> -> 
+InputEventReceiver#<init> -> nativeInit(inputChannel) ->
+---> jni 层
+NativeInputEventReceiver(inputChannel) 根据 channel 创建 InputConsumer，同时：
+initialize() -> mMessageQueue->getLooper()->addFd(channel->getFd(), events = ALOOPER_EVENT_INPUT)，
+而其本身又实现了 LooperCallback，所以当监听的 channel->getFd() 有变化时，会回
+调 handleEvent()，即：
+NativeInputEventReceiver::handleEvent() -> consumeEvents() ->
+--> Java 层
+InputEventReceiver#dispatchBatchedInputEventPending() 或者
+InputEventReceiver#dispatchInputEvent()
+
+-> ViewRootImpl#doProcessInputEvents() -> deliverInputEvent()
+在 ViewRootImpl 中使用 InputStage 责任链的方式对 native 层中发送过来的事件进行分发
+最终是通过 ViewPostImeInputStage 将事件传递到 View 层级中的
+
+ViewPostImeInputStage#onProcess() -> processGenericMotionEvent() ->
+mView.dispatchGenericMotionEvent(event)（这里的 mView 就是 DecorView，View 树的根）->
+Window.Callback#dispatchGenericMotionEvent()，Callback 的实际实现是 Activity 或者 Dialog
