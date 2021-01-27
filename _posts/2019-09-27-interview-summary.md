@@ -64,7 +64,7 @@ tags: [android]
 // 
 ```
 
-### [Service](/posts/Service)
+### [Service](/android/2019/09/27/service/)
 
 ### BroadcastReceiver
 
@@ -78,9 +78,9 @@ tags: [android]
     public Cursor query() {}
     ```
 
-### [Fragment](/posts/Fragment)
+### [Fragment](/android/2019/09/27/fragment/)
 
-### [Handler 机制理解](/posts/Handler机制)
+### [Handler 机制理解](/android/2019/09/02/handler/)
 
 ### View
 - 事件分发流程
