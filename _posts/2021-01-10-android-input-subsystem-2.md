@@ -309,6 +309,21 @@ InputEventReceiver#dispatchInputEvent()
 在 ViewRootImpl 中使用 InputStage 责任链的方式对 native 层中发送过来的事件进行分发
 最终是通过 ViewPostImeInputStage 将事件传递到 View 层级中的
 
-ViewPostImeInputStage#onProcess() -> processGenericMotionEvent() ->
+ViewPostImeInputStage#onProcess() -> 在这里会对输入事件进行分类处理：
+-> KeyEvent：processKeyEvent()
+-> InputDevice.SOURCE_CLASS_POINTER：processPointerEvent()
+-> InputDevice.SOURCE_CLASS_TRACKBALL：processTrackballEvent()
+-> 其他：processGenericMotionEvent() -> 这里我们先看其他事件
 mView.dispatchGenericMotionEvent(event)（这里的 mView 就是 DecorView，View 树的根）->
 Window.Callback#dispatchGenericMotionEvent()，Callback 的实际实现是 Activity 或者 Dialog
+
+最终当事件处理完毕后：ViewRootImpl#finishInputEvent() -> 分为以下 case：
+①-> ViewRootImpl 自己产生的事件：Java 层回收（KeyEvent 和 MotionEvent）
+②-> 来自 InputEventReceiver 的事件：InputEventReceiver#finishInputEvent() -> 
+---> native 层
+android_view_InputEventReceiver.cpp::nativeFinishInputEvent() ->
+NativeInputEventReceiver::finishInputEvent() ->
+InputTransport.cpp::InputConsumer::sendFinishedSignal() -> 
+sendUnchainedFinishedSignal() -> 
+InputChannel::sendMessage(InputMessage/**InputMessage::TYPE_FINISHED**/) ->
+通过 socket::send(fd, msg) 的形式反馈给 InputDispatcher
