@@ -13,7 +13,7 @@ tags: [java]
 
 ## [设计模式](/assets/java/设计模式.svg)
 
-## [socket](/posts/java-socket)
+## [socket](/java/2020/12/02/java-socket)
 
-## [多线程](/posts/multi-thread-and-concurrence)
+## [多线程](/java/2020/11/26/multi-thread-and-concurrence)
 
