@@ -1,9 +1,9 @@
 ---
 layout: post
-title: install-vim-from-source
+title: Ubuntu 下通过源码安装 vim
 author: sleticalboy
 date: 2020-11-27 11:04:11
-category: tools
+category: linux
 tags: [linux, tools]
 ---
 

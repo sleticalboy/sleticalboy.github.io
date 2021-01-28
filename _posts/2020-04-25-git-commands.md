@@ -1,13 +1,11 @@
 ---
 layout: post
-title: common-commands
+title: git 常用命令
 author: sleticalboy
 date: 2020-04-25 11:29:23
 category: git
 tags: [git]
 ---
-
-# git 常用命令
 
 - 将本地库和远端库关联
 

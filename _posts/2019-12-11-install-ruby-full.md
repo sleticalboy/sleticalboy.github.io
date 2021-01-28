@@ -1,6 +1,6 @@
 ---
 layout: post
-title: install ruby-full on Ubuntu 18.04
+title: Ubuntu 下安装 ruby-full
 author: sleticalboy
 date: 2019-12-11 18:31:44
 category: linux

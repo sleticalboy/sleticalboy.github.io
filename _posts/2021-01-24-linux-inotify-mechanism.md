@@ -3,8 +3,8 @@ layout: post
 title: linux inotify 机制
 author: sleticalboy
 date: 2021-01-24 21:08:41 +0800
-category: articale
-tags: [technology]
+category: linux
+tags: [linux]
 ---
 
 ## 基本描述

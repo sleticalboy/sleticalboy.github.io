@@ -1,6 +1,6 @@
 ---
 layout: post
-title: install-nodejs-via-binary-archive
+title: Ubuntu 下通过源码安装 nodejs
 author: sleticalboy
 date: 2019-10-09 17:12:23
 category: linux

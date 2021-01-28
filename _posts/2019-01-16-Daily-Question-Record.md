@@ -1,9 +1,9 @@
 ---
 layout: post
-title: Daily Question Record
+title: 日常问题记录
 author: sleticalboy
 date: 2019-01-16 23:21:15
-category: daily
+category: android
 tags: [android, java]
 ---
 

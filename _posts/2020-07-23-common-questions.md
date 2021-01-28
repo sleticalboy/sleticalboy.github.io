@@ -1,6 +1,6 @@
 ---
 layout: post
-title: common-questions
+title: git 常见问题
 author: sleticalboy
 date: 2020-07-23 10:33:08
 category: git

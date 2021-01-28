@@ -1,10 +1,10 @@
 ---
 layout: post
-title: install-ycmd
+title: Ubuntu 下安装 ycmd
 author: sleticalboy
 date: 2020-11-26 09:41:22
-category: tools
-tags: [linux]
+category: linux
+tags: [linux, tools]
 ---
 
 # Ubuntu 18.04 安装 ycm

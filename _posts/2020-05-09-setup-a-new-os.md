@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 新安装的系统需要安装的常用软件
+title: Ubuntu 新系统常用软件安装
 author: sleticalboy
 date: 2020-05-09 09:28:36
 category: linux

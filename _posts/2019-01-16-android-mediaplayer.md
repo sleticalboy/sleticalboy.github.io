@@ -1,15 +1,14 @@
 ---
 layout: post
-title: ch01-MediaPlayer
+title: Android 系统的 MediaPlayer
 author: sleticalboy
 date: 2019-01-16 23:21:15
 category: book
-tags: [android, framework, media]
+tags: [book, android]
 ---
 
-# Android 系统的 MediaPlayer
-
 ## 状态图及生命周期
+
 - 正常流程
   - idle：空闲状态
     > 调用了 reset() 方法

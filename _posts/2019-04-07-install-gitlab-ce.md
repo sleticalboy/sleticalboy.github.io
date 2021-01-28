@@ -1,6 +1,6 @@
 ---
 layout: post
-title: install-gitlab-ce
+title: Ubuntu 下安装 gitlab ce
 author: sleticalboy
 date: 2019-04-07 12:39:14
 category: linux
