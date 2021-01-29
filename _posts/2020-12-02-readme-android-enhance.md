@@ -1,19 +1,19 @@
 ---
 layout: post
-title: android-enhance-README
+title: Android 开发高手课索引
 author: sleticalboy
 date: 2020-12-02 02:19:11
 category: book
-tags: [android]
+tags: [book, android]
 ---
 
-# android 开发高手课
+# Android 开发高手课
 > 专栏： Android 开发高手课 <br/>
 > 讲师：张邵文 前微信高级工程师，Tinker 负责人 <br/>
 > 课后作业地址: https://github.com/AndroidAdvanceWithGeektime
 
 ### 一、高质量开发
-- [崩溃](/posts/01-app-crash)
+- [崩溃](/book/2019/01/20/android-enhance-01-app-crash/)
 - 内存
   - 4G 时代的内存优化
   - 从哪里着手
@@ -39,5 +39,6 @@ tags: [android]
 - apk 体积
 
 ### 二、高效开发
+
 ### 三、架构演进
 

@@ -1,6 +1,6 @@
 ---
 layout: post
-title: 应用崩溃
+title: Android 应用崩溃
 author: sleticalboy
 date: 2019-01-20 15:50:20
 category: book

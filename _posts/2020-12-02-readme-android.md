@@ -1,19 +1,17 @@
 ---
 layout: post
-title: android-README
+title: Android 知识体系索引
 author: sleticalboy
 date: 2020-12-02 02:19:11
-category: android
-tags: [android]
+category: book
+tags: [book, android]
 ---
 
-# Android 知识体系
-
 ## AOSP 基础
-- [源码下载并编译](/posts/compile-source-code)
-- [编译结果输出](/posts/build-aosp)
-- [编译导入 ide 所需的文件](/posts/build-idegen-jar)
-- [分支管理](/posts/checkout-branch)
+- [源码下载并编译](/android/2019/12/12/aosp-compile-source-code/)
+- [AOSP 编译系统、工具](/aosp/2019/01/21/build-aosp/)
+- [编译导入 ide 所需的文件](/aosp/2019/01/21/build-idegen-jar/)
+- [分支管理](/aosp/2019/07/15/aosp-checkout-branch/)
 
 ## framework 层
 - [面试总结](/posts/面试总结)
@@ -45,7 +43,14 @@ tags: [android]
 - [蓝牙概述](/posts/bluetooth)
 
 ## 驱动子模块
-- [uevent](/posts/uevent)
+- [Android 中的 uevent](/android/2020/07/03/uevent)
+
+## 输入系统子模块
+- [InputManagerService]()
+- [EventHub]()
+- [InputReader]()
+- [InputDispatcher]()
+- [InputChannel]()
 
 ## anr 原理
 - [anr 案例](/posts/binder-settings-anr)

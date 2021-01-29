@@ -1,13 +1,13 @@
 ---
 layout: post
-title: java-36-core-README
+title: java 核心 36 讲
 author: sleticalboy
 date: 2020-12-02 02:19:11
 category: book
-tags: [java-36-core]
+tags: [book, java-core]
 ---
 
-## java 核心 36 讲
+## Java 核心 36 讲
 > 专栏： Java 核心技术 **36** 讲 <br/>
 > 讲师：杨晓峰 前 Oracle 首席工程师
 
@@ -20,7 +20,7 @@ tags: [java-36-core]
 - Vector、ArrayList 和 LinkedList
 - HashTable、HashMap 和 TreeMap
 - 集合线程安全、ConcurrentHashMap
-- [java 中的 io 方式](/posts/IO)
+- [java 中的 io 方式](/java/2020/12/12/java-nio/)
 - 文件拷贝
 - 接口和抽象类
 - 设计模式
