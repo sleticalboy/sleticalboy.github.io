@@ -8,16 +8,19 @@ tags: [android, framework]
 ---
 
 涉及到的源代码及路径：
-`frameworks/base/core/jni/android_view_InputChannel.cpp`<br/>
-`frameworks/base/core/jni/android_view_InputDevice.cpp`<br/>
-`frameworks/base/core/jni/android_view_InputEventReceiver.cpp`<br/>
-`frameworks/base/core/jni/android_view_InputEventSender.cpp`<br/>
-`frameworks/base/core/jni/android_view_InputQueue.cpp`<br/>
-`frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java`<br/>
+`frameworks/base/core/java/android/view/WindowManagerImpl.java`<br>
+`frameworks/base/core/java/android/view/WindowManagerGlobal.java`<br>
+`frameworks/base/core/java/android/view/ViewRootImpl.java`<br>
+`frameworks/base/services/core/java/com/android/server/wm/Session.java`<br>
+`frameworks/base/services/core/java/com/android/server/wm/WindowManagerService.java`<br>
+`frameworks/base/services/core/java/com/android/server/wm/WindowState.java`<br>
+`frameworks/base/core/java/android/view/InputChannel.java`<br>
+`frameworks/base/core/jni/android_view_InputChannel.cpp`<br>
+`frameworks/native/libs/input/InputTransport.cpp`<br>
+`frameworks/base/core/jni/android_view_InputEventReceiver.cpp`<br>
 
 我们知道，应用层的事件是从 Activity 开始分发给 View 树的，那么事件产生的源头又是
 哪里呢？这次我们就来分析一下事件的起源。
-
 
 事件分发采用责任链模式，其处理基类为 `ViewRootImpl#InputStage`：
 ```java

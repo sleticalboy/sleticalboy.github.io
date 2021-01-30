@@ -7,14 +7,29 @@ category: android
 tags: [android, framework]
 ---
 
-ServiceMananger.java
-InputManagerService.java
-com_android_server_input_InputManagerService.cpp
-com_android_server_input_InputWindowHandle.cpp
-com_android_server_input_InputApplicationHandle.cpp
+Android 输入子系统：
+1、IMS 与 WMS 初始化；
+  关联、InputMethodService、
+2、EventHub 工作原理；
+  InputReader
+3、InputDispatcher 对事件分发；
+  InputTransport
+4、Java 层接收输入事件并通过 ViewRootImpl 传递到 View 层级中去；
+  ViewRootImpl
 
+涉及到的源代码及路径：
+`frameworks/base/services/java/com/android/server/SystemServer.java`<br>
+`frameworks/base/services/core/java/com/android/server/input/InputManagerService.java`<br>
+`frameworks/base/services/core/jni/com_android_server_input_InputManagerService.cpp`<br>
+`frameworks/base/services/core/jni/com_android_server_input_InputWindowHandle.cpp`<br>
+`frameworks/base/services/core/jni/com_android_server_input_InputApplicationHandle.cpp`<br>
+`frameworks/native/services/inputflinger/InputManager.cpp`<br>
+`frameworks/native/services/inputflinger/EventHub.cpp`<br>
+`frameworks/native/services/inputflinger/InputReader.cpp`<br>
+`frameworks/native/services/inputflinger/InputDispatcher.cpp`<br>
+`frameworks/native/libs/input/InputTransport.cpp`<br>
 
-InputManagerService 简称 IMS，WindowManagerService 简称 WMS
+下文中 InputManagerService 简称 IMS，WindowManagerService 简称 WMS
 
 ## Java 层 IMS 实例化与启动
 
