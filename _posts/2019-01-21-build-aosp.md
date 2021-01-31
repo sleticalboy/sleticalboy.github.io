@@ -3,8 +3,8 @@ layout: post
 title: aosp 编译、工具等记录
 author: sleticalboy
 date: 2019-01-21 10:40:09
-category: aosp
-tags: [aosp, android]
+category: android
+tags: [android, aosp]
 ---
 
 

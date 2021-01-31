@@ -1536,7 +1536,7 @@ status_t BnMediaPlayerService::onTransact(uint32_t code, const Parcel& data,
 册了一项服务。通过这种方式，MediaServer 输出了大量的服务，比如 IMediaPlayer、
 IMediaRecorder 等
 
-## 实践：[如何实现一个 native service](/android/2021/01/04/how-to-implement-a-native-service/)
+## 实践：[如何实现一个 native service](/android/2021/01/04/android-implement-a-native-service/)
 
 ## 总结
 

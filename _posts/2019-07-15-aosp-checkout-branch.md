@@ -3,8 +3,8 @@ layout: post
 title: AOSP 切换分支
 author: sleticalboy
 date: 2019-07-15 09:43:57
-category: aosp
-tags: [aosp, android]
+category: android
+tags: [android, aosp]
 ---
 
 > 注：事先切换到源码目录下
