@@ -36,7 +36,68 @@ Android 输入子系统：
 SystemService#main() -> run() -> startOtherServices() 方法中启动 IMS 和 WMS，首先
 先实例化 IMS，然后将 IMS 对象作为参数传递给 WMS，最后将依次启动 WMS 和 IMS
 
-<init> -> nativeInit()
+```java
+// SystemServer#startOtherServices()
+private void startOtherServices() {
+    // 实例化 IMS
+    InputManagerService inputManager = new InputManagerService(context);
+    // 实例化 WMS 时传入了 PhoneWindowManager 对象，作为 WindowManagerPolicy 的实现，
+    // 包括其所有的策略接口：在输入事件分发之前都要经过这里决断之后才会进行下一步动作
+    // 另外还将 IMS 作为参数传给 WMS
+    WindowManagerService wm = WindowManagerService.main(context, inputManager,
+            mFactoryTestMode != FactoryTest.FACTORY_TEST_LOW_LEVEL,
+            !mFirstBoot, mOnlyCore, new PhoneWindowManager());
+    // 将 WMS 和 IMS 都注册到 ServiceManager 中
+    ServiceManager.addService(Context.WINDOW_SERVICE, wm, /* allowIsolated= */ false,
+            DUMP_FLAG_PRIORITY_CRITICAL | DUMP_FLAG_PROTO);
+    ServiceManager.addService(Context.INPUT_SERVICE, inputManager,
+            /* allowIsolated= */ false, DUMP_FLAG_PRIORITY_CRITICAL);
+}
+```
+
+先来看 IMS 的实例化：
+
+```java
+public InputManagerService(Context context) {
+    // 实例化一个处理事件的 Handler
+    mHandler = new InputManagerHandler(DisplayThread.get().getLooper());
+    // 初始化 native 层 InputManager，包括 EventHub、InputReaderThread、InputDispatcherThread
+    mPtr = nativeInit(this, mContext, mHandler.getLooper().getQueue());
+}
+```
+Java 层 IMS 的实例化主要做了两件事：
+- 实例化一个处理事件的 Handler 用于处理 native 层传的一些回调；
+- 初始化 native 层 InputManager，包括输入事件生产中心 EventHub、事件读取线程 InputReaderThread
+和事件分发线程 InputDispatcherThread
+
+其实 Java 层 IMS 实际就是 native 层 InputManager 的包装，native 的一些重要方法都是通过 jni
+回调到 Java 层来处理的。接下来再来看 IMS 实例化过程，入口是 `WindownManagerService.main()`
+函数，在该函数中会实例化 WMS 对象并返回。
+
+```java
+private WindowManagerService(Context context, InputManagerService inputManager,
+    boolean haveInputMethods, boolean showBootMsgs, boolean onlyCore,
+    WindowManagerPolicy policy) {
+    // 锁机制
+    installLock(this, INDEX_WINDOW);
+    // 保存 IMS 实例
+    mInputManager = inputManager; // Must be before createDisplayContentLocked.
+    // 保存 WindowManagerPolicy 实例
+    mPolicy = policy;
+    // 用于 Context#getSystemService() 方法
+    LocalServices.addService(WindowManagerPolicy.class, mPolicy);
+    if(mInputManager != null) {
+        // 创建一个 InputChannel 用于接收 native 层的输入事件
+        final InputChannel inputChannel = mInputManager.monitorInput(TAG_WM);
+        // PointerEventDispatcher 继承自 InputEventReceiver，用于接收输入事件
+        mPointerEventDispatcher = inputChannel != null
+                ? new PointerEventDispatcher(inputChannel) : null;
+    } else {
+        mPointerEventDispatcher = null;
+    }
+    // ... 省略
+}
+```
 
 将调用从 IMS 转发到 WMS
 IMS#setWindownManagerCallback(wm.getInputMonitor())
