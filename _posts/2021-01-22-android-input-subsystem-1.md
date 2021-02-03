@@ -63,6 +63,7 @@ public InputManagerService(Context context) {
     mPtr = nativeInit(this, mContext, mHandler.getLooper().getQueue());
 }
 ```
+
 Java 层 IMS 的实例化主要做了两件事：
 - 实例化一个处理事件的 Handler 用于处理 native 层传的一些回调；
 - 初始化 native 层 InputManager，包括输入事件生产中心 EventHub、事件读取线程 InputReaderThread
@@ -108,7 +109,8 @@ Java 层 WMS 实例化：
 
 Java 层 IMS 构造时会调用 `nativeInit()` 函数来触发 native 层 IMS 的初始化，大致
 流程如下：
-<pre>
+
+```
 com_android_server_input_InputManagerService.cpp::nativeInit() ->
 new NativeInputManager::NativeInputManager() ->
   sp<EventHub> eventHub = new EventHub();
@@ -124,7 +126,7 @@ class NativeInputManager : public virtual RefBase,
     public virtual InputReaderPolicyInterface,
     public virtual InputDispatcherPolicyInterface,
     public virtual PointerControllerPolicyInterface {}
-</pre>
+```
 
 1、`com_android_server_input_InputManagerService.cpp::nativeInit()`
 
@@ -223,12 +225,13 @@ EventHub::EventHub(void) :
 }
 ```
 
-EventHub 构造以上代码：
-1、利用 [inotify 机制]()去监听 /dev/input/ 目录下输入设备的移除或添加；
-2、当监听到设备增删时通过 [epoll 机制]()通知EventHub::getEvents() 去读取 
+EventHub 构造函数中：
+
+- 利用 [inotify 机制]()去监听 /dev/input/ 目录下输入设备的移除或添加；
+- 当监听到设备增删时通过 [epoll 机制]()通知EventHub::getEvents() 去读取 
 /dev/input/ 目录下所有设备，并产生原始事件
 
-4、构造 `InputManager`
+4、`InputManager` 构造与初始化
 
 InputManager 类继承自 InputManagerInterface 接口，是系统处理输入事件的核心。
 InputManager 包含两个线程：
@@ -252,11 +255,7 @@ InputManager::InputManager(const sp<EventHubInterface>& eventHub,
     mReader = new InputReader(eventHub, readerPolicy, mDispatcher);
     initialize();
 }
-```
 
-5、`InputManager::initialize()`
-
-```cpp
 void InputManager::initialize() {
     // 构造出 InputRaderThread 和 InputDispatcherThread，事件读取和事件分发的
     // 实际执行者
