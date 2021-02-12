@@ -568,6 +568,65 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
 
 ### dispatchMotionLocked() 函数
 
+```cpp
+bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
+    MotionEntry* entry, DropReason* dropReason, nsecs_t* nextWakeupTime) {
+    if (!entry->dispatchInProgress) {
+        // 标记消息正在处理中
+        entry->dispatchInProgress = true;
+    }
+    if (*dropReason != DROP_REASON_NOT_DROPPED) {
+        // 丢弃掉标记为 DROP_REASON_NOT_DROPPED 的事件
+        // 将 injectionResult 赋值给 entry->injectionState->injectionResult
+        setInjectionResultLocked(entry, *dropReason == DROP_REASON_POLICY
+                ? INPUT_EVENT_INJECTION_SUCCEEDED : INPUT_EVENT_INJECTION_FAILED);
+        return true;
+    }
+    // pointer 事件
+    bool isPointerEvent = entry->source & AINPUT_SOURCE_CLASS_POINTER;
+    // 接收输入事件的目标窗口
+    Vector<InputTarget> inputTargets;
+    bool conflictingPointerActions = false;
+    int32_t injectionResult;
+    if (isPointerEvent) {
+        // Pointer event. 获取当前被触摸的窗口，下一步把事件分发给该窗口
+        injectionResult = findTouchedWindowTargetsLocked(currentTime, entry,
+            inputTargets, nextWakeupTime, &conflictingPointerActions);
+    } else {
+        // Non touch event. 获取当前获取焦点的窗口，下一步把事件分发给该窗口
+        injectionResult = findFocusedWindowTargetsLocked(currentTime,
+            entry, inputTargets, nextWakeupTime);
+    }
+    if (injectionResult == INPUT_EVENT_INJECTION_PENDING) return false;
+    setInjectionResultLocked(entry, injectionResult);
+    if (injectionResult != INPUT_EVENT_INJECTION_SUCCEEDED) {
+        if (injectionResult != INPUT_EVENT_INJECTION_PERMISSION_DENIED) {
+            CancelationOptions::Mode mode(isPointerEvent ?
+                    CancelationOptions::CANCEL_POINTER_EVENTS :
+                    CancelationOptions::CANCEL_NON_POINTER_EVENTS);
+            CancelationOptions options(mode, "input event injection failed");
+            synthesizeCancelationEventsForMonitorsLocked(options);
+        }
+        return true;
+    }
+    addMonitoringTargetsLocked(inputTargets);
+    // Dispatch the motion.
+    if (conflictingPointerActions) {
+        CancelationOptions options(CancelationOptions::CANCEL_POINTER_EVENTS,
+                "conflicting pointer actions");
+        synthesizeCancelationEventsForAllConnectionsLocked(options);
+    }
+    // 将事件分发给目标窗口
+    dispatchEventLocked(currentTime, entry, inputTargets);
+    return true;
+}
+```
+
+**小结**：
+
+- 通过 `findTouched/FocusedWindowTargetsLocked()` 方法查找接收事件的目标窗口；
+- 通过 `dispatchEventLocked()` 方法将事件分发给目标窗口；
+
 ### findTouchedWindowTargetsLocked() 函数
 
 ### dispatchEventLocked() 函数
