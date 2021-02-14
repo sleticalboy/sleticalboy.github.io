@@ -32,7 +32,7 @@ void InputReader::loopOnce() {
 }
 ```
 
-整体来看 `loopOnce()` 函数主要处理以下三件事：
+整体来看 `InputReader.cpp::loopOnce()` 函数主要处理以下三件事：
 - 通过 getEvents() 从 EventHub 获取未处理的事件，这些事件分为两类：一类是原始输入事
 件即从设备节点中读取出的原始事件；一类是设备事件即输入设备可用性变化事件
 - 通过 processEventsLocked() 对事件进行预处理
@@ -233,16 +233,22 @@ epoll 事件处理，并将读取到的事件返回给调用者；
 
 getEvents() 包含原始事件读取、输入设备加载/卸载等操作
 
-### 对事件进行预处理
+### 对原始事件进行预处理
 
+原始事件的预处理过程大致如下：
+```
 InputReader::processEventsLocked() -> processEventsForDeviceLocked() -> 
 InputDevice::process() -> InputMapper::process()
+```
+接下来对以上函数一一进行分析
 
 Device 结构体中：
 EV_KEY：按键类型事件
 EV_ABS：绝对坐标事件
 EV_REL：相对坐标事件
 EV_SW：开关类型事件
+
+1、入口函数 `InputReader::processEventsLocked()`
 
 ```cpp
 void InputReader::processEventsLocked(const RawEvent* rawEvents, size_t count) {
@@ -262,21 +268,12 @@ void InputReader::processEventsLocked(const RawEvent* rawEvents, size_t count) {
             }
             // 批处理某一设备的一批事件
             processEventsForDeviceLocked(deviceId, rawEvent, batchSize);
-        } else { // 设备的增删事件
-            switch (rawEvent->type) {
-            case EventHubInterface::DEVICE_ADDED:
-                addDeviceLocked(rawEvent->when, rawEvent->deviceId);
-                break;
-            case EventHubInterface::DEVICE_REMOVED:
-                removeDeviceLocked(rawEvent->when, rawEvent->deviceId);
-                break;
-            case EventHubInterface::FINISHED_DEVICE_SCAN:
-                handleConfigurationChangedLocked(rawEvent->when);
-                break;
-            default:
-                ALOG_ASSERT(false); // can't happen
-                break;
-            }
+        } else {
+            // 暂时先不讨论此分支
+            // 设备增加事件：addDeviceLocked()
+            // 设备移除事件：removeDeviceLocked()
+            // 设备增加事件：addDeviceLocked()
+            // 配置文件变动：handleConfigurationChangedLocked()
         }
         count -= batchSize;
         rawEvent += batchSize;
@@ -284,23 +281,31 @@ void InputReader::processEventsLocked(const RawEvent* rawEvents, size_t count) {
 }
 ```
 
+该函数会分别处理原始输入事件与设备增删事件（暂不分析），对于原始输入事件，由于 EventHub 会将属于同
+一输入设备的原始输入事件放在一起，因此 `processEventsForDeviceLocked()` 同时处理来自同一输入
+设备的一批事件。
+
+2、`InputReader::processEventsForDeviceLocked()` 函数
+
 ```cpp
 void InputReader::processEventsForDeviceLocked(int32_t deviceId,
     const RawEvent* rawEvents, size_t count) {
-    // 根据 deviceId 找到 index
+    // 根据 deviceId 从 mDevices 字典中找到 index
     ssize_t deviceIndex = mDevices.indexOfKey(deviceId);
     if (deviceIndex < 0) return;
-    // 根据 index 获取 Device 对象
+    // 根据 index 从 mDevices 字典中获取 InputDevice 对象
     InputDevice* device = mDevices.valueAt(deviceIndex);
     if (device->isIgnored()) return;
-    // 调用 Device::process() 处理事件
+    // 调用 InputDevice::process() 函数对这批事件进行处理
     device->process(rawEvents, count);
 }
 ```
 
+3、`InputDevice::process()` 函数
+
 ```cpp
 void InputDevice::process(const RawEvent* rawEvents, size_t count) {
-    // 根据 event 的 class 不同，有不一样的 Mapper，大致有以下12种不同的输入设备：
+    // 根据 event 的 class 不同有不同的 Mapper，大致有以下12种不同的输入设备：
     // External devices：外接设备，比如鼠标、键盘等
     // Devices with mics：具有 mic 的设备
     // Switch-like devices：类开关设备，对应 SwitchInputMapper
@@ -317,7 +322,8 @@ void InputDevice::process(const RawEvent* rawEvents, size_t count) {
     for (const RawEvent* rawEvent = rawEvents; count != 0; rawEvent++) {
         // ... 其他处理
         for (size_t i = 0; i < numMappers; i++) {
-            // mMappers 是 InputDevice 中的一个 list
+            // mMappers 是 InputDevice 中的一个 InputMapper 对象列表，可以看出实际的输入
+            // 事件处理位于 InputMapper::process() 函数
             InputMapper* mapper = mMappers[i];
             // 调用 InputMapper 处理 事件
             mapper->process(rawEvent);
@@ -327,7 +333,7 @@ void InputDevice::process(const RawEvent* rawEvents, size_t count) {
 }
 ```
 
-通过 InputMapper 处理后的事件就可以提交给 InputDispatcher 来进行分发了
+通过 InputMapper 处理后的事件就可以提交给 `InputDispatcher` 来进行分发了
 
 ### 将事件发布到 InputDispatcher
 
@@ -465,18 +471,12 @@ void InputDispatcher::dispatchOnce() {
 ```cpp
 void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
     nsecs_t currentTime = now();
-
     // Reset the key repeat timer whenever normal dispatch is suspended while the
     // device is in a non-interactive state.  This is to ensure that we abort a key
     // repeat if the device is just coming out of sleep.
-    if (!mDispatchEnabled) {
-        resetKeyRepeatLocked();
-    }
-
+    if (!mDispatchEnabled) resetKeyRepeatLocked();
     // If dispatching is frozen, do not process timeouts or try to deliver any new events.
-    if (mDispatchFrozen) {
-        return;
-    }
+    if (mDispatchFrozen) return;
 
     // Optimize latency of app switches.
     // Essentially we start a short timeout when an app switch key (HOME / ENDCALL) has
@@ -634,7 +634,7 @@ bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
 ```cpp
 int32_t InputDispatcher::findTouchedWindowTargetsLocked(nsecs_t currentTime,
     const MotionEntry* entry, Vector<InputTarget>& inputTargets,
-     nsecs_t* nextWakeupTime, bool* outConflictingPointerActions) {
+    nsecs_t* nextWakeupTime, bool* outConflictingPointerActions) {
     enum InjectionPermission {
         INJECTION_PERMISSION_UNKNOWN,
         INJECTION_PERMISSION_GRANTED,
