@@ -370,7 +370,7 @@ void QueuedInputListener::flush() {
 ```
 
 NotifyArgs 有多个子类，会注意尝试让子类就行处理，如果不满足子类约定的事件类型则会立即
-尝试下一个子类来处理
+尝试下一个子类来处理，以下我们将以 `NotifyMotionArgs` 为例来分析。
 
 ## `InputDispatcher::loopOnce()` 函数
 
@@ -383,38 +383,30 @@ void InputDispatcher::notifyMotion(const NotifyMotionArgs* args) {
     // 校验事件是否合法，若果非法则直接返回
     if (!validateMotionEvent(args->action, args->actionButton,
             args->pointerCount, args->pointerProperties)) return;
-
     uint32_t policyFlags = args->policyFlags;
     policyFlags |= POLICY_FLAG_TRUSTED;
-
     android::base::Timer t;
     // mPolicy 的实际执行者是 Java 层的 PhoneWindowManager，其实现了WindowManagerPolicy 接口
     mPolicy->interceptMotionBeforeQueueing(args->eventTime, /*byref*/ policyFlags);
     if (t.duration() > SLOW_INTERCEPTION_THRESHOLD) {
         // 方法执行时长超过 50ms 则打印一条 W 级别的警告日志
     }
-
     bool needWake;
     { // acquire lock
         mLock.lock();
-
         if (shouldSendMotionToInputFilterLocked(args)) {
             mLock.unlock();
-
             MotionEvent event;
             // 将 MotionEntry 转化成一个 MotionEvent 对象
             event.initialize(...);
-
             policyFlags |= POLICY_FLAG_FILTERED;
             // 转发给 Java 层去执行，返回 true 表示事件未被修改需要继续向下传递
             // 返回 false 表示事件被消费了，不需要向下传递
             if (!mPolicy->filterInputEvent(&event, policyFlags)) {
                 return; // event was consumed by the filter
             }
-
             mLock.lock();
         }
-
         // 使用 NotifyMotionArgs 创建一个新的 MotionEntry 对象并放入派发队列中
         MotionEntry* newEntry = new MotionEntry(...);
         needWake = enqueueInboundEventLocked(newEntry);
@@ -477,7 +469,6 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
     if (!mDispatchEnabled) resetKeyRepeatLocked();
     // If dispatching is frozen, do not process timeouts or try to deliver any new events.
     if (mDispatchFrozen) return;
-
     // Optimize latency of app switches.
     // Essentially we start a short timeout when an app switch key (HOME / ENDCALL) has
     // been pressed.  When it expires, we preempt dispatch and drop all other pending events.
@@ -485,7 +476,6 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
     if (mAppSwitchDueTime < *nextWakeupTime) {
         *nextWakeupTime = mAppSwitchDueTime;
     }
-
     // Ready to start a new event.
     // If we don't already have a pending event, go grab one.
     if (!mPendingEvent) {
@@ -496,7 +486,6 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
                 resetPendingAppSwitchLocked(false);
                 isAppSwitchDue = false;
             }
-
             // Synthesize a key repeat if appropriate.
             if (mKeyRepeatState.lastKeyEntry) {
                 if (currentTime >= mKeyRepeatState.nextRepeatTime) {
@@ -507,7 +496,6 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
                     }
                 }
             }
-
             // 队列为空
             if (!mPendingEvent) {
                 return;
@@ -516,16 +504,13 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
             // 取出队列头
             mPendingEvent = mInboundQueue.dequeueAtHead();
         }
-
         // Poke user activity for this event.
         if (mPendingEvent->policyFlags & POLICY_FLAG_PASS_TO_USER) {
             pokeUserActivityLocked(mPendingEvent);
         }
-
         // Get ready to dispatch the event.
         resetANRTimeoutsLocked();
     }
-
     // Now we have an event to dispatch.
     // All events are eventually dequeued and processed this way, even if we intend to drop them.
     bool done = false;
@@ -535,7 +520,6 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
     } else if (!mDispatchEnabled) {
         dropReason = DROP_REASON_DISABLED;
     }
-
     if (mNextUnblockedEvent == mPendingEvent) {
         mNextUnblockedEvent = NULL;
     }
