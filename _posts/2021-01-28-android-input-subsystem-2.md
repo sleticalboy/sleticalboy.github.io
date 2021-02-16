@@ -555,10 +555,8 @@ void InputDispatcher::dispatchOnceInnerLocked(nsecs_t* nextWakeupTime) {
 ```cpp
 bool InputDispatcher::dispatchMotionLocked(nsecs_t currentTime,
     MotionEntry* entry, DropReason* dropReason, nsecs_t* nextWakeupTime) {
-    if (!entry->dispatchInProgress) {
-        // 标记消息正在处理中
-        entry->dispatchInProgress = true;
-    }
+    // 标记消息正在处理中
+    if (!entry->dispatchInProgress) entry->dispatchInProgress = true;
     if (*dropReason != DROP_REASON_NOT_DROPPED) {
         // 丢弃掉标记为 DROP_REASON_NOT_DROPPED 的事件
         // 将 injectionResult 赋值给 entry->injectionState->injectionResult
@@ -620,9 +618,9 @@ int32_t InputDispatcher::findTouchedWindowTargetsLocked(nsecs_t currentTime,
     const MotionEntry* entry, Vector<InputTarget>& inputTargets,
     nsecs_t* nextWakeupTime, bool* outConflictingPointerActions) {
     enum InjectionPermission {
-        INJECTION_PERMISSION_UNKNOWN,
-        INJECTION_PERMISSION_GRANTED,
-        INJECTION_PERMISSION_DENIED
+        INJECTION_PERMISSION_UNKNOWN, // 未知
+        INJECTION_PERMISSION_GRANTED, // 允许
+        INJECTION_PERMISSION_DENIED // 拒绝
     };
     // For security reasons, we defer updating the touch state until we are sure that
     // event injection will be allowed.
@@ -647,9 +645,11 @@ int32_t InputDispatcher::findTouchedWindowTargetsLocked(nsecs_t currentTime,
             && (mTempTouchState.deviceId != entry->deviceId
                     || mTempTouchState.source != entry->source
                     || mTempTouchState.displayId != displayId);
+    // hover action
     bool isHoverAction = (maskedAction == AMOTION_EVENT_ACTION_HOVER_MOVE
             || maskedAction == AMOTION_EVENT_ACTION_HOVER_ENTER
             || maskedAction == AMOTION_EVENT_ACTION_HOVER_EXIT);
+    // new gesture
     bool newGesture = (maskedAction == AMOTION_EVENT_ACTION_DOWN
             || maskedAction == AMOTION_EVENT_ACTION_SCROLL
             || isHoverAction);
@@ -896,6 +896,7 @@ int32_t InputDispatcher::findTouchedWindowTargetsLocked(nsecs_t currentTime,
     // Drop the outside or hover touch windows since we will not care about them
     // in the next iteration.
     mTempTouchState.filterNonAsIsTouchWindows();
+// 失败
 Failed:
     // Check injection permission once and for all.
     if (injectionPermission == INJECTION_PERMISSION_UNKNOWN) {
@@ -967,6 +968,7 @@ Failed:
             mLastHoverWindowHandle = newHoverWindowHandle;
         }
     } else {}
+// 无响应
 Unresponsive:
     // Reset temporary touch state to ensure we release unnecessary references to input channels.
     mTempTouchState.reset();

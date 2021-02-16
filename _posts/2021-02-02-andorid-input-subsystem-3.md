@@ -7,6 +7,7 @@ category: android
 tags: [android, framework]
 ---
 
+涉及到的源代码及路径：<br>
 `frameworks/base/core/java/android/view/WindowManagerImpl.java`<br>
 `frameworks/base/core/java/android/view/WindowManagerGlobal.java`<br>
 `frameworks/base/core/java/android/view/ViewRootImpl.java`<br>
