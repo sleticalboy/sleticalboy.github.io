@@ -240,13 +240,7 @@ getEvents() 包含原始事件读取、输入设备加载/卸载等操作
 InputReader::processEventsLocked() -> processEventsForDeviceLocked() -> 
 InputDevice::process() -> InputMapper::process()
 ```
-接下来对以上函数一一进行分析
-
-Device 结构体中：
-EV_KEY：按键类型事件
-EV_ABS：绝对坐标事件
-EV_REL：相对坐标事件
-EV_SW：开关类型事件
+接下来对以上函数一一进行分。
 
 1、入口函数 `InputReader::processEventsLocked()`
 
@@ -281,9 +275,9 @@ void InputReader::processEventsLocked(const RawEvent* rawEvents, size_t count) {
 }
 ```
 
-该函数会分别处理原始输入事件与设备增删事件（暂不分析），对于原始输入事件，由于 EventHub 会将属于同
-一输入设备的原始输入事件放在一起，因此 `processEventsForDeviceLocked()` 同时处理来自同一输入
-设备的一批事件。
+该函数会分别处理原始输入事件与设备增删事件（暂不分析），对于原始输入事件，由于 
+EventHub 会将属于同一输入设备的原始输入事件放在一起，因此 `processEventsForDeviceLocked()`
+同时处理来自同一输入设备的一批事件。
 
 2、`InputReader::processEventsForDeviceLocked()` 函数
 
@@ -301,6 +295,8 @@ void InputReader::processEventsForDeviceLocked(int32_t deviceId,
 }
 ```
 
+这里首次出现了 `InputDevice` 类，暂不做分析，先看下 `InputDevice::process()` 函数。
+
 3、`InputDevice::process()` 函数
 
 ```cpp
@@ -314,24 +310,30 @@ void InputDevice::process(const RawEvent* rawEvents, size_t count) {
     // Keyboard-like devices：类键盘设备，对应 KeyboardInputMapper
     // Cursor-like devices：光标设备，比如轨迹球或鼠标，对应 CursorInputMapper
     // Mouser-like devices：带有鼠标的输入设备，对应 KeyMouseInputMapper
-    // Touchscreens and touchpad devices：触摸屏和触摸板设备，分为多点触控和单点触控
-    //   分别对应 MultiTouchInputMapper 和 SingleTouchInputMapper
+    // Touchscreens and touchpad devices：触摸屏和触摸板设备，这里又分为多点触控
+    //   和单点触控，分别对应 MultiTouchInputMapper 和 SingleTouchInputMapper
     // Joystick-like devices：类似操纵杆的设备，对应 JoystickInputMapper
     // External stylus-like devices：外部笔式设备，对应 ExternalStylusInputMapper
     size_t numMappers = mMappers.size();
     for (const RawEvent* rawEvent = rawEvents; count != 0; rawEvent++) {
         // ... 其他处理
         for (size_t i = 0; i < numMappers; i++) {
-            // mMappers 是 InputDevice 中的一个 InputMapper 对象列表，可以看出实际的输入
-            // 事件处理位于 InputMapper::process() 函数
+            // mMappers 是 InputDevice 中的一个 InputMapper 对象列表，可以看出实
+            // 际的输入事件处理位于 InputMapper::process() 函数
             InputMapper* mapper = mMappers[i];
-            // 调用 InputMapper 处理 事件
+            // 调用 InputMapper::process() 函数来处理
             mapper->process(rawEvent);
         }
         --count;
     }
 }
 ```
+
+**总结**：
+`processEventsLocked()` 函数处理原始输入时间的逻辑如下：
+- 首先将输入同一设备的输入时间交给 `processEventsForDeviceLocked()` 函数处理；
+- 然后 `processEventsForDeviceLocked()` 再将事件转发给 `InputDevice::process()` 处理；
+- 最后 `InputDevice::process()` 将事件交给 `InputMapper::process()` 来处理
 
 通过 InputMapper 处理后的事件就可以提交给 `InputDispatcher` 来进行分发了
 
@@ -991,6 +993,76 @@ Unresponsive:
 ## InputChannel::sendMessage()
 
 之后就该通过 jni 转到 Java 层了
+
+## 番外： `InputDevice` 和 `InputMapper`
+
+`InputDevice` 是 `InputReader` 中的一个类，用来表示一个输入设备，其内部维护了一个
+`InputMapper` 列表。`InputMapper` 是 `InputReader` 中实际进行原始输入时间加工的场
+所，它有一些列子类用来加工不同类型的原始输入事件。
+不难推测出 InputDevice 的创建和销毁操作与 EventHub 的设备增删事件有关，在 
+`processEventsLocked()` 函数中：
+- DEVICE_ADDED 事件：将会调用 `addDevice()` 函数创建 InputDevice；
+- DEVICE_REMOVED 事件：将会调用 `removeDevice()` 函数删除 InputDevice；
+- FINISHED_DEVICE_SCAN 事件：InputReader 将会产生一个 ConfigurationChanged 事件
+并将其发送给 InputDispatcher；
+
+### `InputDevice` 的创建
+
+1、InputReader.cpp 中 `InputReader::addDeviceLocked()` 函数：
+
+```cpp
+void InputReader::addDeviceLocked(nsecs_t when, int32_t deviceId) {
+    // 根据 deviceId 找到索引，如果索引大于或等于 0 说明设备已添加直接返回
+    ssize_t deviceIndex = mDevices.indexOfKey(deviceId);
+    if (deviceIndex >= 0) return;
+    // 从 EventHub 中获取厂商信息和设备类别
+    InputDeviceIdentifier identifier = mEventHub->getDeviceIdentifier(deviceId);
+    uint32_t classes = mEventHub->getDeviceClasses(deviceId);
+    int32_t controllerNumber = mEventHub->getDeviceControllerNumber(deviceId);
+    // 创建设备
+    InputDevice* device = createDeviceLocked(deviceId, controllerNumber, identifier, classes);
+    // 使用 mConfig 策略配置信息对新创建的 InputDevice 进行配置并通过 reset() 重置
+    device->configure(when, &mConfig, 0);
+    device->reset(when);
+    // 添加到 mDevices 字典中
+    mDevices.add(deviceId, device);
+    bumpGenerationLocked();
+    if (device->getClasses() & INPUT_DEVICE_CLASS_EXTERNAL_STYLUS) {
+        notifyExternalStylusPresenceChanged();
+    }
+}
+```
+
+**注意**：这里的 `mConfig` 是一个 `InputReaderConfiguration`，通过 
+`InputReaderPolicyInterface::getReaderConfiguration()` 接口进行赋值，该接口具体实
+现在 `com_android_server_input_InputManagerService.cpp` 中，因此这就使得 IMS 以及
+应用程序能够在一定程度上影响输入事件的处理过程。
+
+2、InputReader.cpp 中 `InputReader::createDeviceLocked()` 函数：
+
+```cpp
+InputDevice* InputReader::createDeviceLocked(int32_t deviceId, int32_t controllerNumber,
+    const InputDeviceIdentifier& identifier, uint32_t classes) {
+    // 根据 deviceId、厂商信息以及设备类型创建一个 InputDevice 对象
+    InputDevice* device = new InputDevice(&mContext, deviceId, bumpGenerationLocked(),
+            controllerNumber, identifier, classes);
+    // ... 根据 classes 添加具体的 InputMapper 实现
+    if (keyboardSource != 0) {
+        device->addMapper(new KeyboardInputMapper(device, keyboardSource, keyboardType));
+    }
+    return device;
+}
+```
+
+### `InputMapper` 的分配
+
+在 `createDeviceLocked()` 函数中，会根据 classes 来分配具体的 InputMapper，其中 
+classes 类型来自 EventHub 中私有的 Device 结构中，其枚举类型定义在 `EventHub.h` 中。
+- EV_KEY：按键类型事件，能够上报这类事件的有键盘、鼠标、手柄、手写板等一切有实体按键的设备；
+- EV_ABS：绝对坐标事件，描述了在二维空间中的一个点，触控板、触摸屏等设备可上报这类事件；
+- EV_REL：相对坐标事件，描述在二维空间中相对与上次事件的偏移量，鼠标、轨迹球等基
+于游标指针的设备可上报这类事件；
+- EV_SW：开关类型事件
 
 ## 总结 
 
