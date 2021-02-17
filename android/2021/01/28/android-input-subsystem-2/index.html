@@ -1,0 +1,1879 @@
+<!DOCTYPE html><html lang="en" ><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="theme" content="Chirpy v2.6.2"><meta name="generator" content="Jekyll v4.1.1" /><meta property="og:title" content="Android 输入子系统2：EventHub 工作原理" /><meta name="author" content="sleticalboy" /><meta property="og:locale" content="en_US" /><meta name="description" content="涉及到的源代码及路径： frameworks/native/services/inputflinger/EventHub.cpp frameworks/native/services/inputflinger/InputReader.cpp frameworks/native/services/inputflinger/InputDispatcher.cpp frameworks/native/libs/input/InputTransport.cpp frameworks/base/core/jni/android_view_InputChannel.cpp frameworks/base/core/jni/android_view_InputEventReceiver.cpp" /><meta property="og:description" content="涉及到的源代码及路径： frameworks/native/services/inputflinger/EventHub.cpp frameworks/native/services/inputflinger/InputReader.cpp frameworks/native/services/inputflinger/InputDispatcher.cpp frameworks/native/libs/input/InputTransport.cpp frameworks/base/core/jni/android_view_InputChannel.cpp frameworks/base/core/jni/android_view_InputEventReceiver.cpp" /><link rel="canonical" href="https://sleticalboy.github.io/android/2021/01/28/android-input-subsystem-2/" /><meta property="og:url" content="https://sleticalboy.github.io/android/2021/01/28/android-input-subsystem-2/" /><meta property="og:site_name" content="sleticalboy" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2021-01-28T10:56:13+08:00" /><meta name="google-site-verification" content="google_meta_tag_verification" /> <script type="application/ld+json"> {"dateModified":"2021-02-17T21:49:40+08:00","datePublished":"2021-01-28T10:56:13+08:00","@type":"BlogPosting","headline":"Android 输入子系统2：EventHub 工作原理","mainEntityOfPage":{"@type":"WebPage","@id":"https://sleticalboy.github.io/android/2021/01/28/android-input-subsystem-2/"},"author":{"@type":"Person","name":"sleticalboy"},"description":"涉及到的源代码及路径： frameworks/native/services/inputflinger/EventHub.cpp frameworks/native/services/inputflinger/InputReader.cpp frameworks/native/services/inputflinger/InputDispatcher.cpp frameworks/native/libs/input/InputTransport.cpp frameworks/base/core/jni/android_view_InputChannel.cpp frameworks/base/core/jni/android_view_InputEventReceiver.cpp","url":"https://sleticalboy.github.io/android/2021/01/28/android-input-subsystem-2/","@context":"https://schema.org"}</script><title>Android 输入子系统2：EventHub 工作原理 | sleticalboy</title><link rel="shortcut icon" href="/assets/img/favicons/favicon.ico" type="image/x-icon"><link rel="icon" href="/assets/img/favicons/favicon.ico" type="image/x-icon"><link rel="apple-touch-icon" href="/assets/img/favicons/apple-icon.png"><link rel="apple-touch-icon" href="/assets/img/favicons/apple-icon-precomposed.png"><link rel="apple-touch-icon" sizes="57x57" href="/assets/img/favicons/apple-icon-57x57.png"><link rel="apple-touch-icon" sizes="60x60" href="/assets/img/favicons/apple-icon-60x60.png"><link rel="apple-touch-icon" sizes="72x72" href="/assets/img/favicons/apple-icon-72x72.png"><link rel="apple-touch-icon" sizes="76x76" href="/assets/img/favicons/apple-icon-76x76.png"><link rel="apple-touch-icon" sizes="114x114" href="/assets/img/favicons/apple-icon-114x114.png"><link rel="apple-touch-icon" sizes="120x120" href="/assets/img/favicons/apple-icon-120x120.png"><link rel="apple-touch-icon" sizes="144x144" href="/assets/img/favicons/apple-icon-144x144.png"><link rel="apple-touch-icon" sizes="152x152" href="/assets/img/favicons/apple-icon-152x152.png"><link rel="apple-touch-icon" sizes="180x180" href="/assets/img/favicons/apple-icon-180x180.png"><link rel="icon" type="image/png" sizes="192x192" href="/assets/img/favicons/android-icon-192x192.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicons/favicon-32x32.png"><link rel="icon" type="image/png" sizes="96x96" href="/assets/img/favicons/favicon-96x96.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicons/favicon-16x16.png"><link rel="manifest" href="/assets/img/favicons/manifest.json"><meta name='msapplication-config' content='/assets/img/favicons/browserconfig.xml'><meta name="msapplication-TileColor" content="#ffffff"><meta name="msapplication-TileImage" content="/assets/img/favicons/ms-icon-144x144.png"><meta name="theme-color" content="#ffffff"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"><link rel="dns-prefetch" href="https://fonts.gstatic.com"><link rel="preconnect" href="cdn.jsdelivr.net"><link rel="dns-prefetch" href="cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha256-LA89z+k9fjgMKQ/kq4OO2Mrf8VltYml/VES+Rg0fh20=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css" integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin="anonymous"><link rel="preload" as="style" href="/assets/css/post.css"><link rel="stylesheet" href="/assets/css/post.css"><link rel="preload" as="style" href="/assets/css/lib/bootstrap-toc.min.css"><link rel="stylesheet" href="/assets/css/lib/bootstrap-toc.min.css" /> <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script> <script async src="https://cdn.jsdelivr.net/combine/npm/popper.js@1.15.0,npm/bootstrap@4/dist/js/bootstrap.min.js"></script> <script async src="/assets/js/post.min.js"></script><body data-spy="scroll" data-target="#toc"><div id="sidebar" class="d-flex flex-column"><div id="nav-wrapper"><div id="profile-wrapper" class="d-flex flex-column"><div id="avatar" class="d-flex justify-content-center"> <a href="/" alt="avatar"> <img src="/assets/img/sample/avatar.jpg" alt="avatar" onerror="this.style.display='none'"> </a></div><div class="profile-text mt-3"><div class="site-title"> <a href="/">sleticalboy</a></div><div class="site-subtitle font-italic">李斌的小站</div></div></div><ul class="nav flex-column"><li class="nav-item d-flex justify-content-center "> <a href="/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-home ml-xl-3 mr-xl-3 unloaded"></i> <span>HOME</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/categories/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-stream ml-xl-3 mr-xl-3 unloaded"></i> <span>CATEGORIES</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/tags/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-tags ml-xl-3 mr-xl-3 unloaded"></i> <span>TAGS</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/archives/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-archive ml-xl-3 mr-xl-3 unloaded"></i> <span>ARCHIVES</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/about/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-info ml-xl-3 mr-xl-3 unloaded"></i> <span>ABOUT</span> </a></ul></div><div class="sidebar-bottom d-flex flex-wrap justify-content-around mt-4"> <span id="mode-toggle-wrapper"> <i class="mode-toggle fas fa-sun" dark-mode-invisible></i> <i class="mode-toggle fas fa-moon" light-mode-invisible></i> <script type="text/javascript"> class ModeToggle { static get MODE_KEY() { return "mode"; } static get DARK_MODE() { return "dark"; } static get LIGHT_MODE() { return "light"; } constructor() { if (this.mode != null) { if (this.mode == ModeToggle.DARK_MODE) { if (!this.isSysDarkPrefer) { this.setDark(); } } else { if (this.isSysDarkPrefer) { this.setLight(); } } } var self = this; /* always follow the system prefers */ this.sysDarkPrefers.addListener(function() { if (self.mode != null) { if (self.mode == ModeToggle.DARK_MODE) { if (!self.isSysDarkPrefer) { self.setDark(); } } else { if (self.isSysDarkPrefer) { self.setLight(); } } self.clearMode(); } }); } /* constructor() */ setDark() { $('html').attr(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); } setLight() { $('html').attr(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); } clearMode() { $('html').removeAttr(ModeToggle.MODE_KEY); sessionStorage.removeItem(ModeToggle.MODE_KEY); } get sysDarkPrefers() { return window.matchMedia("(prefers-color-scheme: dark)"); } get isSysDarkPrefer() { return this.sysDarkPrefers.matches; } get isDarkMode() { return this.mode == ModeToggle.DARK_MODE; } get isLightMode() { return this.mode == ModeToggle.LIGHT_MODE; } get hasMode() { return this.mode != null; } get mode() { return sessionStorage.getItem(ModeToggle.MODE_KEY); } flipMode() { if (this.hasMode) { if (this.isSysDarkPrefer) { if (this.isLightMode) { this.clearMode(); } else { this.setLight(); } } else { if (this.isDarkMode) { this.clearMode(); } else { this.setDark(); } } } else { if (this.isSysDarkPrefer) { this.setLight(); } else { this.setDark(); } } } /* flipMode() */ } /* ModeToggle */ let toggle = new ModeToggle(); $(".mode-toggle").click(function() { toggle.flipMode(); }); </script> </span> <span class="icon-border"></span> <a href="https://github.com/sleticalboy" aria-label="github" target="_blank" rel="noopener"> <i class="fab fa-github-alt"></i> </a> <a href=" javascript:location.href = 'mailto:' + ['sleticalboy','gmail.com'].join('@')" aria-label="email" > <i class="fas fa-envelope"></i> </a> <a href="/feed.xml" aria-label="rss" > <i class="fas fa-rss"></i> </a></div></div><div id="topbar-wrapper" class="row justify-content-center topbar-down"><div id="topbar" class="col-11 d-flex h-100 align-items-center justify-content-between"> <span id="breadcrumb"> <span> <a href="/"> Posts </a> </span> <span>Android 输入子系统2：EventHub 工作原理</span> </span> <i id="sidebar-trigger" class="fas fa-bars fa-fw"></i><div id="topbar-title"> Post</div><i id="search-trigger" class="fas fa-search fa-fw"></i> <span id="search-wrapper" class="align-items-center"> <i class="fas fa-search fa-fw"></i> <input class="form-control" id="search-input" type="search" aria-label="search" placeholder="Search..."> <i class="fa fa-times-circle fa-fw" id="search-cleaner"></i> </span> <span id="search-cancel" >Cancel</span></div></div><div id="main-wrapper"><div id="main"><div class="row"><div id="post-wrapper" class="col-12 col-lg-11 col-xl-8"><div class="post pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><h1 data-toc-skip>Android 输入子系统2：EventHub 工作原理</h1><div class="post-meta text-muted d-flex flex-column"><div> Posted <span class="timeago " data-toggle="tooltip" data-placement="bottom" title="Thu, Jan 28, 2021, 10:56 AM +0800" > Jan 28 <i class="unloaded">2021-01-28T10:56:13+08:00</i> </span> by <span class="author"> sleticalboy </span></div><div> Updated <span class="timeago lastmod" data-toggle="tooltip" data-placement="bottom" title="Wed, Feb 17, 2021, 9:49 PM +0800" > Feb 17 <i class="unloaded">2021-02-17T21:49:40+08:00</i> </span></div></div><div class="post-content"><p>涉及到的源代码及路径：<br /> <code class="language-plaintext highlighter-rouge">frameworks/native/services/inputflinger/EventHub.cpp</code><br /> <code class="language-plaintext highlighter-rouge">frameworks/native/services/inputflinger/InputReader.cpp</code><br /> <code class="language-plaintext highlighter-rouge">frameworks/native/services/inputflinger/InputDispatcher.cpp</code><br /> <code class="language-plaintext highlighter-rouge">frameworks/native/libs/input/InputTransport.cpp</code><br /> <code class="language-plaintext highlighter-rouge">frameworks/base/core/jni/android_view_InputChannel.cpp</code><br /> <code class="language-plaintext highlighter-rouge">frameworks/base/core/jni/android_view_InputEventReceiver.cpp</code><br /></p><p>承接上节，本文以 <code class="language-plaintext highlighter-rouge">InputReader::loopOnce()</code> 函数开始，从 InputReader 如何从 EventHub 获取输入事件开始来揭示 EventHub 的工作原理。另外：InputReader、InputDispatcher、 EventHub 都属于 <code class="language-plaintext highlighter-rouge">inputflinger</code> 模块</p><h2 id="inputreaderlooponce-函数"><code class="language-plaintext highlighter-rouge">InputReader::loopOnce()</code> 函数</h2><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre><td class="rouge-code"><pre><span class="kt">void</span> <span class="n">InputReader</span><span class="o">::</span><span class="n">loopOnce</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// 1、从EventHub 获取事件，返回事件个数</span>
+    <span class="kt">size_t</span> <span class="n">count</span> <span class="o">=</span> <span class="n">mEventHub</span><span class="o">-&gt;</span><span class="n">getEvents</span><span class="p">(</span><span class="n">timeout</span><span class="p">,</span> <span class="n">mEventBuffer</span><span class="p">,</span> <span class="n">EVENT_BUFFER_SIZE</span><span class="cm">/*256*/</span><span class="p">);</span>
+    <span class="c1">// 2、预处理事件</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">count</span><span class="p">)</span> <span class="n">processEventsLocked</span><span class="p">(</span><span class="n">mEventBuffer</span><span class="p">,</span> <span class="n">count</span><span class="p">);</span>
+    <span class="c1">// 3、通知 dispatcher 进行分发</span>
+    <span class="n">mQueuedListener</span><span class="o">-&gt;</span><span class="n">flush</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>整体来看 <code class="language-plaintext highlighter-rouge">InputReader.cpp::loopOnce()</code> 函数主要处理以下三件事：</p><ul><li>通过 getEvents() 从 EventHub 获取未处理的事件，这些事件分为两类：一类是原始输入事 件即从设备节点中读取出的原始事件；一类是设备事件即输入设备可用性变化事件<li>通过 processEventsLocked() 对事件进行预处理<li>预处理之后通过 flush() 将事件交给 InputDispatcher 进行分发</ul><p>下面来依次进行分析</p><h3 id="从-eventhub-获取原始输入事件">从 EventHub 获取原始输入事件</h3><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+</pre><td class="rouge-code"><pre><span class="kt">size_t</span> <span class="n">EventHub</span><span class="o">::</span><span class="n">getEvents</span><span class="p">(</span><span class="kt">int</span> <span class="n">timeoutMillis</span><span class="p">,</span> <span class="n">RawEvent</span><span class="o">*</span> <span class="n">buffer</span><span class="p">,</span>
+    <span class="kt">size_t</span> <span class="n">bufferSize</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">AutoMutex</span> <span class="n">_l</span><span class="p">(</span><span class="n">mLock</span><span class="p">);</span>
+    <span class="k">struct</span> <span class="nc">input_event</span> <span class="n">readBuffer</span><span class="p">[</span><span class="n">bufferSize</span><span class="p">];</span> <span class="c1">// 数组长度为 256</span>
+    <span class="c1">// event 指针指向在 buffer 中下一个可用于存储事件的 RawEvent 结构体，每存储一个</span>
+    <span class="c1">// 事件，指针后移一个元素</span>
+    <span class="n">RawEvent</span><span class="o">*</span> <span class="n">event</span> <span class="o">=</span> <span class="n">buffer</span><span class="p">;</span> <span class="c1">// buffer 长度为 256</span>
+    <span class="kt">size_t</span> <span class="n">capacity</span> <span class="o">=</span> <span class="n">bufferSize</span><span class="p">;</span> <span class="c1">// 数组剩余可以装入多少个元素</span>
+    <span class="kt">bool</span> <span class="n">awoken</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span> <span class="c1">// 是否需要唤醒 dispatcher 端</span>
+    <span class="c1">// 先将可用事件放入 buffer 中并返回，如没有可用事件则调用 epoll_wait() 等待事件</span>
+    <span class="c1">// 到来；事件到来后会重新执行循环</span>
+    <span class="k">for</span> <span class="p">(;;)</span> <span class="p">{</span>
+        <span class="n">nsecs_t</span> <span class="n">now</span> <span class="o">=</span> <span class="n">systemTime</span><span class="p">(</span><span class="n">SYSTEM_TIME_MONOTONIC</span><span class="p">);</span>
+        <span class="c1">// ① 处理与设备相关的工作，包括：</span>
+        <span class="c1">// a、重新打开设备</span>
+        <span class="c1">// b、移除设备</span>
+        <span class="c1">// c、扫描设备</span>
+        <span class="c1">// d、新增设备</span>
+        <span class="c1">// e、扫描完成</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mNeedToReopenDevices</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// a、如果需要重新打开设备则先关闭再打开</span>
+            <span class="n">mNeedToReopenDevices</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+            <span class="n">closeAllDevicesLocked</span><span class="p">();</span>
+            <span class="n">mNeedToScanDevices</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+            <span class="k">break</span><span class="p">;</span> <span class="c1">// return to the caller before we actually rescan</span>
+        <span class="p">}</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">mClosingDevices</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// b、移除设备时会产生 DEVICE_REMOCED 事件</span>
+            <span class="n">Device</span><span class="o">*</span> <span class="n">device</span> <span class="o">=</span> <span class="n">mClosingDevices</span><span class="p">;</span>
+            <span class="n">mClosingDevices</span> <span class="o">=</span> <span class="n">device</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+            <span class="n">event</span><span class="o">-&gt;</span><span class="n">when</span> <span class="o">=</span> <span class="n">now</span><span class="p">;</span>
+            <span class="n">event</span><span class="o">-&gt;</span><span class="n">deviceId</span> <span class="o">=</span> <span class="n">device</span><span class="o">-&gt;</span><span class="n">id</span> <span class="o">==</span> <span class="n">mBuiltInKeyboardId</span> <span class="o">?</span> <span class="n">BUILT_IN_KEYBOARD_ID</span> <span class="o">:</span> <span class="n">device</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">;</span>
+            <span class="n">event</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">=</span> <span class="n">DEVICE_REMOVED</span><span class="p">;</span>
+            <span class="n">event</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span> <span class="c1">// 指向数组下一个可用位置</span>
+            <span class="k">delete</span> <span class="n">device</span><span class="p">;</span>
+            <span class="n">mNeedToSendFinishedDeviceScan</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">--</span><span class="n">capacity</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span> <span class="c1">// 如果缓冲区已满，则退出循环</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mNeedToScanDevices</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// c、需要扫描设备并读取全部事件</span>
+            <span class="n">mNeedToScanDevices</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+            <span class="n">scanDevicesLocked</span><span class="p">();</span>
+            <span class="n">mNeedToSendFinishedDeviceScan</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">mOpeningDevices</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// d、添加设备会产生 DEVICE_ADD 事件</span>
+            <span class="n">Device</span><span class="o">*</span> <span class="n">device</span> <span class="o">=</span> <span class="n">mOpeningDevices</span><span class="p">;</span>
+            <span class="n">mOpeningDevices</span> <span class="o">=</span> <span class="n">device</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">;</span>
+            <span class="n">event</span><span class="o">-&gt;</span><span class="n">when</span> <span class="o">=</span> <span class="n">now</span><span class="p">;</span>
+            <span class="n">event</span><span class="o">-&gt;</span><span class="n">deviceId</span> <span class="o">=</span> <span class="n">device</span><span class="o">-&gt;</span><span class="n">id</span> <span class="o">==</span> <span class="n">mBuiltInKeyboardId</span> <span class="o">?</span> <span class="mi">0</span> <span class="o">:</span> <span class="n">device</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">;</span>
+            <span class="n">event</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">=</span> <span class="n">DEVICE_ADDED</span><span class="p">;</span>
+            <span class="n">event</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="n">mNeedToSendFinishedDeviceScan</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">--</span><span class="n">capacity</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span> <span class="c1">// 如果缓冲区已满，则退出循环</span>
+        <span class="p">}</span>
+         <span class="c1">// e、扫描完成会产生 FINISHED_DEVICE_SCAN 事件</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mNeedToSendFinishedDeviceScan</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">mNeedToSendFinishedDeviceScan</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+            <span class="n">event</span><span class="o">-&gt;</span><span class="n">when</span> <span class="o">=</span> <span class="n">now</span><span class="p">;</span>
+            <span class="n">event</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">=</span> <span class="n">FINISHED_DEVICE_SCAN</span><span class="p">;</span>
+            <span class="n">event</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">--</span><span class="n">capacity</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span> <span class="c1">// 如果缓冲区已满，则退出循环</span>
+        <span class="p">}</span>
+        <span class="c1">// ② 处理未被 InputReader 取走的输入事件与设备事件</span>
+        <span class="kt">bool</span> <span class="n">deviceChanged</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="k">while</span> <span class="p">(</span><span class="n">mPendingEventIndex</span> <span class="o">&lt;</span> <span class="n">mPendingEventCount</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// 取出 epoll 事件并根据事件类型做出相应处理</span>
+            <span class="k">const</span> <span class="k">struct</span> <span class="nc">epoll_event</span><span class="o">&amp;</span> <span class="n">eventItem</span> <span class="o">=</span> <span class="n">mPendingEventItems</span><span class="p">[</span><span class="n">mPendingEventIndex</span><span class="o">++</span><span class="p">];</span>
+            <span class="c1">// inotify 事件，设置 mPendingINotify 为 true，后面根据此标记位读取</span>
+            <span class="c1">// notify fd 中的事件，执行加载或卸载设备的操作</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">eventItem</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">u32</span> <span class="o">==</span> <span class="n">EPOLL_ID_INOTIFY</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">eventItem</span><span class="p">.</span><span class="n">events</span> <span class="o">&amp;</span> <span class="n">EPOLLIN</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">mPendingINotify</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+                <span class="p">}</span>
+                <span class="k">continue</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="c1">// 管道读端有数据可读事件，则设置 awoken 为 true，后面会根据此标记跳出外</span>
+            <span class="c1">// 层循环，即无论 getEvents() 是否读到事件，都不调用 epoll_wait() 等待</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">eventItem</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">u32</span> <span class="o">==</span> <span class="n">EPOLL_ID_WAKE</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">eventItem</span><span class="p">.</span><span class="n">events</span> <span class="o">&amp;</span> <span class="n">EPOLLIN</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">awoken</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+                    <span class="kt">char</span> <span class="n">buffer</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
+                    <span class="kt">ssize_t</span> <span class="n">nRead</span><span class="p">;</span>
+                    <span class="k">do</span> <span class="p">{</span>
+                        <span class="n">nRead</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">mWakeReadPipeFd</span><span class="p">,</span> <span class="n">buffer</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">));</span>
+                    <span class="p">}</span> <span class="k">while</span> <span class="p">((</span><span class="n">nRead</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">errno</span> <span class="o">==</span> <span class="n">EINTR</span><span class="p">)</span> <span class="o">||</span> <span class="n">nRead</span> <span class="o">==</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">buffer</span><span class="p">));</span>
+                <span class="p">}</span>
+                <span class="k">continue</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="c1">// eventItem.data.u32 字段存储的是设备 id</span>
+            <span class="kt">ssize_t</span> <span class="n">deviceIndex</span> <span class="o">=</span> <span class="n">mDevices</span><span class="p">.</span><span class="n">indexOfKey</span><span class="p">(</span><span class="n">eventItem</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">u32</span><span class="p">);</span>
+            <span class="c1">// 未知设备，跳过继续循环</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">deviceIndex</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="k">continue</span><span class="p">;</span>
+            <span class="n">Device</span><span class="o">*</span> <span class="n">device</span> <span class="o">=</span> <span class="n">mDevices</span><span class="p">.</span><span class="n">valueAt</span><span class="p">(</span><span class="n">deviceIndex</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">eventItem</span><span class="p">.</span><span class="n">events</span> <span class="o">&amp;</span> <span class="n">EPOLLIN</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// 从设备 fd 中读取原始事件</span>
+                <span class="kt">int32_t</span> <span class="n">readSize</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">device</span><span class="o">-&gt;</span><span class="n">fd</span><span class="p">,</span> <span class="n">readBuffer</span><span class="p">,</span>
+                        <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="nc">input_event</span><span class="p">)</span> <span class="o">*</span> <span class="n">capacity</span><span class="p">);</span>
+                <span class="c1">// 返回 0 表示无事件，负数表示出错了</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">readSize</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="p">(</span><span class="n">readSize</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">errno</span> <span class="o">==</span> <span class="n">ENODEV</span><span class="p">))</span> <span class="p">{</span>
+                    <span class="c1">// Device was removed before INotify noticed.</span>
+                    <span class="n">deviceChanged</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+                    <span class="n">closeDeviceLocked</span><span class="p">(</span><span class="n">device</span><span class="p">);</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">readSize</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="c1">// 出错了</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">((</span><span class="n">readSize</span> <span class="o">%</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="nc">input_event</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="c1">// 事件不完整？</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="kt">int32_t</span> <span class="n">deviceId</span> <span class="o">=</span> <span class="n">device</span><span class="o">-&gt;</span><span class="n">id</span> <span class="o">==</span> <span class="n">mBuiltInKeyboardId</span> <span class="o">?</span> <span class="mi">0</span> <span class="o">:</span> <span class="n">device</span><span class="o">-&gt;</span><span class="n">id</span><span class="p">;</span>
+                    <span class="c1">// 准备遍历获取原始事件 input_event 并加工成 RawEvent</span>
+                    <span class="kt">size_t</span> <span class="n">count</span> <span class="o">=</span> <span class="kt">size_t</span><span class="p">(</span><span class="n">readSize</span><span class="p">)</span> <span class="o">/</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="nc">input_event</span><span class="p">);</span>
+                    <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="k">struct</span> <span class="nc">input_event</span><span class="o">&amp;</span> <span class="n">iev</span> <span class="o">=</span> <span class="n">readBuffer</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">event</span><span class="o">-&gt;</span><span class="n">when</span> <span class="o">&gt;=</span> <span class="n">now</span> <span class="o">+</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">1000000000LL</span><span class="p">)</span> <span class="p">{</span>
+                            <span class="c1">// Double-check.  Time may have moved on.</span>
+                            <span class="n">nsecs_t</span> <span class="n">time</span> <span class="o">=</span> <span class="n">systemTime</span><span class="p">(</span><span class="n">SYSTEM_TIME_MONOTONIC</span><span class="p">);</span>
+                            <span class="k">if</span> <span class="p">(</span><span class="n">event</span><span class="o">-&gt;</span><span class="n">when</span> <span class="o">&gt;</span> <span class="n">time</span><span class="p">)</span> <span class="p">{</span>
+                                <span class="n">event</span><span class="o">-&gt;</span><span class="n">when</span> <span class="o">=</span> <span class="n">time</span><span class="p">;</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                        <span class="n">event</span><span class="o">-&gt;</span><span class="n">deviceId</span> <span class="o">=</span> <span class="n">deviceId</span><span class="p">;</span>
+                        <span class="n">event</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">=</span> <span class="n">iev</span><span class="p">.</span><span class="n">type</span><span class="p">;</span>
+                        <span class="n">event</span><span class="o">-&gt;</span><span class="n">code</span> <span class="o">=</span> <span class="n">iev</span><span class="p">.</span><span class="n">code</span><span class="p">;</span>
+                        <span class="n">event</span><span class="o">-&gt;</span><span class="n">value</span> <span class="o">=</span> <span class="n">iev</span><span class="p">.</span><span class="n">value</span><span class="p">;</span>
+                        <span class="n">event</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+                        <span class="n">capacity</span> <span class="o">-=</span> <span class="mi">1</span><span class="p">;</span>
+                    <span class="p">}</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">capacity</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="c1">// 数组填充满了，跳出此次循环；下面会重置 mPendingEventIndex</span>
+                        <span class="c1">// 等下次循环再读取事件</span>
+                        <span class="n">mPendingEventIndex</span> <span class="o">-=</span> <span class="mi">1</span><span class="p">;</span>
+                        <span class="k">break</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">eventItem</span><span class="p">.</span><span class="n">events</span> <span class="o">&amp;</span> <span class="n">EPOLLHUP</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">deviceChanged</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+                <span class="n">closeDeviceLocked</span><span class="p">(</span><span class="n">device</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="c1">// ③ 设备节点发生增删事件，将 deviceChanged 设为 true 并重新执行循环体</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mPendingINotify</span> <span class="o">&amp;&amp;</span> <span class="n">mPendingEventIndex</span> <span class="o">&gt;=</span> <span class="n">mPendingEventCount</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">mPendingINotify</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+            <span class="n">readNotifyLocked</span><span class="p">();</span>
+            <span class="n">deviceChanged</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="c1">// 立即上报设备增删事件，从这里看增删事件的优先级是高于其他事件的</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">deviceChanged</span><span class="p">)</span> <span class="k">continue</span><span class="p">;</span>
+
+        <span class="c1">// 如果此次 getEvents() 成功获取了一些事件或者要求唤醒 InputReader，则退出</span>
+        <span class="c1">// 循环并结束此次调用，使 InputReader 可以立即处理事件</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">event</span> <span class="o">!=</span> <span class="n">buffer</span> <span class="o">||</span> <span class="n">awoken</span><span class="p">)</span> <span class="k">break</span><span class="p">;</span>
+
+        <span class="c1">// ④ 若此次循环没有取到事件，则执行 epoll_wait() 等待事件到来，并将事件存储</span>
+        <span class="c1">// 到 mPendingEventItems 中且重置 mPendingEventIndex 为 0</span>
+        <span class="n">mPendingEventIndex</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">mLock</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span> <span class="c1">// release lock before poll, must be before release_wake_lock</span>
+        <span class="c1">// 释放电源锁</span>
+        <span class="n">release_wake_lock</span><span class="p">(</span><span class="n">WAKE_LOCK_ID</span><span class="cm">/*KeyEvents*/</span><span class="p">);</span>
+        
+        <span class="c1">// 调用 epoll_wait() 等待事件到来</span>
+        <span class="kt">int</span> <span class="n">pollResult</span> <span class="o">=</span> <span class="n">epoll_wait</span><span class="p">(</span><span class="n">mEpollFd</span><span class="p">,</span> <span class="n">mPendingEventItems</span><span class="p">,</span> <span class="n">EPOLL_MAX_EVENTS</span><span class="p">,</span> <span class="n">timeoutMillis</span><span class="p">);</span>
+        <span class="c1">// 获取电源锁，PARTIAL_WAKE_LOCK: 屏幕熄灭但 CPU 保持工作</span>
+        <span class="n">acquire_wake_lock</span><span class="p">(</span><span class="n">PARTIAL_WAKE_LOCK</span><span class="p">,</span> <span class="n">WAKE_LOCK_ID</span><span class="cm">/*KeyEvents*/</span><span class="p">);</span>
+        <span class="n">mLock</span><span class="p">.</span><span class="n">lock</span><span class="p">();</span> <span class="c1">// reacquire lock after poll, must be after acquire_wake_lock</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">pollResult</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// 没有取到事件，跳出循环</span>
+            <span class="n">mPendingEventCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">pollResult</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// 出错了</span>
+            <span class="n">mPendingEventCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">errno</span> <span class="o">!=</span> <span class="n">EINTR</span><span class="p">)</span> <span class="n">usleep</span><span class="p">(</span><span class="mi">100000</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="c1">// 取到事件了，进入下次循环</span>
+            <span class="n">mPendingEventCount</span> <span class="o">=</span> <span class="kt">size_t</span><span class="p">(</span><span class="n">pollResult</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">// 返回读取事件的个数</span>
+    <span class="k">return</span> <span class="n">event</span> <span class="o">-</span> <span class="n">buffer</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>通过 getEvents() 方法可以提取到以下关键信息：</p><ul><li>mPendingEventItems 数组是一个 epoll 事件池，getEvents() 会优先从这个事件池中获取 epoll 事件处理，并将读取到的事件返回给调用者；<li>当事件池无事件时，调用 epoll_wait() 等待事件到来并将事件存放到事件池中；<li>getEvents() 的过程其实可以看做是消费事件池中事件的过程；<li>可将从 epoll_wait() 调用开始到将事件消费完毕的过程理解为 EventHub 的一个监听周期</ul><p>当有 inotify 事件可以从 ifd 中读取时会产生一个 epoll 事件，EventHub 就知道设备节点 发生了增删操作。等事件池中的事件处理完毕之后，就会从 ifd 中读取 inotify 事件，进行设 备的加载/卸载操作，然后生成对应的 RawEvent 机构提返回给调用者。</p><p>getEvents() 包含原始事件读取、输入设备加载/卸载等操作</p><h3 id="对原始事件进行预处理">对原始事件进行预处理</h3><p>原始事件的预处理过程大致如下：</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+</pre><td class="rouge-code"><pre>InputReader::processEventsLocked() -&gt; processEventsForDeviceLocked() -&gt; 
+InputDevice::process() -&gt; InputMapper::process()
+</pre></table></code></div></div><p>接下来对以上函数一一进行分。</p><p>1、入口函数 <code class="language-plaintext highlighter-rouge">InputReader::processEventsLocked()</code></p><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+</pre><td class="rouge-code"><pre><span class="kt">void</span> <span class="n">InputReader</span><span class="o">::</span><span class="n">processEventsLocked</span><span class="p">(</span><span class="k">const</span> <span class="n">RawEvent</span><span class="o">*</span> <span class="n">rawEvents</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">count</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 遍历所有事件</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="n">RawEvent</span><span class="o">*</span> <span class="n">rawEvent</span> <span class="o">=</span> <span class="n">rawEvents</span><span class="p">;</span> <span class="n">count</span><span class="p">;)</span> <span class="p">{</span>
+        <span class="kt">int32_t</span> <span class="n">type</span> <span class="o">=</span> <span class="n">rawEvent</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">;</span>
+        <span class="kt">size_t</span> <span class="n">batchSize</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+        <span class="c1">// 根据事件类型区分是增删事件还是原始输入事件</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">type</span> <span class="o">&lt;</span> <span class="n">EventHubInterface</span><span class="o">::</span><span class="n">FIRST_SYNTHETIC_EVENT</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kt">int32_t</span> <span class="n">deviceId</span> <span class="o">=</span> <span class="n">rawEvent</span><span class="o">-&gt;</span><span class="n">deviceId</span><span class="p">;</span>
+            <span class="k">while</span> <span class="p">(</span><span class="n">batchSize</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">rawEvent</span><span class="p">[</span><span class="n">batchSize</span><span class="p">].</span><span class="n">type</span> <span class="o">&gt;=</span> <span class="n">EventHubInterface</span><span class="o">::</span><span class="n">FIRST_SYNTHETIC_EVENT</span>
+                        <span class="o">||</span> <span class="n">rawEvent</span><span class="p">[</span><span class="n">batchSize</span><span class="p">].</span><span class="n">deviceId</span> <span class="o">!=</span> <span class="n">deviceId</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">break</span><span class="p">;</span>
+                <span class="p">}</span>
+                <span class="n">batchSize</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="c1">// 批处理某一设备的一批事件</span>
+            <span class="n">processEventsForDeviceLocked</span><span class="p">(</span><span class="n">deviceId</span><span class="p">,</span> <span class="n">rawEvent</span><span class="p">,</span> <span class="n">batchSize</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="c1">// 暂时先不讨论此分支</span>
+            <span class="c1">// 设备增加事件：addDeviceLocked()</span>
+            <span class="c1">// 设备移除事件：removeDeviceLocked()</span>
+            <span class="c1">// 设备增加事件：addDeviceLocked()</span>
+            <span class="c1">// 配置文件变动：handleConfigurationChangedLocked()</span>
+        <span class="p">}</span>
+        <span class="n">count</span> <span class="o">-=</span> <span class="n">batchSize</span><span class="p">;</span>
+        <span class="n">rawEvent</span> <span class="o">+=</span> <span class="n">batchSize</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>该函数会分别处理原始输入事件与设备增删事件（暂不分析），对于原始输入事件，由于 EventHub 会将属于同一输入设备的原始输入事件放在一起，因此 <code class="language-plaintext highlighter-rouge">processEventsForDeviceLocked()</code> 同时处理来自同一输入设备的一批事件。</p><p>2、<code class="language-plaintext highlighter-rouge">InputReader::processEventsForDeviceLocked()</code> 函数</p><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre><td class="rouge-code"><pre><span class="kt">void</span> <span class="n">InputReader</span><span class="o">::</span><span class="n">processEventsForDeviceLocked</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">deviceId</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">RawEvent</span><span class="o">*</span> <span class="n">rawEvents</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">count</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 根据 deviceId 从 mDevices 字典中找到 index</span>
+    <span class="kt">ssize_t</span> <span class="n">deviceIndex</span> <span class="o">=</span> <span class="n">mDevices</span><span class="p">.</span><span class="n">indexOfKey</span><span class="p">(</span><span class="n">deviceId</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">deviceIndex</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+    <span class="c1">// 根据 index 从 mDevices 字典中获取 InputDevice 对象</span>
+    <span class="n">InputDevice</span><span class="o">*</span> <span class="n">device</span> <span class="o">=</span> <span class="n">mDevices</span><span class="p">.</span><span class="n">valueAt</span><span class="p">(</span><span class="n">deviceIndex</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">device</span><span class="o">-&gt;</span><span class="n">isIgnored</span><span class="p">())</span> <span class="k">return</span><span class="p">;</span>
+    <span class="c1">// 调用 InputDevice::process() 函数对这批事件进行处理</span>
+    <span class="n">device</span><span class="o">-&gt;</span><span class="n">process</span><span class="p">(</span><span class="n">rawEvents</span><span class="p">,</span> <span class="n">count</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>这里首次出现了 <code class="language-plaintext highlighter-rouge">InputDevice</code> 类，暂不做分析，先看下 <code class="language-plaintext highlighter-rouge">InputDevice::process()</code> 函数。</p><p>3、<code class="language-plaintext highlighter-rouge">InputDevice::process()</code> 函数</p><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+</pre><td class="rouge-code"><pre><span class="kt">void</span> <span class="n">InputDevice</span><span class="o">::</span><span class="n">process</span><span class="p">(</span><span class="k">const</span> <span class="n">RawEvent</span><span class="o">*</span> <span class="n">rawEvents</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">count</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 根据 event 的 class 不同有不同的 Mapper，大致有以下12种不同的输入设备：</span>
+    <span class="c1">// External devices：外接设备，比如鼠标、键盘等</span>
+    <span class="c1">// Devices with mics：具有 mic 的设备</span>
+    <span class="c1">// Switch-like devices：类开关设备，对应 SwitchInputMapper</span>
+    <span class="c1">// Scroll wheel-like devices：带滚轮的设备，对应  RotaryEncoderInputMapper</span>
+    <span class="c1">// Vibrator-like devices：类震动设备，对应 VibratorInputMapper</span>
+    <span class="c1">// Keyboard-like devices：类键盘设备，对应 KeyboardInputMapper</span>
+    <span class="c1">// Cursor-like devices：光标设备，比如轨迹球或鼠标，对应 CursorInputMapper</span>
+    <span class="c1">// Mouser-like devices：带有鼠标的输入设备，对应 KeyMouseInputMapper</span>
+    <span class="c1">// Touchscreens and touchpad devices：触摸屏和触摸板设备，这里又分为多点触控</span>
+    <span class="c1">//   和单点触控，分别对应 MultiTouchInputMapper 和 SingleTouchInputMapper</span>
+    <span class="c1">// Joystick-like devices：类似操纵杆的设备，对应 JoystickInputMapper</span>
+    <span class="c1">// External stylus-like devices：外部笔式设备，对应 ExternalStylusInputMapper</span>
+    <span class="kt">size_t</span> <span class="n">numMappers</span> <span class="o">=</span> <span class="n">mMappers</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="n">RawEvent</span><span class="o">*</span> <span class="n">rawEvent</span> <span class="o">=</span> <span class="n">rawEvents</span><span class="p">;</span> <span class="n">count</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">rawEvent</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... 其他处理</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">numMappers</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// mMappers 是 InputDevice 中的一个 InputMapper 对象列表，可以看出实</span>
+            <span class="c1">// 际的输入事件处理位于 InputMapper::process() 函数</span>
+            <span class="n">InputMapper</span><span class="o">*</span> <span class="n">mapper</span> <span class="o">=</span> <span class="n">mMappers</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+            <span class="c1">// 调用 InputMapper::process() 函数来处理</span>
+            <span class="n">mapper</span><span class="o">-&gt;</span><span class="n">process</span><span class="p">(</span><span class="n">rawEvent</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="o">--</span><span class="n">count</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p><strong>总结</strong>： <code class="language-plaintext highlighter-rouge">processEventsLocked()</code> 函数处理原始输入时间的逻辑如下：</p><ul><li>首先将输入同一设备的输入时间交给 <code class="language-plaintext highlighter-rouge">processEventsForDeviceLocked()</code> 函数处理；<li>然后 <code class="language-plaintext highlighter-rouge">processEventsForDeviceLocked()</code> 再将事件转发给 <code class="language-plaintext highlighter-rouge">InputDevice::process()</code> 处理；<li>最后 <code class="language-plaintext highlighter-rouge">InputDevice::process()</code> 将事件交给 <code class="language-plaintext highlighter-rouge">InputMapper::process()</code> 来处理</ul><p>通过 InputMapper 处理后的事件就可以提交给 <code class="language-plaintext highlighter-rouge">InputDispatcher</code> 来进行分发了</p><h3 id="将事件发布到-inputdispatcher">将事件发布到 InputDispatcher</h3><p>执行完 <code class="language-plaintext highlighter-rouge">mQueuedListener-&gt;flush()</code> 后，工作重心将从 InputReader 转移到 InputDispatcher</p><p>这是为什么呢？看下面：</p><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+</pre><td class="rouge-code"><pre><span class="c1">// InputManager 实例化时</span>
+<span class="n">mDispatcher</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">InputDispatcher</span><span class="p">(</span><span class="n">dispatcherPolicy</span><span class="p">);</span>
+<span class="n">mReader</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">InputReader</span><span class="p">(</span><span class="n">eventHub</span><span class="p">,</span> <span class="n">readerPolicy</span><span class="p">,</span> <span class="n">mDispatcher</span><span class="cm">/*listener*/</span><span class="p">);</span>
+<span class="c1">// InputReader 实例化时</span>
+<span class="n">mQueuedListener</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">QueuedInputListener</span><span class="p">(</span><span class="n">listener</span><span class="cm">/*mDispatcher*/</span><span class="p">);</span>
+<span class="c1">// QueuedInputListener 实例化时</span>
+<span class="n">mInnerListener</span> <span class="o">=</span> <span class="n">innerListener</span><span class="cm">/*mDispatcher*/</span><span class="p">;</span>
+
+<span class="c1">// 所以 mQueuedLister-&gt;flush() -&gt;</span>
+<span class="kt">void</span> <span class="n">QueuedInputListener</span><span class="o">::</span><span class="n">flush</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kt">size_t</span> <span class="n">count</span> <span class="o">=</span> <span class="n">mArgsQueue</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// NotifyArgs 有 5 个实现子类：</span>
+        <span class="c1">// NotifyConfigurationChangedArgs：配置更改事件</span>
+        <span class="c1">// NotifyDeviceResetArgs：设备重置事件，比如添加、移除或重新配置</span>
+        <span class="c1">// NotifyKeyArgs：按键事件，多用于电视机</span>
+        <span class="c1">// NotifyMotionArgs：手势事件，多用于只能手机或平板、车载等手持设备</span>
+        <span class="c1">// NotifySwitchArgs：切换事件</span>
+        <span class="c1">// 这里以 NotityMotionArgs 为例</span>
+        <span class="n">NotifyArgs</span><span class="o">*</span> <span class="n">args</span> <span class="o">=</span> <span class="n">mArgsQueue</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+        <span class="c1">// mInnerListeren 即 mDispatcher</span>
+        <span class="n">args</span><span class="o">-&gt;</span><span class="n">notify</span><span class="p">(</span><span class="n">mInnerListener</span><span class="p">);</span>
+        <span class="k">delete</span> <span class="n">args</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">mArgsQueue</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>NotifyArgs 有多个子类，会注意尝试让子类就行处理，如果不满足子类约定的事件类型则会立即 尝试下一个子类来处理，以下我们将以 <code class="language-plaintext highlighter-rouge">NotifyMotionArgs</code> 为例来分析。</p><h2 id="inputdispatcherlooponce-函数"><code class="language-plaintext highlighter-rouge">InputDispatcher::loopOnce()</code> 函数</h2><p>InputDispatcher、InputDispatcherThread、InputChannel</p><h3 id="inputdispatchernotifymotion"><code class="language-plaintext highlighter-rouge">InputDispatcher::notifyMotion()</code></h3><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+</pre><td class="rouge-code"><pre><span class="kt">void</span> <span class="n">InputDispatcher</span><span class="o">::</span><span class="n">notifyMotion</span><span class="p">(</span><span class="k">const</span> <span class="n">NotifyMotionArgs</span><span class="o">*</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 校验事件是否合法，若果非法则直接返回</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">validateMotionEvent</span><span class="p">(</span><span class="n">args</span><span class="o">-&gt;</span><span class="n">action</span><span class="p">,</span> <span class="n">args</span><span class="o">-&gt;</span><span class="n">actionButton</span><span class="p">,</span>
+            <span class="n">args</span><span class="o">-&gt;</span><span class="n">pointerCount</span><span class="p">,</span> <span class="n">args</span><span class="o">-&gt;</span><span class="n">pointerProperties</span><span class="p">))</span> <span class="k">return</span><span class="p">;</span>
+    <span class="kt">uint32_t</span> <span class="n">policyFlags</span> <span class="o">=</span> <span class="n">args</span><span class="o">-&gt;</span><span class="n">policyFlags</span><span class="p">;</span>
+    <span class="n">policyFlags</span> <span class="o">|=</span> <span class="n">POLICY_FLAG_TRUSTED</span><span class="p">;</span>
+    <span class="n">android</span><span class="o">::</span><span class="n">base</span><span class="o">::</span><span class="n">Timer</span> <span class="n">t</span><span class="p">;</span>
+    <span class="c1">// mPolicy 的实际执行者是 Java 层的 PhoneWindowManager，其实现了WindowManagerPolicy 接口</span>
+    <span class="n">mPolicy</span><span class="o">-&gt;</span><span class="n">interceptMotionBeforeQueueing</span><span class="p">(</span><span class="n">args</span><span class="o">-&gt;</span><span class="n">eventTime</span><span class="p">,</span> <span class="cm">/*byref*/</span> <span class="n">policyFlags</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">duration</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">SLOW_INTERCEPTION_THRESHOLD</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 方法执行时长超过 50ms 则打印一条 W 级别的警告日志</span>
+    <span class="p">}</span>
+    <span class="kt">bool</span> <span class="n">needWake</span><span class="p">;</span>
+    <span class="p">{</span> <span class="c1">// acquire lock</span>
+        <span class="n">mLock</span><span class="p">.</span><span class="n">lock</span><span class="p">();</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">shouldSendMotionToInputFilterLocked</span><span class="p">(</span><span class="n">args</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">mLock</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
+            <span class="n">MotionEvent</span> <span class="n">event</span><span class="p">;</span>
+            <span class="c1">// 将 MotionEntry 转化成一个 MotionEvent 对象</span>
+            <span class="n">event</span><span class="p">.</span><span class="n">initialize</span><span class="p">(...);</span>
+            <span class="n">policyFlags</span> <span class="o">|=</span> <span class="n">POLICY_FLAG_FILTERED</span><span class="p">;</span>
+            <span class="c1">// 转发给 Java 层去执行，返回 true 表示事件未被修改需要继续向下传递</span>
+            <span class="c1">// 返回 false 表示事件被消费了，不需要向下传递</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">mPolicy</span><span class="o">-&gt;</span><span class="n">filterInputEvent</span><span class="p">(</span><span class="o">&amp;</span><span class="n">event</span><span class="p">,</span> <span class="n">policyFlags</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span> <span class="c1">// event was consumed by the filter</span>
+            <span class="p">}</span>
+            <span class="n">mLock</span><span class="p">.</span><span class="n">lock</span><span class="p">();</span>
+        <span class="p">}</span>
+        <span class="c1">// 使用 NotifyMotionArgs 创建一个新的 MotionEntry 对象并放入派发队列中</span>
+        <span class="n">MotionEntry</span><span class="o">*</span> <span class="n">newEntry</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MotionEntry</span><span class="p">(...);</span>
+        <span class="n">needWake</span> <span class="o">=</span> <span class="n">enqueueInboundEventLocked</span><span class="p">(</span><span class="n">newEntry</span><span class="p">);</span>
+        <span class="n">mLock</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
+    <span class="p">}</span> <span class="c1">// release lock</span>
+    <span class="c1">// 唤醒 dispatcher 线程</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">needWake</span><span class="p">)</span> <span class="n">mLooper</span><span class="o">-&gt;</span><span class="n">wake</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>事件入队 <code class="language-plaintext highlighter-rouge">enqueueInboundEventLocked()</code></p><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre><td class="rouge-code"><pre><span class="kt">bool</span> <span class="n">InputDispatcher</span><span class="o">::</span><span class="n">enqueueInboundEventLocked</span><span class="p">(</span><span class="n">EventEntry</span><span class="o">*</span> <span class="n">entry</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 队列为空，表示 dispatcher 线程处于休眠状态，需要唤醒</span>
+    <span class="kt">bool</span> <span class="n">needWake</span> <span class="o">=</span> <span class="n">mInboundQueue</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">();</span>
+    <span class="c1">// 将事件放到队尾</span>
+    <span class="n">mInboundQueue</span><span class="p">.</span><span class="n">enqueueAtTail</span><span class="p">(</span><span class="n">entry</span><span class="p">);</span>
+    <span class="c1">// ...</span>
+    <span class="k">return</span> <span class="n">needWake</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p>mInboundQueue 为空时，dispatcher 线程将进入休眠状态</p><h3 id="inputdispatcher-dispatch-线程循环">InputDispatcher dispatch 线程循环</h3><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+</pre><td class="rouge-code"><pre><span class="kt">void</span> <span class="n">InputDispatcher</span><span class="o">::</span><span class="n">dispatchOnce</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">nsecs_t</span> <span class="n">nextWakeupTime</span> <span class="o">=</span> <span class="n">LONG_LONG_MAX</span><span class="p">;</span>
+    <span class="p">{</span> <span class="c1">// acquire lock</span>
+        <span class="n">AutoMutex</span> <span class="n">_l</span><span class="p">(</span><span class="n">mLock</span><span class="p">);</span>
+        <span class="n">mDispatcherIsAliveCondition</span><span class="p">.</span><span class="n">broadcast</span><span class="p">();</span>
+        <span class="c1">// 通过 dispatchOnceInnerLocked 进行事件分发，nextWakeupTime 表示下次分发</span>
+        <span class="c1">// 执行的时间</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">haveCommandsLocked</span><span class="p">())</span> <span class="p">{</span>
+            <span class="n">dispatchOnceInnerLocked</span><span class="p">(</span><span class="o">&amp;</span><span class="n">nextWakeupTime</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="c1">// 执行队列中的命令</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">runCommandsLockedInterruptible</span><span class="p">())</span> <span class="p">{</span>
+            <span class="c1">// 当把 nextWakeupTime 设置为 LONG_LONG_MIN 时将立即开始下次分发</span>
+            <span class="n">nextWakeupTime</span> <span class="o">=</span> <span class="n">LONG_LONG_MIN</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="c1">// release lock</span>
+
+    <span class="c1">// 如果有必要，让分发线程陷入休眠状态，由 nextWakeupTime 来指定休眠时间</span>
+    <span class="n">nsecs_t</span> <span class="n">currentTime</span> <span class="o">=</span> <span class="n">now</span><span class="p">();</span>
+    <span class="kt">int</span> <span class="n">timeoutMillis</span> <span class="o">=</span> <span class="n">toMillisecondTimeoutDelay</span><span class="p">(</span><span class="n">currentTime</span><span class="p">,</span> <span class="n">nextWakeupTime</span><span class="p">);</span>
+    <span class="c1">// pollOnce() 的本质就是 epoll_wait()</span>
+    <span class="n">mLooper</span><span class="o">-&gt;</span><span class="n">pollOnce</span><span class="p">(</span><span class="n">timeoutMillis</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></table></code></div></div><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+</pre><td class="rouge-code"><pre><span class="kt">void</span> <span class="n">InputDispatcher</span><span class="o">::</span><span class="n">dispatchOnceInnerLocked</span><span class="p">(</span><span class="n">nsecs_t</span><span class="o">*</span> <span class="n">nextWakeupTime</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">nsecs_t</span> <span class="n">currentTime</span> <span class="o">=</span> <span class="n">now</span><span class="p">();</span>
+    <span class="c1">// Reset the key repeat timer whenever normal dispatch is suspended while the</span>
+    <span class="c1">// device is in a non-interactive state.  This is to ensure that we abort a key</span>
+    <span class="c1">// repeat if the device is just coming out of sleep.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">mDispatchEnabled</span><span class="p">)</span> <span class="n">resetKeyRepeatLocked</span><span class="p">();</span>
+    <span class="c1">// If dispatching is frozen, do not process timeouts or try to deliver any new events.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">mDispatchFrozen</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+    <span class="c1">// Optimize latency of app switches.</span>
+    <span class="c1">// Essentially we start a short timeout when an app switch key (HOME / ENDCALL) has</span>
+    <span class="c1">// been pressed.  When it expires, we preempt dispatch and drop all other pending events.</span>
+    <span class="kt">bool</span> <span class="n">isAppSwitchDue</span> <span class="o">=</span> <span class="n">mAppSwitchDueTime</span> <span class="o">&lt;=</span> <span class="n">currentTime</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">mAppSwitchDueTime</span> <span class="o">&lt;</span> <span class="o">*</span><span class="n">nextWakeupTime</span><span class="p">)</span> <span class="p">{</span>
+        <span class="o">*</span><span class="n">nextWakeupTime</span> <span class="o">=</span> <span class="n">mAppSwitchDueTime</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// Ready to start a new event.</span>
+    <span class="c1">// If we don't already have a pending event, go grab one.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">mPendingEvent</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mInboundQueue</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">isAppSwitchDue</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// The inbound queue is empty so the app switch key we were waiting</span>
+                <span class="c1">// for will never arrive.  Stop waiting for it.</span>
+                <span class="n">resetPendingAppSwitchLocked</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span>
+                <span class="n">isAppSwitchDue</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="c1">// Synthesize a key repeat if appropriate.</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">mKeyRepeatState</span><span class="p">.</span><span class="n">lastKeyEntry</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">currentTime</span> <span class="o">&gt;=</span> <span class="n">mKeyRepeatState</span><span class="p">.</span><span class="n">nextRepeatTime</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">mPendingEvent</span> <span class="o">=</span> <span class="n">synthesizeKeyRepeatLocked</span><span class="p">(</span><span class="n">currentTime</span><span class="p">);</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">mKeyRepeatState</span><span class="p">.</span><span class="n">nextRepeatTime</span> <span class="o">&lt;</span> <span class="o">*</span><span class="n">nextWakeupTime</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="o">*</span><span class="n">nextWakeupTime</span> <span class="o">=</span> <span class="n">mKeyRepeatState</span><span class="p">.</span><span class="n">nextRepeatTime</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="c1">// 队列为空</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">mPendingEvent</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="c1">// 取出队列头</span>
+            <span class="n">mPendingEvent</span> <span class="o">=</span> <span class="n">mInboundQueue</span><span class="p">.</span><span class="n">dequeueAtHead</span><span class="p">();</span>
+        <span class="p">}</span>
+        <span class="c1">// Poke user activity for this event.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mPendingEvent</span><span class="o">-&gt;</span><span class="n">policyFlags</span> <span class="o">&amp;</span> <span class="n">POLICY_FLAG_PASS_TO_USER</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">pokeUserActivityLocked</span><span class="p">(</span><span class="n">mPendingEvent</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="c1">// Get ready to dispatch the event.</span>
+        <span class="n">resetANRTimeoutsLocked</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="c1">// Now we have an event to dispatch.</span>
+    <span class="c1">// All events are eventually dequeued and processed this way, even if we intend to drop them.</span>
+    <span class="kt">bool</span> <span class="n">done</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="n">DropReason</span> <span class="n">dropReason</span> <span class="o">=</span> <span class="n">DROP_REASON_NOT_DROPPED</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">mPendingEvent</span><span class="o">-&gt;</span><span class="n">policyFlags</span> <span class="o">&amp;</span> <span class="n">POLICY_FLAG_PASS_TO_USER</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">dropReason</span> <span class="o">=</span> <span class="n">DROP_REASON_POLICY</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">mDispatchEnabled</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">dropReason</span> <span class="o">=</span> <span class="n">DROP_REASON_DISABLED</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">mNextUnblockedEvent</span> <span class="o">==</span> <span class="n">mPendingEvent</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">mNextUnblockedEvent</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">mPendingEvent</span><span class="o">-&gt;</span><span class="n">type</span> <span class="o">==</span> <span class="n">EventEntry</span><span class="o">::</span><span class="n">TYPE_MOTION</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">MotionEntry</span><span class="o">*</span> <span class="n">typedEntry</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">MotionEntry</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">mPendingEvent</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">dropReason</span> <span class="o">==</span> <span class="n">DROP_REASON_NOT_DROPPED</span> <span class="o">&amp;&amp;</span> <span class="n">isAppSwitchDue</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">dropReason</span> <span class="o">=</span> <span class="n">DROP_REASON_APP_SWITCH</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">dropReason</span> <span class="o">==</span> <span class="n">DROP_REASON_NOT_DROPPED</span>
+                    <span class="o">&amp;&amp;</span> <span class="n">isStaleEventLocked</span><span class="p">(</span><span class="n">currentTime</span><span class="p">,</span> <span class="n">typedEntry</span><span class="p">))</span> <span class="p">{</span>
+                <span class="n">dropReason</span> <span class="o">=</span> <span class="n">DROP_REASON_STALE</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">dropReason</span> <span class="o">==</span> <span class="n">DROP_REASON_NOT_DROPPED</span> <span class="o">&amp;&amp;</span> <span class="n">mNextUnblockedEvent</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">dropReason</span> <span class="o">=</span> <span class="n">DROP_REASON_BLOCKED</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="n">done</span> <span class="o">=</span> <span class="n">dispatchMotionLocked</span><span class="p">(</span><span class="n">currentTime</span><span class="p">,</span> <span class="n">typedEntry</span><span class="p">,</span>
+                    <span class="o">&amp;</span><span class="n">dropReason</span><span class="p">,</span> <span class="n">nextWakeupTime</span><span class="p">);</span>
+    <span class="p">}</span><span class="c1">// ...</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">done</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// 分发完成，准备分发下一个事件</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">dropReason</span> <span class="o">!=</span> <span class="n">DROP_REASON_NOT_DROPPED</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">dropInboundEventLocked</span><span class="p">(</span><span class="n">mPendingEvent</span><span class="p">,</span> <span class="n">dropReason</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="n">mLastDropReason</span> <span class="o">=</span> <span class="n">dropReason</span><span class="p">;</span>
+        <span class="n">releasePendingEventLocked</span><span class="p">();</span>
+        <span class="c1">// 立即唤醒分发线程</span>
+        <span class="o">*</span><span class="n">nextWakeupTime</span> <span class="o">=</span> <span class="n">LONG_LONG_MIN</span><span class="p">;</span>  <span class="c1">// force next poll to wake up immediately</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></table></code></div></div><h3 id="dispatchmotionlocked-函数">dispatchMotionLocked() 函数</h3><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+</pre><td class="rouge-code"><pre><span class="kt">bool</span> <span class="n">InputDispatcher</span><span class="o">::</span><span class="n">dispatchMotionLocked</span><span class="p">(</span><span class="n">nsecs_t</span> <span class="n">currentTime</span><span class="p">,</span>
+    <span class="n">MotionEntry</span><span class="o">*</span> <span class="n">entry</span><span class="p">,</span> <span class="n">DropReason</span><span class="o">*</span> <span class="n">dropReason</span><span class="p">,</span> <span class="n">nsecs_t</span><span class="o">*</span> <span class="n">nextWakeupTime</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 标记消息正在处理中</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">dispatchInProgress</span><span class="p">)</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">dispatchInProgress</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">dropReason</span> <span class="o">!=</span> <span class="n">DROP_REASON_NOT_DROPPED</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 丢弃掉标记为 DROP_REASON_NOT_DROPPED 的事件</span>
+        <span class="c1">// 将 injectionResult 赋值给 entry-&gt;injectionState-&gt;injectionResult</span>
+        <span class="n">setInjectionResultLocked</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="o">*</span><span class="n">dropReason</span> <span class="o">==</span> <span class="n">DROP_REASON_POLICY</span>
+                <span class="o">?</span> <span class="n">INPUT_EVENT_INJECTION_SUCCEEDED</span> <span class="o">:</span> <span class="n">INPUT_EVENT_INJECTION_FAILED</span><span class="p">);</span>
+        <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// pointer 事件</span>
+    <span class="kt">bool</span> <span class="n">isPointerEvent</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">source</span> <span class="o">&amp;</span> <span class="n">AINPUT_SOURCE_CLASS_POINTER</span><span class="p">;</span>
+    <span class="c1">// 接收输入事件的目标窗口</span>
+    <span class="n">Vector</span><span class="o">&lt;</span><span class="n">InputTarget</span><span class="o">&gt;</span> <span class="n">inputTargets</span><span class="p">;</span>
+    <span class="c1">// 标记 pointer action 是否冲突</span>
+    <span class="kt">bool</span> <span class="n">conflictingPointerActions</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="kt">int32_t</span> <span class="n">injectionResult</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">isPointerEvent</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Pointer event. 获取当前被触摸的窗口，下一步把事件分发给该窗口</span>
+        <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">findTouchedWindowTargetsLocked</span><span class="p">(</span><span class="n">currentTime</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span>
+            <span class="n">inputTargets</span><span class="p">,</span> <span class="n">nextWakeupTime</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">conflictingPointerActions</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="c1">// Non touch event. 获取当前获取焦点的窗口，下一步把事件分发给该窗口</span>
+        <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">findFocusedWindowTargetsLocked</span><span class="p">(</span><span class="n">currentTime</span><span class="p">,</span>
+            <span class="n">entry</span><span class="p">,</span> <span class="n">inputTargets</span><span class="p">,</span> <span class="n">nextWakeupTime</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">injectionResult</span> <span class="o">==</span> <span class="n">INPUT_EVENT_INJECTION_PENDING</span><span class="p">)</span> <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="n">setInjectionResultLocked</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">injectionResult</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">injectionResult</span> <span class="o">!=</span> <span class="n">INPUT_EVENT_INJECTION_SUCCEEDED</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 获取窗口失败，返回</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">injectionResult</span> <span class="o">!=</span> <span class="n">INPUT_EVENT_INJECTION_PERMISSION_DENIED</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">CancelationOptions</span><span class="o">::</span><span class="n">Mode</span> <span class="n">mode</span><span class="p">(</span><span class="n">isPointerEvent</span> <span class="o">?</span>
+                    <span class="n">CancelationOptions</span><span class="o">::</span><span class="n">CANCEL_POINTER_EVENTS</span> <span class="o">:</span>
+                    <span class="n">CancelationOptions</span><span class="o">::</span><span class="n">CANCEL_NON_POINTER_EVENTS</span><span class="p">);</span>
+            <span class="n">CancelationOptions</span> <span class="n">options</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="s">"input event injection failed"</span><span class="p">);</span>
+            <span class="n">synthesizeCancelationEventsForMonitorsLocked</span><span class="p">(</span><span class="n">options</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">addMonitoringTargetsLocked</span><span class="p">(</span><span class="n">inputTargets</span><span class="p">);</span>
+    <span class="c1">// Dispatch the motion.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">conflictingPointerActions</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">CancelationOptions</span> <span class="n">options</span><span class="p">(</span><span class="n">CancelationOptions</span><span class="o">::</span><span class="n">CANCEL_POINTER_EVENTS</span><span class="p">,</span>
+                <span class="s">"conflicting pointer actions"</span><span class="p">);</span>
+        <span class="n">synthesizeCancelationEventsForAllConnectionsLocked</span><span class="p">(</span><span class="n">options</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="c1">// 将事件分发给目标窗口</span>
+    <span class="n">dispatchEventLocked</span><span class="p">(</span><span class="n">currentTime</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="n">inputTargets</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p><strong>小结</strong>：</p><ul><li>通过 <code class="language-plaintext highlighter-rouge">findTouched/FocusedWindowTargetsLocked()</code> 方法查找接收事件的目标窗口；<li>通过 <code class="language-plaintext highlighter-rouge">dispatchEventLocked()</code> 方法将事件分发给目标窗口；</ul><h3 id="findtouchedwindowtargetslocked-函数">findTouchedWindowTargetsLocked() 函数</h3><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+</pre><td class="rouge-code"><pre><span class="kt">int32_t</span> <span class="n">InputDispatcher</span><span class="o">::</span><span class="n">findTouchedWindowTargetsLocked</span><span class="p">(</span><span class="n">nsecs_t</span> <span class="n">currentTime</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">MotionEntry</span><span class="o">*</span> <span class="n">entry</span><span class="p">,</span> <span class="n">Vector</span><span class="o">&lt;</span><span class="n">InputTarget</span><span class="o">&gt;&amp;</span> <span class="n">inputTargets</span><span class="p">,</span>
+    <span class="n">nsecs_t</span><span class="o">*</span> <span class="n">nextWakeupTime</span><span class="p">,</span> <span class="kt">bool</span><span class="o">*</span> <span class="n">outConflictingPointerActions</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">enum</span> <span class="n">InjectionPermission</span> <span class="p">{</span>
+        <span class="n">INJECTION_PERMISSION_UNKNOWN</span><span class="p">,</span> <span class="c1">// 未知</span>
+        <span class="n">INJECTION_PERMISSION_GRANTED</span><span class="p">,</span> <span class="c1">// 允许</span>
+        <span class="n">INJECTION_PERMISSION_DENIED</span> <span class="c1">// 拒绝</span>
+    <span class="p">};</span>
+    <span class="c1">// For security reasons, we defer updating the touch state until we are sure that</span>
+    <span class="c1">// event injection will be allowed.</span>
+    <span class="kt">int32_t</span> <span class="n">displayId</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">displayId</span><span class="p">;</span>
+    <span class="kt">int32_t</span> <span class="n">action</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">action</span><span class="p">;</span>
+    <span class="kt">int32_t</span> <span class="n">maskedAction</span> <span class="o">=</span> <span class="n">action</span> <span class="o">&amp;</span> <span class="n">AMOTION_EVENT_ACTION_MASK</span><span class="p">;</span>
+    <span class="c1">// Update the touch state as needed based on the properties of the touch event.</span>
+    <span class="kt">int32_t</span> <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">INPUT_EVENT_INJECTION_PENDING</span><span class="p">;</span>
+    <span class="n">InjectionPermission</span> <span class="n">injectionPermission</span> <span class="o">=</span> <span class="n">INJECTION_PERMISSION_UNKNOWN</span><span class="p">;</span>
+    <span class="n">sp</span><span class="o">&lt;</span><span class="n">InputWindowHandle</span><span class="o">&gt;</span> <span class="n">newHoverWindowHandle</span><span class="p">;</span>
+    <span class="c1">// Copy current touch state into mTempTouchState.</span>
+    <span class="c1">// This state is always reset at the end of this function, so if we don't find state</span>
+    <span class="c1">// for the specified display then our initial state will be empty.</span>
+    <span class="k">const</span> <span class="n">TouchState</span><span class="o">*</span> <span class="n">oldState</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="kt">ssize_t</span> <span class="n">oldStateIndex</span> <span class="o">=</span> <span class="n">mTouchStatesByDisplay</span><span class="p">.</span><span class="n">indexOfKey</span><span class="p">(</span><span class="n">displayId</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">oldStateIndex</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">oldState</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">mTouchStatesByDisplay</span><span class="p">.</span><span class="n">valueAt</span><span class="p">(</span><span class="n">oldStateIndex</span><span class="p">);</span>
+        <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">copyFrom</span><span class="p">(</span><span class="o">*</span><span class="n">oldState</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="kt">bool</span> <span class="n">isSplit</span> <span class="o">=</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">split</span><span class="p">;</span>
+    <span class="kt">bool</span> <span class="n">switchedDevice</span> <span class="o">=</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">deviceId</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">displayId</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+            <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">mTempTouchState</span><span class="p">.</span><span class="n">deviceId</span> <span class="o">!=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">deviceId</span>
+                    <span class="o">||</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">source</span> <span class="o">!=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">source</span>
+                    <span class="o">||</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">displayId</span> <span class="o">!=</span> <span class="n">displayId</span><span class="p">);</span>
+    <span class="c1">// hover action</span>
+    <span class="kt">bool</span> <span class="n">isHoverAction</span> <span class="o">=</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_HOVER_MOVE</span>
+            <span class="o">||</span> <span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_HOVER_ENTER</span>
+            <span class="o">||</span> <span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_HOVER_EXIT</span><span class="p">);</span>
+    <span class="c1">// new gesture</span>
+    <span class="kt">bool</span> <span class="n">newGesture</span> <span class="o">=</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_DOWN</span>
+            <span class="o">||</span> <span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_SCROLL</span>
+            <span class="o">||</span> <span class="n">isHoverAction</span><span class="p">);</span>
+    <span class="kt">bool</span> <span class="n">wrongDevice</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">newGesture</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">bool</span> <span class="n">down</span> <span class="o">=</span> <span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_DOWN</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">switchedDevice</span> <span class="o">&amp;&amp;</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">down</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">down</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">isHoverAction</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// TODO: test multiple simultaneous input streams.</span>
+            <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">INPUT_EVENT_INJECTION_FAILED</span><span class="p">;</span>
+            <span class="n">switchedDevice</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+            <span class="n">wrongDevice</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+            <span class="k">goto</span> <span class="n">Failed</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
+        <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">down</span> <span class="o">=</span> <span class="n">down</span><span class="p">;</span>
+        <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">deviceId</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">deviceId</span><span class="p">;</span>
+        <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">source</span><span class="p">;</span>
+        <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">displayId</span> <span class="o">=</span> <span class="n">displayId</span><span class="p">;</span>
+        <span class="n">isSplit</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">switchedDevice</span> <span class="o">&amp;&amp;</span> <span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_MOVE</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// TODO: test multiple simultaneous input streams.</span>
+        <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">INPUT_EVENT_INJECTION_PERMISSION_DENIED</span><span class="p">;</span>
+        <span class="n">switchedDevice</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="n">wrongDevice</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+        <span class="k">goto</span> <span class="n">Failed</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">newGesture</span> <span class="o">||</span> <span class="p">(</span><span class="n">isSplit</span> <span class="o">&amp;&amp;</span> <span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_POINTER_DOWN</span><span class="p">))</span> <span class="p">{</span>
+        <span class="cm">/* Case 1: New splittable pointer going down, or need target for hover or scroll. */</span>
+        <span class="kt">int32_t</span> <span class="n">pointerIndex</span> <span class="o">=</span> <span class="n">getMotionEventActionPointerIndex</span><span class="p">(</span><span class="n">action</span><span class="p">);</span>
+        <span class="kt">int32_t</span> <span class="n">x</span> <span class="o">=</span> <span class="kt">int32_t</span><span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">pointerCoords</span><span class="p">[</span><span class="n">pointerIndex</span><span class="p">].</span>
+                <span class="n">getAxisValue</span><span class="p">(</span><span class="n">AMOTION_EVENT_AXIS_X</span><span class="p">));</span>
+        <span class="kt">int32_t</span> <span class="n">y</span> <span class="o">=</span> <span class="kt">int32_t</span><span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">pointerCoords</span><span class="p">[</span><span class="n">pointerIndex</span><span class="p">].</span>
+                <span class="n">getAxisValue</span><span class="p">(</span><span class="n">AMOTION_EVENT_AXIS_Y</span><span class="p">));</span>
+        <span class="n">sp</span><span class="o">&lt;</span><span class="n">InputWindowHandle</span><span class="o">&gt;</span> <span class="n">newTouchedWindowHandle</span><span class="p">;</span>
+        <span class="kt">bool</span> <span class="n">isTouchModal</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="c1">// Traverse windows from front to back to find touched window and outside targets.</span>
+        <span class="kt">size_t</span> <span class="n">numWindows</span> <span class="o">=</span> <span class="n">mWindowHandles</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">numWindows</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">sp</span><span class="o">&lt;</span><span class="n">InputWindowHandle</span><span class="o">&gt;</span> <span class="n">windowHandle</span> <span class="o">=</span> <span class="n">mWindowHandles</span><span class="p">.</span><span class="n">itemAt</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+            <span class="k">const</span> <span class="n">InputWindowInfo</span><span class="o">*</span> <span class="n">windowInfo</span> <span class="o">=</span> <span class="n">windowHandle</span><span class="o">-&gt;</span><span class="n">getInfo</span><span class="p">();</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">windowInfo</span><span class="o">-&gt;</span><span class="n">displayId</span> <span class="o">!=</span> <span class="n">displayId</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">continue</span><span class="p">;</span> <span class="c1">// wrong display</span>
+            <span class="p">}</span>
+            <span class="kt">int32_t</span> <span class="n">flags</span> <span class="o">=</span> <span class="n">windowInfo</span><span class="o">-&gt;</span><span class="n">layoutParamsFlags</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">windowInfo</span><span class="o">-&gt;</span><span class="n">visible</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="o">!</span> <span class="p">(</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">InputWindowInfo</span><span class="o">::</span><span class="n">FLAG_NOT_TOUCHABLE</span><span class="p">))</span> <span class="p">{</span>
+                    <span class="n">isTouchModal</span> <span class="o">=</span> <span class="p">(</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">InputWindowInfo</span><span class="o">::</span><span class="n">FLAG_NOT_FOCUSABLE</span>
+                            <span class="o">|</span> <span class="n">InputWindowInfo</span><span class="o">::</span><span class="n">FLAG_NOT_TOUCH_MODAL</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">;</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">isTouchModal</span> <span class="o">||</span> <span class="n">windowInfo</span><span class="o">-&gt;</span><span class="n">touchableRegionContainsPoint</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span> <span class="p">{</span>
+                        <span class="n">newTouchedWindowHandle</span> <span class="o">=</span> <span class="n">windowHandle</span><span class="p">;</span>
+                        <span class="k">break</span><span class="p">;</span> <span class="c1">// found touched window, exit window loop</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_DOWN</span>
+                        <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">InputWindowInfo</span><span class="o">::</span><span class="n">FLAG_WATCH_OUTSIDE_TOUCH</span><span class="p">))</span> <span class="p">{</span>
+                    <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">addOrUpdateWindow</span><span class="p">(</span>
+                            <span class="n">windowHandle</span><span class="p">,</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_DISPATCH_AS_OUTSIDE</span><span class="p">,</span> <span class="n">BitSet32</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="c1">// Figure out whether splitting will be allowed for this window.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">newTouchedWindowHandle</span> <span class="o">!=</span> <span class="nb">NULL</span>
+                <span class="o">&amp;&amp;</span> <span class="n">newTouchedWindowHandle</span><span class="o">-&gt;</span><span class="n">getInfo</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">supportsSplitTouch</span><span class="p">())</span> <span class="p">{</span>
+            <span class="c1">// New window supports splitting.</span>
+            <span class="n">isSplit</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">isSplit</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// New window does not support splitting but we have already split events.</span>
+            <span class="c1">// Ignore the new window.</span>
+            <span class="n">newTouchedWindowHandle</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="c1">// Handle the case where we did not find a window.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">newTouchedWindowHandle</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// Try to assign the pointer to the first foreground window we find, if there is one.</span>
+            <span class="n">newTouchedWindowHandle</span> <span class="o">=</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">getFirstForegroundWindowHandle</span><span class="p">();</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">newTouchedWindowHandle</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">ALOGI</span><span class="p">(</span><span class="s">"Dropping event because there is no touchable window at (%d, %d)."</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">);</span>
+                <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">INPUT_EVENT_INJECTION_FAILED</span><span class="p">;</span>
+                <span class="k">goto</span> <span class="n">Failed</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="c1">// Set target flags.</span>
+        <span class="kt">int32_t</span> <span class="n">targetFlags</span> <span class="o">=</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_FOREGROUND</span> <span class="o">|</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_DISPATCH_AS_IS</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">isSplit</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">targetFlags</span> <span class="o">|=</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_SPLIT</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">isWindowObscuredAtPointLocked</span><span class="p">(</span><span class="n">newTouchedWindowHandle</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">targetFlags</span> <span class="o">|=</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_WINDOW_IS_OBSCURED</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">isWindowObscuredLocked</span><span class="p">(</span><span class="n">newTouchedWindowHandle</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">targetFlags</span> <span class="o">|=</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_WINDOW_IS_PARTIALLY_OBSCURED</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="c1">// Update hover state.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">isHoverAction</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">newHoverWindowHandle</span> <span class="o">=</span> <span class="n">newTouchedWindowHandle</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_SCROLL</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">newHoverWindowHandle</span> <span class="o">=</span> <span class="n">mLastHoverWindowHandle</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="c1">// Update the temporary touch state.</span>
+        <span class="n">BitSet32</span> <span class="n">pointerIds</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">isSplit</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kt">uint32_t</span> <span class="n">pointerId</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">pointerProperties</span><span class="p">[</span><span class="n">pointerIndex</span><span class="p">].</span><span class="n">id</span><span class="p">;</span>
+            <span class="n">pointerIds</span><span class="p">.</span><span class="n">markBit</span><span class="p">(</span><span class="n">pointerId</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">addOrUpdateWindow</span><span class="p">(</span><span class="n">newTouchedWindowHandle</span><span class="p">,</span> <span class="n">targetFlags</span><span class="p">,</span> <span class="n">pointerIds</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="cm">/* Case 2: Pointer move, up, cancel or non-splittable pointer down. */</span>
+        <span class="c1">// If the pointer is not currently down, then ignore the event.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">down</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">INPUT_EVENT_INJECTION_FAILED</span><span class="p">;</span>
+            <span class="k">goto</span> <span class="n">Failed</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="c1">// Check whether touches should slip outside of the current foreground window.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_MOVE</span>
+                <span class="o">&amp;&amp;</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">pointerCount</span> <span class="o">==</span> <span class="mi">1</span>
+                <span class="o">&amp;&amp;</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">isSlippery</span><span class="p">())</span> <span class="p">{</span>
+            <span class="kt">int32_t</span> <span class="n">x</span> <span class="o">=</span> <span class="kt">int32_t</span><span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">pointerCoords</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">getAxisValue</span><span class="p">(</span><span class="n">AMOTION_EVENT_AXIS_X</span><span class="p">));</span>
+            <span class="kt">int32_t</span> <span class="n">y</span> <span class="o">=</span> <span class="kt">int32_t</span><span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">pointerCoords</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">getAxisValue</span><span class="p">(</span><span class="n">AMOTION_EVENT_AXIS_Y</span><span class="p">));</span>
+            <span class="n">sp</span><span class="o">&lt;</span><span class="n">InputWindowHandle</span><span class="o">&gt;</span> <span class="n">oldTouchedWindowHandle</span> <span class="o">=</span>
+                    <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">getFirstForegroundWindowHandle</span><span class="p">();</span>
+            <span class="n">sp</span><span class="o">&lt;</span><span class="n">InputWindowHandle</span><span class="o">&gt;</span> <span class="n">newTouchedWindowHandle</span> <span class="o">=</span>
+                    <span class="n">findTouchedWindowAtLocked</span><span class="p">(</span><span class="n">displayId</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">oldTouchedWindowHandle</span> <span class="o">!=</span> <span class="n">newTouchedWindowHandle</span>
+                    <span class="o">&amp;&amp;</span> <span class="n">newTouchedWindowHandle</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// Make a slippery exit from the old window.</span>
+                <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">addOrUpdateWindow</span><span class="p">(</span><span class="n">oldTouchedWindowHandle</span><span class="p">,</span>
+                        <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_DISPATCH_AS_SLIPPERY_EXIT</span><span class="p">,</span> <span class="n">BitSet32</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+                <span class="c1">// Make a slippery entrance into the new window.</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">newTouchedWindowHandle</span><span class="o">-&gt;</span><span class="n">getInfo</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">supportsSplitTouch</span><span class="p">())</span> <span class="p">{</span>
+                    <span class="n">isSplit</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+                <span class="p">}</span>
+                <span class="kt">int32_t</span> <span class="n">targetFlags</span> <span class="o">=</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_FOREGROUND</span>
+                        <span class="o">|</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_DISPATCH_AS_SLIPPERY_ENTER</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">isSplit</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">targetFlags</span> <span class="o">|=</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_SPLIT</span><span class="p">;</span>
+                <span class="p">}</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">isWindowObscuredAtPointLocked</span><span class="p">(</span><span class="n">newTouchedWindowHandle</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span> <span class="p">{</span>
+                    <span class="n">targetFlags</span> <span class="o">|=</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_WINDOW_IS_OBSCURED</span><span class="p">;</span>
+                <span class="p">}</span>
+                <span class="n">BitSet32</span> <span class="n">pointerIds</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">isSplit</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">pointerIds</span><span class="p">.</span><span class="n">markBit</span><span class="p">(</span><span class="n">entry</span><span class="o">-&gt;</span><span class="n">pointerProperties</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">id</span><span class="p">);</span>
+                <span class="p">}</span>
+                <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">addOrUpdateWindow</span><span class="p">(</span><span class="n">newTouchedWindowHandle</span><span class="p">,</span> <span class="n">targetFlags</span><span class="p">,</span> <span class="n">pointerIds</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">newHoverWindowHandle</span> <span class="o">!=</span> <span class="n">mLastHoverWindowHandle</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Let the previous window know that the hover sequence is over.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">mLastHoverWindowHandle</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">addOrUpdateWindow</span><span class="p">(</span><span class="n">mLastHoverWindowHandle</span><span class="p">,</span>
+                    <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_DISPATCH_AS_HOVER_EXIT</span><span class="p">,</span> <span class="n">BitSet32</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+        <span class="p">}</span>
+        <span class="c1">// Let the new window know that the hover sequence is starting.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">newHoverWindowHandle</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">addOrUpdateWindow</span><span class="p">(</span><span class="n">newHoverWindowHandle</span><span class="p">,</span>
+                    <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_DISPATCH_AS_HOVER_ENTER</span><span class="p">,</span> <span class="n">BitSet32</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">// Check permission to inject into all touched foreground windows and ensure there</span>
+    <span class="c1">// is at least one touched foreground window.</span>
+    <span class="p">{</span>
+        <span class="kt">bool</span> <span class="n">haveForegroundWindow</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">const</span> <span class="n">TouchedWindow</span><span class="o">&amp;</span> <span class="n">touchedWindow</span> <span class="o">=</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">touchedWindow</span><span class="p">.</span><span class="n">targetFlags</span> <span class="o">&amp;</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_FOREGROUND</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">haveForegroundWindow</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="o">!</span> <span class="n">checkInjectionPermission</span><span class="p">(</span><span class="n">touchedWindow</span><span class="p">.</span><span class="n">windowHandle</span><span class="p">,</span>
+                        <span class="n">entry</span><span class="o">-&gt;</span><span class="n">injectionState</span><span class="p">))</span> <span class="p">{</span>
+                    <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">INPUT_EVENT_INJECTION_PERMISSION_DENIED</span><span class="p">;</span>
+                    <span class="n">injectionPermission</span> <span class="o">=</span> <span class="n">INJECTION_PERMISSION_DENIED</span><span class="p">;</span>
+                    <span class="k">goto</span> <span class="n">Failed</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span> <span class="n">haveForegroundWindow</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">INPUT_EVENT_INJECTION_FAILED</span><span class="p">;</span>
+            <span class="k">goto</span> <span class="n">Failed</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="c1">// Permission granted to injection into all touched foreground windows.</span>
+        <span class="n">injectionPermission</span> <span class="o">=</span> <span class="n">INJECTION_PERMISSION_GRANTED</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// Check whether windows listening for outside touches are owned by the same UID. If it is</span>
+    <span class="c1">// set the policy flag that we will not reveal coordinate information to this window.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_DOWN</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">sp</span><span class="o">&lt;</span><span class="n">InputWindowHandle</span><span class="o">&gt;</span> <span class="n">foregroundWindowHandle</span> <span class="o">=</span>
+                <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">getFirstForegroundWindowHandle</span><span class="p">();</span>
+        <span class="k">const</span> <span class="kt">int32_t</span> <span class="n">foregroundWindowUid</span> <span class="o">=</span> <span class="n">foregroundWindowHandle</span><span class="o">-&gt;</span><span class="n">getInfo</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">ownerUid</span><span class="p">;</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">const</span> <span class="n">TouchedWindow</span><span class="o">&amp;</span> <span class="n">touchedWindow</span> <span class="o">=</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">touchedWindow</span><span class="p">.</span><span class="n">targetFlags</span> <span class="o">&amp;</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_DISPATCH_AS_OUTSIDE</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">sp</span><span class="o">&lt;</span><span class="n">InputWindowHandle</span><span class="o">&gt;</span> <span class="n">inputWindowHandle</span> <span class="o">=</span> <span class="n">touchedWindow</span><span class="p">.</span><span class="n">windowHandle</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">inputWindowHandle</span><span class="o">-&gt;</span><span class="n">getInfo</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">ownerUid</span> <span class="o">!=</span> <span class="n">foregroundWindowUid</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">addOrUpdateWindow</span><span class="p">(</span><span class="n">inputWindowHandle</span><span class="p">,</span>
+                            <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_ZERO_COORDS</span><span class="p">,</span> <span class="n">BitSet32</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">// Ensure all touched foreground windows are ready for new input.</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">const</span> <span class="n">TouchedWindow</span><span class="o">&amp;</span> <span class="n">touchedWindow</span> <span class="o">=</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">touchedWindow</span><span class="p">.</span><span class="n">targetFlags</span> <span class="o">&amp;</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_FOREGROUND</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// Check whether the window is ready for more input.</span>
+            <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">reason</span> <span class="o">=</span> <span class="n">checkWindowReadyForMoreInputLocked</span><span class="p">(</span><span class="n">currentTime</span><span class="p">,</span>
+                    <span class="n">touchedWindow</span><span class="p">.</span><span class="n">windowHandle</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="s">"touched"</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">reason</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+                <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">handleTargetsNotReadyLocked</span><span class="p">(</span><span class="n">currentTime</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span>
+                        <span class="nb">NULL</span><span class="p">,</span> <span class="n">touchedWindow</span><span class="p">.</span><span class="n">windowHandle</span><span class="p">,</span> <span class="n">nextWakeupTime</span><span class="p">,</span> <span class="n">reason</span><span class="p">.</span><span class="n">c_str</span><span class="p">());</span>
+                <span class="k">goto</span> <span class="n">Unresponsive</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">// If this is the first pointer going down and the touched window has a wallpaper</span>
+    <span class="c1">// then also add the touched wallpaper windows so they are locked in for the duration</span>
+    <span class="c1">// of the touch gesture.</span>
+    <span class="c1">// We do not collect wallpapers during HOVER_MOVE or SCROLL because the wallpaper</span>
+    <span class="c1">// engine only supports touch events.  We would need to add a mechanism similar</span>
+    <span class="c1">// to View.onGenericMotionEvent to enable wallpapers to handle these events.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_DOWN</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">sp</span><span class="o">&lt;</span><span class="n">InputWindowHandle</span><span class="o">&gt;</span> <span class="n">foregroundWindowHandle</span> <span class="o">=</span>
+                <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">getFirstForegroundWindowHandle</span><span class="p">();</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">foregroundWindowHandle</span><span class="o">-&gt;</span><span class="n">getInfo</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">hasWallpaper</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mWindowHandles</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="n">sp</span><span class="o">&lt;</span><span class="n">InputWindowHandle</span><span class="o">&gt;</span> <span class="n">windowHandle</span> <span class="o">=</span> <span class="n">mWindowHandles</span><span class="p">.</span><span class="n">itemAt</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+                <span class="k">const</span> <span class="n">InputWindowInfo</span><span class="o">*</span> <span class="n">info</span> <span class="o">=</span> <span class="n">windowHandle</span><span class="o">-&gt;</span><span class="n">getInfo</span><span class="p">();</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">info</span><span class="o">-&gt;</span><span class="n">displayId</span> <span class="o">==</span> <span class="n">displayId</span>
+                        <span class="o">&amp;&amp;</span> <span class="n">windowHandle</span><span class="o">-&gt;</span><span class="n">getInfo</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">layoutParamsType</span>
+                                <span class="o">==</span> <span class="n">InputWindowInfo</span><span class="o">::</span><span class="n">TYPE_WALLPAPER</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">addOrUpdateWindow</span><span class="p">(</span><span class="n">windowHandle</span><span class="p">,</span>
+                            <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_WINDOW_IS_OBSCURED</span>
+                                    <span class="o">|</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_WINDOW_IS_PARTIALLY_OBSCURED</span>
+                                    <span class="o">|</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_DISPATCH_AS_IS</span><span class="p">,</span>
+                            <span class="n">BitSet32</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">// Success!  Output targets.</span>
+    <span class="n">injectionResult</span> <span class="o">=</span> <span class="n">INPUT_EVENT_INJECTION_SUCCEEDED</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">const</span> <span class="n">TouchedWindow</span><span class="o">&amp;</span> <span class="n">touchedWindow</span> <span class="o">=</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">.</span><span class="n">itemAt</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+        <span class="n">addWindowTargetLocked</span><span class="p">(</span><span class="n">touchedWindow</span><span class="p">.</span><span class="n">windowHandle</span><span class="p">,</span> <span class="n">touchedWindow</span><span class="p">.</span><span class="n">targetFlags</span><span class="p">,</span>
+                <span class="n">touchedWindow</span><span class="p">.</span><span class="n">pointerIds</span><span class="p">,</span> <span class="n">inputTargets</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="c1">// Drop the outside or hover touch windows since we will not care about them</span>
+    <span class="c1">// in the next iteration.</span>
+    <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">filterNonAsIsTouchWindows</span><span class="p">();</span>
+<span class="c1">// 失败</span>
+<span class="nl">Failed:</span>
+    <span class="c1">// Check injection permission once and for all.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">injectionPermission</span> <span class="o">==</span> <span class="n">INJECTION_PERMISSION_UNKNOWN</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">checkInjectionPermission</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">injectionState</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">injectionPermission</span> <span class="o">=</span> <span class="n">INJECTION_PERMISSION_GRANTED</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">injectionPermission</span> <span class="o">=</span> <span class="n">INJECTION_PERMISSION_DENIED</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">// Update final pieces of touch state if the injector had permission.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">injectionPermission</span> <span class="o">==</span> <span class="n">INJECTION_PERMISSION_GRANTED</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">wrongDevice</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">switchedDevice</span><span class="p">)</span> <span class="p">{</span>
+                <span class="o">*</span><span class="n">outConflictingPointerActions</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">isHoverAction</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// Started hovering, therefore no longer down.</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">oldState</span> <span class="o">&amp;&amp;</span> <span class="n">oldState</span><span class="o">-&gt;</span><span class="n">down</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="o">*</span><span class="n">outConflictingPointerActions</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+                <span class="p">}</span>
+                <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_HOVER_ENTER</span>
+                        <span class="o">||</span> <span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_HOVER_MOVE</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">deviceId</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">deviceId</span><span class="p">;</span>
+                    <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">source</span><span class="p">;</span>
+                    <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">displayId</span> <span class="o">=</span> <span class="n">displayId</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_UP</span>
+                    <span class="o">||</span> <span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_CANCEL</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// All pointers up or canceled.</span>
+                <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_DOWN</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// First pointer went down.</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">oldState</span> <span class="o">&amp;&amp;</span> <span class="n">oldState</span><span class="o">-&gt;</span><span class="n">down</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="o">*</span><span class="n">outConflictingPointerActions</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">==</span> <span class="n">AMOTION_EVENT_ACTION_POINTER_UP</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">// One pointer went up.</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">isSplit</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="kt">int32_t</span> <span class="n">pointerIndex</span> <span class="o">=</span> <span class="n">getMotionEventActionPointerIndex</span><span class="p">(</span><span class="n">action</span><span class="p">);</span>
+                    <span class="kt">uint32_t</span> <span class="n">pointerId</span> <span class="o">=</span> <span class="n">entry</span><span class="o">-&gt;</span><span class="n">pointerProperties</span><span class="p">[</span><span class="n">pointerIndex</span><span class="p">].</span><span class="n">id</span><span class="p">;</span>
+                    <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="p">)</span> <span class="p">{</span>
+                        <span class="n">TouchedWindow</span><span class="o">&amp;</span> <span class="n">touchedWindow</span> <span class="o">=</span> <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">.</span><span class="n">editItemAt</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+                        <span class="k">if</span> <span class="p">(</span><span class="n">touchedWindow</span><span class="p">.</span><span class="n">targetFlags</span> <span class="o">&amp;</span> <span class="n">InputTarget</span><span class="o">::</span><span class="n">FLAG_SPLIT</span><span class="p">)</span> <span class="p">{</span>
+                            <span class="n">touchedWindow</span><span class="p">.</span><span class="n">pointerIds</span><span class="p">.</span><span class="n">clearBit</span><span class="p">(</span><span class="n">pointerId</span><span class="p">);</span>
+                            <span class="k">if</span> <span class="p">(</span><span class="n">touchedWindow</span><span class="p">.</span><span class="n">pointerIds</span><span class="p">.</span><span class="n">isEmpty</span><span class="p">())</span> <span class="p">{</span>
+                                <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">windows</span><span class="p">.</span><span class="n">removeAt</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+                                <span class="k">continue</span><span class="p">;</span>
+                            <span class="p">}</span>
+                        <span class="p">}</span>
+                        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="c1">// Save changes unless the action was scroll in which case the temporary touch</span>
+            <span class="c1">// state was only valid for this one action.</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">maskedAction</span> <span class="o">!=</span> <span class="n">AMOTION_EVENT_ACTION_SCROLL</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">mTempTouchState</span><span class="p">.</span><span class="n">displayId</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">oldStateIndex</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="n">mTouchStatesByDisplay</span><span class="p">.</span><span class="n">editValueAt</span><span class="p">(</span><span class="n">oldStateIndex</span><span class="p">).</span><span class="n">copyFrom</span><span class="p">(</span><span class="n">mTempTouchState</span><span class="p">);</span>
+                    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                        <span class="n">mTouchStatesByDisplay</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">displayId</span><span class="p">,</span> <span class="n">mTempTouchState</span><span class="p">);</span>
+                    <span class="p">}</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">oldStateIndex</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">mTouchStatesByDisplay</span><span class="p">.</span><span class="n">removeItemsAt</span><span class="p">(</span><span class="n">oldStateIndex</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="c1">// Update hover state.</span>
+            <span class="n">mLastHoverWindowHandle</span> <span class="o">=</span> <span class="n">newHoverWindowHandle</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{}</span>
+<span class="c1">// 无响应</span>
+<span class="nl">Unresponsive:</span>
+    <span class="c1">// Reset temporary touch state to ensure we release unnecessary references to input channels.</span>
+    <span class="n">mTempTouchState</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
+    <span class="n">nsecs_t</span> <span class="n">timeSpentWaitingForApplication</span> <span class="o">=</span> <span class="n">getTimeSpentWaitingForApplicationLocked</span><span class="p">(</span><span class="n">currentTime</span><span class="p">);</span>
+    <span class="n">updateDispatchStatisticsLocked</span><span class="p">(</span><span class="n">currentTime</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="n">injectionResult</span><span class="p">,</span>
+        <span class="n">timeSpentWaitingForApplication</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">injectionResult</span><span class="p">;</span>
+<span class="p">}</span>
+
+</pre></table></code></div></div><h3 id="dispatcheventlocked-函数">dispatchEventLocked() 函数</h3><h3 id="preparedispatchcyclelocked-函数">prepareDispatchCycleLocked() 函数</h3><h3 id="startdispatchcyclelocked-函数">startDispatchCycleLocked() 函数</h3><h2 id="inputpublisherpublishmotionevent-函数">InputPublisher::publishMotionEvent() 函数</h2><h2 id="inputchannelsendmessage">InputChannel::sendMessage()</h2><p>之后就该通过 jni 转到 Java 层了</p><h2 id="番外-inputdevice-和-inputmapper">番外： <code class="language-plaintext highlighter-rouge">InputDevice</code> 和 <code class="language-plaintext highlighter-rouge">InputMapper</code></h2><p><code class="language-plaintext highlighter-rouge">InputDevice</code> 是 <code class="language-plaintext highlighter-rouge">InputReader</code> 中的一个类，用来表示一个输入设备，其内部维护了一个 <code class="language-plaintext highlighter-rouge">InputMapper</code> 列表。<code class="language-plaintext highlighter-rouge">InputMapper</code> 是 <code class="language-plaintext highlighter-rouge">InputReader</code> 中实际进行原始输入时间加工的场 所，它有一些列子类用来加工不同类型的原始输入事件。 不难推测出 InputDevice 的创建和销毁操作与 EventHub 的设备增删事件有关，在 <code class="language-plaintext highlighter-rouge">processEventsLocked()</code> 函数中：</p><ul><li>DEVICE_ADDED 事件：将会调用 <code class="language-plaintext highlighter-rouge">addDevice()</code> 函数创建 InputDevice；<li>DEVICE_REMOVED 事件：将会调用 <code class="language-plaintext highlighter-rouge">removeDevice()</code> 函数删除 InputDevice；<li>FINISHED_DEVICE_SCAN 事件：InputReader 将会产生一个 ConfigurationChanged 事件 并将其发送给 InputDispatcher；</ul><h3 id="inputdevice-的创建"><code class="language-plaintext highlighter-rouge">InputDevice</code> 的创建</h3><p>1、InputReader.cpp 中 <code class="language-plaintext highlighter-rouge">InputReader::addDeviceLocked()</code> 函数：</p><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+</pre><td class="rouge-code"><pre><span class="kt">void</span> <span class="n">InputReader</span><span class="o">::</span><span class="n">addDeviceLocked</span><span class="p">(</span><span class="n">nsecs_t</span> <span class="n">when</span><span class="p">,</span> <span class="kt">int32_t</span> <span class="n">deviceId</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 根据 deviceId 找到索引，如果索引大于或等于 0 说明设备已添加直接返回</span>
+    <span class="kt">ssize_t</span> <span class="n">deviceIndex</span> <span class="o">=</span> <span class="n">mDevices</span><span class="p">.</span><span class="n">indexOfKey</span><span class="p">(</span><span class="n">deviceId</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">deviceIndex</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+    <span class="c1">// 从 EventHub 中获取厂商信息和设备类别</span>
+    <span class="n">InputDeviceIdentifier</span> <span class="n">identifier</span> <span class="o">=</span> <span class="n">mEventHub</span><span class="o">-&gt;</span><span class="n">getDeviceIdentifier</span><span class="p">(</span><span class="n">deviceId</span><span class="p">);</span>
+    <span class="kt">uint32_t</span> <span class="n">classes</span> <span class="o">=</span> <span class="n">mEventHub</span><span class="o">-&gt;</span><span class="n">getDeviceClasses</span><span class="p">(</span><span class="n">deviceId</span><span class="p">);</span>
+    <span class="kt">int32_t</span> <span class="n">controllerNumber</span> <span class="o">=</span> <span class="n">mEventHub</span><span class="o">-&gt;</span><span class="n">getDeviceControllerNumber</span><span class="p">(</span><span class="n">deviceId</span><span class="p">);</span>
+    <span class="c1">// 创建设备</span>
+    <span class="n">InputDevice</span><span class="o">*</span> <span class="n">device</span> <span class="o">=</span> <span class="n">createDeviceLocked</span><span class="p">(</span><span class="n">deviceId</span><span class="p">,</span> <span class="n">controllerNumber</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">classes</span><span class="p">);</span>
+    <span class="c1">// 使用 mConfig 策略配置信息对新创建的 InputDevice 进行配置并通过 reset() 重置</span>
+    <span class="n">device</span><span class="o">-&gt;</span><span class="n">configure</span><span class="p">(</span><span class="n">when</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mConfig</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="n">device</span><span class="o">-&gt;</span><span class="n">reset</span><span class="p">(</span><span class="n">when</span><span class="p">);</span>
+    <span class="c1">// 添加到 mDevices 字典中</span>
+    <span class="n">mDevices</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">deviceId</span><span class="p">,</span> <span class="n">device</span><span class="p">);</span>
+    <span class="n">bumpGenerationLocked</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">device</span><span class="o">-&gt;</span><span class="n">getClasses</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">INPUT_DEVICE_CLASS_EXTERNAL_STYLUS</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">notifyExternalStylusPresenceChanged</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></table></code></div></div><p><strong>注意</strong>：这里的 <code class="language-plaintext highlighter-rouge">mConfig</code> 是一个 <code class="language-plaintext highlighter-rouge">InputReaderConfiguration</code>，通过 <code class="language-plaintext highlighter-rouge">InputReaderPolicyInterface::getReaderConfiguration()</code> 接口进行赋值，该接口具体实 现在 <code class="language-plaintext highlighter-rouge">com_android_server_input_InputManagerService.cpp</code> 中，因此这就使得 IMS 以及 应用程序能够在一定程度上影响输入事件的处理过程。</p><p>2、InputReader.cpp 中 <code class="language-plaintext highlighter-rouge">InputReader::createDeviceLocked()</code> 函数：</p><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre><td class="rouge-code"><pre><span class="n">InputDevice</span><span class="o">*</span> <span class="n">InputReader</span><span class="o">::</span><span class="n">createDeviceLocked</span><span class="p">(</span><span class="kt">int32_t</span> <span class="n">deviceId</span><span class="p">,</span> <span class="kt">int32_t</span> <span class="n">controllerNumber</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">InputDeviceIdentifier</span><span class="o">&amp;</span> <span class="n">identifier</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">classes</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// 根据 deviceId、厂商信息以及设备类型创建一个 InputDevice 对象</span>
+    <span class="n">InputDevice</span><span class="o">*</span> <span class="n">device</span> <span class="o">=</span> <span class="k">new</span> <span class="n">InputDevice</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mContext</span><span class="p">,</span> <span class="n">deviceId</span><span class="p">,</span> <span class="n">bumpGenerationLocked</span><span class="p">(),</span>
+            <span class="n">controllerNumber</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">classes</span><span class="p">);</span>
+    <span class="c1">// ... 根据 classes 添加具体的 InputMapper 实现</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">keyboardSource</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">device</span><span class="o">-&gt;</span><span class="n">addMapper</span><span class="p">(</span><span class="k">new</span> <span class="n">KeyboardInputMapper</span><span class="p">(</span><span class="n">device</span><span class="p">,</span> <span class="n">keyboardSource</span><span class="p">,</span> <span class="n">keyboardType</span><span class="p">));</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">device</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></table></code></div></div><h3 id="inputmapper-的分配"><code class="language-plaintext highlighter-rouge">InputMapper</code> 的分配</h3><p>在 <code class="language-plaintext highlighter-rouge">createDeviceLocked()</code> 函数中，会根据 classes 来分配具体的 InputMapper，其中 classes 类型来自 EventHub 中私有的 Device 结构中，其枚举类型定义在 <code class="language-plaintext highlighter-rouge">EventHub.h</code> 中。</p><ul><li>EV_KEY：按键类型事件，能够上报这类事件的有键盘、鼠标、手柄、手写板等一切有实体按键的设备；<li>EV_ABS：绝对坐标事件，描述了在二维空间中的一个点，触控板、触摸屏等设备可上报这类事件；<li>EV_REL：相对坐标事件，描述在二维空间中相对与上次事件的偏移量，鼠标、轨迹球等基 于游标指针的设备可上报这类事件；<li>EV_SW：开关类型事件，描述了若干固定状态之间的切换，手机上的静音模式开关按钮等可 以上报这类事件；</ul><h2 id="总结">总结</h2><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+</pre><td class="rouge-code"><pre>---&gt; native 层
+InputDispatcherThread::threadLoop() -&gt;
+InputDispatcher::dispatchOnce() -&gt; dispatchOnceInnerLocked() -&gt;
+dispatchMotionLocked() -&gt; findTouchedWindowTargetsLocked() -&gt;
+dispatchEventLocked() -&gt; prepareDispatchCycleLocked() -&gt;
+startDispatchCycleLocked() -&gt;
+InputPublisher::publishMotionEvent() -&gt;
+InputChannel::sendMessage(InputMessage msg) -&gt; 通过 socket 将 msg 发送给接收端
+
+所以要弄清接收端是谁？
+
+---&gt; Java 层，Activity 启动时：
+ActivityThread#handleResumeActivity() -&gt;
+WindowManagerImpl#addView() -&gt;
+WindowManagerGlobal#addView() -&gt;
+ViewRootImpl#setView() -&gt;
+Session#addToDisplay() -&gt;
+WMS#addWindow() -&gt;
+WindowState#openInputChannel() -&gt;
+InputChannel#openInputChannelPair() -&gt; nativeOpenInputChannelPair() -&gt;
+---&gt; jni 层
+android_view_InputChannel.cpp::android_view_InputChannel_nativeOpenInputChannelPair() -&gt;
+InputTransport.cpp::InputChannel::openInputChannelPair() -&gt; [0] server [1]client
+
+最终被保存到 ViewRootImpl#mInputChannel 中，而 ViewRootImpl$WindowInputEventReceiver
+是用 ViewRootImpl#mInputChannel 来初始化的，所以：
+--&gt; 接收端：ViewRootImpl$WindowInputEventReceiver
+
+---&gt; java 层
+WindowInputEventReceiver#&lt;init&gt; -&gt; 
+InputEventReceiver#&lt;init&gt; -&gt; nativeInit(inputChannel) -&gt;
+---&gt; jni 层
+NativeInputEventReceiver(inputChannel) 根据 channel 创建 InputConsumer，同时：
+initialize() -&gt; mMessageQueue-&gt;getLooper()-&gt;addFd(channel-&gt;getFd(), events = ALOOPER_EVENT_INPUT)，
+而其本身又实现了 LooperCallback，所以当监听的 channel-&gt;getFd() 有变化时，会回
+调 handleEvent()，即：
+NativeInputEventReceiver::handleEvent() -&gt; consumeEvents() -&gt;
+--&gt; Java 层
+InputEventReceiver#dispatchBatchedInputEventPending() 或者
+InputEventReceiver#dispatchInputEvent()
+
+-&gt; ViewRootImpl#doProcessInputEvents() -&gt; deliverInputEvent()
+在 ViewRootImpl 中使用 InputStage 责任链的方式对 native 层中发送过来的事件进行分发
+最终是通过 ViewPostImeInputStage 将事件传递到 View 层级中的
+
+ViewPostImeInputStage#onProcess() -&gt; 在这里会对输入事件进行分类处理：
+-&gt; KeyEvent：processKeyEvent()
+-&gt; InputDevice.SOURCE_CLASS_POINTER：processPointerEvent()
+-&gt; InputDevice.SOURCE_CLASS_TRACKBALL：processTrackballEvent()
+-&gt; 其他：processGenericMotionEvent() -&gt; 这里我们先看其他事件
+mView.dispatchGenericMotionEvent(event)（这里的 mView 就是 DecorView，View 树的根）-&gt;
+Window.Callback#dispatchGenericMotionEvent()，Callback 的实际实现是 Activity 或者 Dialog
+
+最终当事件处理完毕后：ViewRootImpl#finishInputEvent() -&gt; 分为以下 case：
+①-&gt; ViewRootImpl 自己产生的事件：Java 层回收（KeyEvent 和 MotionEvent）
+②-&gt; 来自 InputEventReceiver 的事件：InputEventReceiver#finishInputEvent() -&gt; 
+---&gt; native 层
+android_view_InputEventReceiver.cpp::nativeFinishInputEvent() -&gt;
+NativeInputEventReceiver::finishInputEvent() -&gt;
+InputTransport.cpp::InputConsumer::sendFinishedSignal() -&gt; 
+sendUnchainedFinishedSignal() -&gt; 
+InputChannel::sendMessage(InputMessage/**InputMessage::TYPE_FINISHED**/) -&gt;
+通过 socket::send(fd, msg) 的形式反馈给 InputDispatcher
+</pre></table></code></div></div></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/android/'>android</a></div><div class="post-tags"> <i class="fa fa-tags fa-fw mr-1"></i> <a href="/tags/android/" class="post-tag no-text-decoration" >android</a> <a href="/tags/framework/" class="post-tag no-text-decoration" >framework</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center mt-3 pt-5 pb-2"><div class="license-wrapper"> This post is licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> by the author.</div><div class="share-wrapper"> <span class="share-label text-muted mr-1">Share</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=Android 输入子系统2：EventHub 工作原理 - sleticalboy&url=https://sleticalboy.github.io/android/2021/01/28/android-input-subsystem-2/" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank" rel="noopener" aria-label="Twitter"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=Android 输入子系统2：EventHub 工作原理 - sleticalboy&u=https://sleticalboy.github.io/android/2021/01/28/android-input-subsystem-2/" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://telegram.me/share?text=Android 输入子系统2：EventHub 工作原理 - sleticalboy&url=https://sleticalboy.github.io/android/2021/01/28/android-input-subsystem-2/" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank" rel="noopener" aria-label="Telegram"> <i class="fa-fw fab fa-telegram"></i> </a> <i class="fa-fw fas fa-link small" onclick="copyLink()" data-toggle="tooltip" data-placement="top" title="Copy link"></i> </span></div></div></div></div></div><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted topbar-down"><div class="access"><div id="access-lastmod" class="post"> <span>Recent Update</span><ul class="post-content pl-0 pb-1 ml-1 mt-2"><li><a href="/android/2021/01/28/android-input-subsystem-2/">Android 输入子系统2：EventHub 工作原理</a><li><a href="/android/2021/02/02/andorid-input-subsystem-3/">Android 输入子系统3：InputDispatcher 对事件分发</a><li><a href="/android/2021/01/22/android-input-subsystem-1/">Android 输入子系统1：IMS 初始化与启动</a><li><a href="/android/2019/01/21/build-aosp/">aosp 编译、工具等记录</a><li><a href="/android/2019/01/21/build-idegen-jar/">build-idegen-jar</a></ul></div><div id="access-tags"> <span>Trending Tags</span><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/android/">android</a> <a class="post-tag" href="/tags/framework/">framework</a> <a class="post-tag" href="/tags/english/">english</a> <a class="post-tag" href="/tags/linux/">linux</a> <a class="post-tag" href="/tags/tools/">tools</a> <a class="post-tag" href="/tags/open-source/">open source</a> <a class="post-tag" href="/tags/book/">book</a> <a class="post-tag" href="/tags/aosp/">aosp</a> <a class="post-tag" href="/tags/java/">java</a> <a class="post-tag" href="/tags/git/">git</a></div></div></div><div id="toc-wrapper" class="pl-0 pr-4 mb-5"> <span class="pl-3 pt-2 mb-2">Contents</span><nav id="toc" data-toggle="toc"></nav></div></div></div><div class="row"><div class="col-12 col-lg-11 col-xl-8"><div id="post-extend-wrapper" class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><div id="related-posts" class="mt-5 mb-2 mb-sm-4"><h3 class="pt-2 mt-1 mb-4 ml-1" data-toc-skip>Further Reading</h3><div class="card-deck mb-4"><div class="card"> <a href="/android/2019/04/09/app%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90-01/"><div class="card-body"> <span class="timeago small" > Apr 9, 2019 <i class="unloaded">2019-04-09T05:38:47+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>app 启动流程源码分析-1</h3><div class="text-muted small"><p> 源码 基于 android 8.0 从点击桌面 app 图标到 ActivityThread 的 main() 方法执行 先来两张图(先凑合下吧，没找到合适的画图工具，找到了再补上=_=) Launcher /packages/apps/Launcher2/src/com/android/launcher2/Launcher.java 什么是 Launcher ...</p></div></div></a></div><div class="card"> <a href="/android/2019/04/13/app%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90-02/"><div class="card-body"> <span class="timeago small" > Apr 13, 2019 <i class="unloaded">2019-04-13T23:40:34+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>app 启动流程分析-2</h3><div class="text-muted small"><p> 源码 基于 android 8.0 从 ActivityThread 的 main() 方法执行到页面显示 开篇之前，先思考以下几个问题 Q1: Application 是如何创建的？ Q2: Application 的 attachBaseContext() 为什么会在 onCreate() 方法之前调用？ Q3: Activity 是如何被创建的？ Q4: A...</p></div></div></a></div><div class="card"> <a href="/android/2019/04/17/AndroidManifest%E6%96%87%E4%BB%B6%E8%A7%A3%E6%9E%90/"><div class="card-body"> <span class="timeago small" > Apr 17, 2019 <i class="unloaded">2019-04-17T07:17:07+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>03-AndroidManifest文件解析</h3><div class="text-muted small"><p> 03-AndroidManifest.xml文件解析分析 启动 app 时 AndroidManifest.xml 文件是何时解析的？ Questtions 找不到解析入口在哪里？解决思路： LoadedApk.makeApplication() 方法里有个 clsName, 可以尝试反向查找 clsName 在哪里赋值的【未果】 网上搜一下...</p></div></div></a></div></div></div><div class="post-navigation d-flex justify-content-between"> <a href="/linux/2021/01/24/linux-inotify-mechanism/" class="btn btn-outline-primary"><p>linux inotify 机制</p></a> <a href="/android/2021/02/02/andorid-input-subsystem-3/" class="btn btn-outline-primary"><p>Android 输入子系统3：InputDispatcher 对事件分发</p></a></div></div></div></div><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lozad/dist/lozad.min.js"></script> <script type="text/javascript"> const imgs = document.querySelectorAll('#post-wrapper img'); const observer = lozad(imgs); observer.observe(); </script><footer class="d-flex w-100 justify-content-center"><div class="d-flex justify-content-between align-items-center"><div class="footer-left"><p class="mb-0"> © 2021 <a href="https://github.com/sleticalboy">BenLee</a>. <span data-toggle="tooltip" data-placement="top" title="Except where otherwise noted, the blog posts on this site are licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) License by the author.">Some rights reserved.</span></p></div><div class="footer-right"><p class="mb-0"> Powered by <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a> with <a href="https://github.com/cotes2020/jekyll-theme-chirpy/" target="_blank" rel="noopener">Chirpy</a> theme.</p></div></div></footer></div><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-xl-11 post-content"><div id="search-hints"><h4 class="text-muted mb-4">Trending Tags</h4><a class="post-tag" href="/tags/android/">android</a> <a class="post-tag" href="/tags/framework/">framework</a> <a class="post-tag" href="/tags/english/">english</a> <a class="post-tag" href="/tags/linux/">linux</a> <a class="post-tag" href="/tags/tools/">tools</a> <a class="post-tag" href="/tags/open-source/">open source</a> <a class="post-tag" href="/tags/book/">book</a> <a class="post-tag" href="/tags/aosp/">aosp</a> <a class="post-tag" href="/tags/java/">java</a> <a class="post-tag" href="/tags/git/">git</a></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><div id="mask"></div><a id="back-to-top" href="#" aria-label="back-to-top" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a> <script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.7.3/dest/simple-jekyll-search.min.js"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/js/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="https://sleticalboy.github.io{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"><div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>{categories}</div><div><i class="fa fa-tag fa-fw"></i>{tags}</div></div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">Oops! No result founds.</p>' }); </script>

@@ -1,0 +1,862 @@
+<!DOCTYPE html><html lang="en" ><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="theme" content="Chirpy v2.6.2"><meta name="generator" content="Jekyll v4.1.1" /><meta property="og:title" content="实战：使用 Binder 机制实现 C/S 架构" /><meta name="author" content="sleticalboy" /><meta property="og:locale" content="en_US" /><meta name="description" content="第一种：native 层实现" /><meta property="og:description" content="第一种：native 层实现" /><link rel="canonical" href="https://sleticalboy.github.io/android/2021/01/04/android-implement-a-native-service/" /><meta property="og:url" content="https://sleticalboy.github.io/android/2021/01/04/android-implement-a-native-service/" /><meta property="og:site_name" content="sleticalboy" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2021-01-04T20:53:51+08:00" /><meta name="google-site-verification" content="google_meta_tag_verification" /> <script type="application/ld+json"> {"dateModified":"2021-01-04T20:53:51+08:00","datePublished":"2021-01-04T20:53:51+08:00","@type":"BlogPosting","headline":"实战：使用 Binder 机制实现 C/S 架构","mainEntityOfPage":{"@type":"WebPage","@id":"https://sleticalboy.github.io/android/2021/01/04/android-implement-a-native-service/"},"author":{"@type":"Person","name":"sleticalboy"},"description":"第一种：native 层实现","url":"https://sleticalboy.github.io/android/2021/01/04/android-implement-a-native-service/","@context":"https://schema.org"}</script><title>实战：使用 Binder 机制实现 C/S 架构 | sleticalboy</title><link rel="shortcut icon" href="/assets/img/favicons/favicon.ico" type="image/x-icon"><link rel="icon" href="/assets/img/favicons/favicon.ico" type="image/x-icon"><link rel="apple-touch-icon" href="/assets/img/favicons/apple-icon.png"><link rel="apple-touch-icon" href="/assets/img/favicons/apple-icon-precomposed.png"><link rel="apple-touch-icon" sizes="57x57" href="/assets/img/favicons/apple-icon-57x57.png"><link rel="apple-touch-icon" sizes="60x60" href="/assets/img/favicons/apple-icon-60x60.png"><link rel="apple-touch-icon" sizes="72x72" href="/assets/img/favicons/apple-icon-72x72.png"><link rel="apple-touch-icon" sizes="76x76" href="/assets/img/favicons/apple-icon-76x76.png"><link rel="apple-touch-icon" sizes="114x114" href="/assets/img/favicons/apple-icon-114x114.png"><link rel="apple-touch-icon" sizes="120x120" href="/assets/img/favicons/apple-icon-120x120.png"><link rel="apple-touch-icon" sizes="144x144" href="/assets/img/favicons/apple-icon-144x144.png"><link rel="apple-touch-icon" sizes="152x152" href="/assets/img/favicons/apple-icon-152x152.png"><link rel="apple-touch-icon" sizes="180x180" href="/assets/img/favicons/apple-icon-180x180.png"><link rel="icon" type="image/png" sizes="192x192" href="/assets/img/favicons/android-icon-192x192.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicons/favicon-32x32.png"><link rel="icon" type="image/png" sizes="96x96" href="/assets/img/favicons/favicon-96x96.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicons/favicon-16x16.png"><link rel="manifest" href="/assets/img/favicons/manifest.json"><meta name='msapplication-config' content='/assets/img/favicons/browserconfig.xml'><meta name="msapplication-TileColor" content="#ffffff"><meta name="msapplication-TileImage" content="/assets/img/favicons/ms-icon-144x144.png"><meta name="theme-color" content="#ffffff"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"><link rel="dns-prefetch" href="https://fonts.gstatic.com"><link rel="preconnect" href="cdn.jsdelivr.net"><link rel="dns-prefetch" href="cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha256-LA89z+k9fjgMKQ/kq4OO2Mrf8VltYml/VES+Rg0fh20=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css" integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin="anonymous"><link rel="preload" as="style" href="/assets/css/post.css"><link rel="stylesheet" href="/assets/css/post.css"><link rel="preload" as="style" href="/assets/css/lib/bootstrap-toc.min.css"><link rel="stylesheet" href="/assets/css/lib/bootstrap-toc.min.css" /> <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script> <script async src="https://cdn.jsdelivr.net/combine/npm/popper.js@1.15.0,npm/bootstrap@4/dist/js/bootstrap.min.js"></script> <script async src="/assets/js/post.min.js"></script><body data-spy="scroll" data-target="#toc"><div id="sidebar" class="d-flex flex-column"><div id="nav-wrapper"><div id="profile-wrapper" class="d-flex flex-column"><div id="avatar" class="d-flex justify-content-center"> <a href="/" alt="avatar"> <img src="/assets/img/sample/avatar.jpg" alt="avatar" onerror="this.style.display='none'"> </a></div><div class="profile-text mt-3"><div class="site-title"> <a href="/">sleticalboy</a></div><div class="site-subtitle font-italic">李斌的小站</div></div></div><ul class="nav flex-column"><li class="nav-item d-flex justify-content-center "> <a href="/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-home ml-xl-3 mr-xl-3 unloaded"></i> <span>HOME</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/categories/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-stream ml-xl-3 mr-xl-3 unloaded"></i> <span>CATEGORIES</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/tags/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-tags ml-xl-3 mr-xl-3 unloaded"></i> <span>TAGS</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/archives/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-archive ml-xl-3 mr-xl-3 unloaded"></i> <span>ARCHIVES</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/about/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-info ml-xl-3 mr-xl-3 unloaded"></i> <span>ABOUT</span> </a></ul></div><div class="sidebar-bottom d-flex flex-wrap justify-content-around mt-4"> <span id="mode-toggle-wrapper"> <i class="mode-toggle fas fa-sun" dark-mode-invisible></i> <i class="mode-toggle fas fa-moon" light-mode-invisible></i> <script type="text/javascript"> class ModeToggle { static get MODE_KEY() { return "mode"; } static get DARK_MODE() { return "dark"; } static get LIGHT_MODE() { return "light"; } constructor() { if (this.mode != null) { if (this.mode == ModeToggle.DARK_MODE) { if (!this.isSysDarkPrefer) { this.setDark(); } } else { if (this.isSysDarkPrefer) { this.setLight(); } } } var self = this; /* always follow the system prefers */ this.sysDarkPrefers.addListener(function() { if (self.mode != null) { if (self.mode == ModeToggle.DARK_MODE) { if (!self.isSysDarkPrefer) { self.setDark(); } } else { if (self.isSysDarkPrefer) { self.setLight(); } } self.clearMode(); } }); } /* constructor() */ setDark() { $('html').attr(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); } setLight() { $('html').attr(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); } clearMode() { $('html').removeAttr(ModeToggle.MODE_KEY); sessionStorage.removeItem(ModeToggle.MODE_KEY); } get sysDarkPrefers() { return window.matchMedia("(prefers-color-scheme: dark)"); } get isSysDarkPrefer() { return this.sysDarkPrefers.matches; } get isDarkMode() { return this.mode == ModeToggle.DARK_MODE; } get isLightMode() { return this.mode == ModeToggle.LIGHT_MODE; } get hasMode() { return this.mode != null; } get mode() { return sessionStorage.getItem(ModeToggle.MODE_KEY); } flipMode() { if (this.hasMode) { if (this.isSysDarkPrefer) { if (this.isLightMode) { this.clearMode(); } else { this.setLight(); } } else { if (this.isDarkMode) { this.clearMode(); } else { this.setDark(); } } } else { if (this.isSysDarkPrefer) { this.setLight(); } else { this.setDark(); } } } /* flipMode() */ } /* ModeToggle */ let toggle = new ModeToggle(); $(".mode-toggle").click(function() { toggle.flipMode(); }); </script> </span> <span class="icon-border"></span> <a href="https://github.com/sleticalboy" aria-label="github" target="_blank" rel="noopener"> <i class="fab fa-github-alt"></i> </a> <a href=" javascript:location.href = 'mailto:' + ['sleticalboy','gmail.com'].join('@')" aria-label="email" > <i class="fas fa-envelope"></i> </a> <a href="/feed.xml" aria-label="rss" > <i class="fas fa-rss"></i> </a></div></div><div id="topbar-wrapper" class="row justify-content-center topbar-down"><div id="topbar" class="col-11 d-flex h-100 align-items-center justify-content-between"> <span id="breadcrumb"> <span> <a href="/"> Posts </a> </span> <span>实战：使用 Binder 机制实现 C/S 架构</span> </span> <i id="sidebar-trigger" class="fas fa-bars fa-fw"></i><div id="topbar-title"> Post</div><i id="search-trigger" class="fas fa-search fa-fw"></i> <span id="search-wrapper" class="align-items-center"> <i class="fas fa-search fa-fw"></i> <input class="form-control" id="search-input" type="search" aria-label="search" placeholder="Search..."> <i class="fa fa-times-circle fa-fw" id="search-cleaner"></i> </span> <span id="search-cancel" >Cancel</span></div></div><div id="main-wrapper"><div id="main"><div class="row"><div id="post-wrapper" class="col-12 col-lg-11 col-xl-8"><div class="post pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><h1 data-toc-skip>实战：使用 Binder 机制实现 C/S 架构</h1><div class="post-meta text-muted d-flex flex-column"><div> Posted <span class="timeago " data-toggle="tooltip" data-placement="bottom" title="Mon, Jan 4, 2021, 8:53 PM +0800" > Jan 4 <i class="unloaded">2021-01-04T20:53:51+08:00</i> </span> by <span class="author"> sleticalboy </span></div></div><div class="post-content"><h2 id="第一种native-层实现">第一种：native 层实现</h2><h3 id="声明-service-业务接口">声明 service 业务接口</h3><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+</pre><td class="rouge-code"><pre><span class="cp">#ifndef ANDROID_ITESTSERVICE_H
+#define ANDROID_ITESTSERVICE_H
+</span>
+<span class="cp">#include &lt;binder/IInterface.h&gt;
+#include &lt;binder/Parcel.h&gt;
+</span>
+<span class="c1">// 命名空间为 android</span>
+<span class="k">namespace</span> <span class="n">android</span> <span class="p">{</span>
+
+<span class="c1">// 声明业务接口，子类实现接口处理具体业务</span>
+<span class="k">class</span> <span class="nc">ITest</span> <span class="o">:</span> <span class="k">public</span> <span class="n">IInterface</span> <span class="p">{</span>
+<span class="nl">public:</span>
+    <span class="c1">// !!一定不要忘记了这里!!</span>
+    <span class="n">DECLARE_META_INTERFACE</span><span class="p">(</span><span class="n">Test</span><span class="p">)</span>
+
+    <span class="c1">// 子类实现以下接口处理业务函数</span>
+    <span class="k">virtual</span> <span class="kt">void</span> <span class="n">write</span><span class="p">();</span>
+    <span class="k">virtual</span> <span class="kt">void</span> <span class="n">read</span><span class="p">();</span>
+<span class="p">};</span>
+
+<span class="c1">// BnTest 根据请求码 code 对客户端的请求进行转发，实际工作由 ITest 子类完成，</span>
+<span class="c1">// BnInterface 既是模板类又是多继承，其原型为：</span>
+<span class="c1">// template&lt;typename INTERFACE&gt;</span>
+<span class="c1">// class BnInterface : public INTERFACE, public BBinder {}</span>
+<span class="k">class</span> <span class="nc">BnTest</span> <span class="o">:</span> <span class="k">public</span> <span class="n">BnInterface</span><span class="o">&lt;</span><span class="n">ITest</span><span class="o">&gt;</span> <span class="p">{</span>
+<span class="nl">public:</span>
+    <span class="k">virtual</span> <span class="n">status_t</span> <span class="n">onTransact</span><span class="p">(</span><span class="kt">uint32_t</span> <span class="n">code</span><span class="p">,</span> <span class="k">const</span> <span class="n">Parcel</span> <span class="o">&amp;</span><span class="n">data</span><span class="p">,</span>
+                                <span class="n">Parcel</span> <span class="o">*</span><span class="n">reply</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span><span class="p">);</span>
+<span class="p">};</span>
+<span class="p">}</span> <span class="c1">// namespace android</span>
+<span class="cp">#endif // ANDROID_ITESTSERVICE_H
+</span></pre></table></code></div></div><h3 id="实现-service-业务方法">实现 service 业务方法</h3><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+</pre><td class="rouge-code"><pre><span class="c1">// 定义 log tag, ALOGx() 中会用到</span>
+<span class="cp">#define LOG_TAG "TestServer"
+</span>
+<span class="cp">#include &lt;binder/IPCThreadState.h&gt;
+#include &lt;binder/IServiceManager.h&gt;
+#include &lt;utils/Log.h&gt;
+#include "ITest.h"
+</span>
+<span class="k">namespace</span> <span class="n">android</span> <span class="p">{</span>
+
+<span class="k">const</span> <span class="kt">uint32_t</span> <span class="n">CODE_WRITE</span> <span class="o">=</span> <span class="mh">0x10</span><span class="p">;</span>
+<span class="k">const</span> <span class="kt">uint32_t</span> <span class="n">CODE_READ</span> <span class="o">=</span> <span class="mh">0x11</span><span class="p">;</span>
+
+<span class="k">class</span> <span class="nc">BpTest</span> <span class="o">:</span> <span class="k">public</span> <span class="n">BpInterface</span><span class="o">&lt;</span><span class="n">ITest</span><span class="o">&gt;</span> <span class="p">{</span>
+<span class="nl">public:</span>
+    <span class="n">BpTest</span><span class="p">(</span><span class="k">const</span> <span class="n">sp</span><span class="o">&lt;</span><span class="n">IBinder</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">impl</span><span class="p">)</span>
+            <span class="o">:</span> <span class="n">BpInterface</span><span class="o">&lt;</span><span class="n">ITest</span><span class="o">&gt;</span><span class="p">(</span><span class="n">impl</span><span class="p">)</span> <span class="p">{}</span>
+
+    <span class="c1">// 与 ITest 中声明的业务函数同名，原因是 BpInterface 是多继承类 &amp; 模板类，</span>
+    <span class="c1">// 其原型为： template&lt;typename INTERFACE&gt;</span>
+    <span class="c1">// class BpInterface : public INTERFACE, public BpRefBase {...}</span>
+    <span class="kt">void</span> <span class="n">write</span><span class="p">()</span> <span class="k">override</span> <span class="p">{</span>
+        <span class="n">Parcel</span> <span class="n">data</span><span class="p">,</span> <span class="n">reply</span><span class="p">;</span>
+        <span class="n">data</span><span class="p">.</span><span class="n">writeInterfaceToken</span><span class="p">(</span><span class="n">ITest</span><span class="o">::</span><span class="n">getInterfaceDescriptor</span><span class="p">());</span>
+        <span class="c1">// 转发到 BnTest::onTransact()</span>
+        <span class="n">ALOGD</span><span class="p">(</span><span class="s">"BpTest::write() start transact %s cmd(%d)"</span><span class="p">,</span> <span class="s">"WRITE"</span><span class="p">,</span> <span class="n">CODE_WRITE</span><span class="p">);</span>
+        <span class="n">remote</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">transact</span><span class="p">(</span><span class="n">CODE_WRITE</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">reply</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="kt">void</span> <span class="n">read</span><span class="p">()</span> <span class="k">override</span> <span class="p">{</span>
+        <span class="n">Parcel</span> <span class="n">data</span><span class="p">,</span> <span class="n">reply</span><span class="p">;</span>
+        <span class="n">data</span><span class="p">.</span><span class="n">writeInterfaceToken</span><span class="p">(</span><span class="n">ITest</span><span class="o">::</span><span class="n">getInterfaceDescriptor</span><span class="p">());</span>
+        <span class="c1">// 转发到 BnTest::onTransact()</span>
+        <span class="n">ALOGD</span><span class="p">(</span><span class="s">"BpTest::read() start transact %s cmd(%d)"</span><span class="p">,</span> <span class="s">"READ"</span><span class="p">,</span> <span class="n">CODE_READ</span><span class="p">);</span>
+        <span class="n">remote</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">transact</span><span class="p">(</span><span class="n">CODE_READ</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">reply</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="c1">// 实现 BnTest::onTransact()</span>
+<span class="n">status_t</span> <span class="n">BnTest</span><span class="o">::</span><span class="n">onTransact</span><span class="p">(</span><span class="kt">uint32_t</span> <span class="n">code</span><span class="p">,</span> <span class="k">const</span> <span class="n">Parcel</span> <span class="o">&amp;</span><span class="n">data</span><span class="p">,</span> <span class="n">Parcel</span> <span class="o">*</span><span class="n">reply</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">flags</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="n">code</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">CODE_READ</span><span class="p">:</span>
+            <span class="n">CHECK_INTERFACE</span><span class="p">(</span><span class="n">ITest</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">reply</span><span class="p">)</span>
+            <span class="n">ALOGD</span><span class="p">(</span><span class="s">"BnTest::%s() read(%d), flags(%d)"</span><span class="p">,</span> <span class="n">__FUNCTION__</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">flags</span><span class="p">);</span>
+            <span class="c1">// 这里调用的是 ITest::read() 函数</span>
+            <span class="n">read</span><span class="p">();</span>
+            <span class="k">return</span> <span class="n">NO_ERROR</span><span class="p">;</span>
+        <span class="k">case</span> <span class="n">CODE_WRITE</span><span class="p">:</span>
+            <span class="n">CHECK_INTERFACE</span><span class="p">(</span><span class="n">ITest</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">reply</span><span class="p">)</span>
+            <span class="n">ALOGD</span><span class="p">(</span><span class="s">"BnTest::%s() write(%d), flags(%d)"</span><span class="p">,</span> <span class="n">__FUNCTION__</span><span class="p">,</span> <span class="n">code</span><span class="p">,</span> <span class="n">flags</span><span class="p">);</span>
+            <span class="c1">// 这里调用的是 ITest::write() 函数</span>
+            <span class="n">write</span><span class="p">();</span>
+            <span class="k">return</span> <span class="n">NO_ERROR</span><span class="p">;</span>
+        <span class="nl">default:</span>
+            <span class="k">return</span> <span class="n">BnInterface</span><span class="o">::</span><span class="n">onTransact</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">reply</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// 实现 ITest::read() 接口，处理实际的业务逻辑</span>
+<span class="kt">void</span> <span class="n">ITest</span><span class="o">::</span><span class="n">read</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">ALOGD</span><span class="p">(</span><span class="s">"ITest::read() called, start do hard work"</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// 实现 ITest::write() 接口，处理实际的业务逻辑</span>
+<span class="kt">void</span> <span class="n">ITest</span><span class="o">::</span><span class="n">write</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">ALOGD</span><span class="p">(</span><span class="s">"ITest::write() called, start do hard work"</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="c1">// !!一定不要忘记了这里!!</span>
+<span class="n">IMPLEMENT_META_INTERFACE</span><span class="p">(</span><span class="n">Test</span><span class="p">,</span> <span class="s">"android.test.ITest"</span><span class="p">)</span>
+<span class="p">}</span> <span class="c1">// namespace android</span>
+</pre></table></code></div></div><h3 id="编写-testservercpp-文件实现-server-端">编写 TestServer.cpp 文件实现 server 端</h3><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+</pre><td class="rouge-code"><pre><span class="cp">#define LOG_TAG "TestService"
+</span>
+<span class="cp">#include &lt;binder/IPCThreadState.h&gt;
+#include &lt;binder/ProcessState.h&gt;
+#include &lt;binder/IServiceManager.h&gt;
+#include &lt;utils/Log.h&gt;
+#include &lt;utils/String8.h&gt;
+#include "ITest.h"
+</span>
+<span class="c1">// 使用 android 命名空间</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">android</span><span class="p">;</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// count 为参数个数，argv[0] 表示可执行程序本身</span>
+    <span class="n">ALOGI</span><span class="p">(</span><span class="s">"sample service start count: %d, argv[0]: %s"</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+
+    <span class="c1">// 创建单例</span>
+    <span class="n">sp</span><span class="o">&lt;</span><span class="n">ProcessState</span><span class="o">&gt;</span> <span class="n">proc</span><span class="p">(</span><span class="n">ProcessState</span><span class="o">::</span><span class="n">self</span><span class="p">());</span>
+
+    <span class="c1">// 获取 service manager</span>
+    <span class="n">sp</span><span class="o">&lt;</span><span class="n">IServiceManager</span><span class="o">&gt;</span> <span class="n">sm</span><span class="p">(</span><span class="n">defaultServiceManager</span><span class="p">());</span>
+    <span class="n">ALOGI</span><span class="p">(</span><span class="s">"defaultServiceManager(): %p"</span><span class="p">,</span> <span class="n">sm</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+
+    <span class="c1">// 注意 BnTest 的继承关系如下：</span>
+    <span class="c1">//              IBinder</span>
+    <span class="c1">//                ^^</span>
+    <span class="c1">//                ||</span>
+    <span class="c1">//              BBinder</span>
+    <span class="c1">//                ^^</span>
+    <span class="c1">//                ||</span>
+    <span class="c1">//           BnInterface</span>
+    <span class="c1">//                ^^</span>
+    <span class="c1">//                ||</span>
+    <span class="c1">//              BnTest</span>
+    <span class="c1">// 即实际上 BnTest 就是一个 IBinder</span>
+    <span class="c1">// 注册服务</span>
+    <span class="n">sm</span><span class="o">-&gt;</span><span class="n">addService</span><span class="p">(</span><span class="n">String16</span><span class="p">(</span><span class="s">"sample.service"</span><span class="p">),</span> <span class="k">new</span> <span class="n">BnTest</span><span class="p">()</span><span class="cm">/*binder*/</span><span class="p">);</span>
+    <span class="n">ALOGI</span><span class="p">(</span><span class="s">"add sample.service to service manager"</span><span class="p">);</span>
+
+    <span class="c1">// 开启工作线程</span>
+    <span class="n">ProcessState</span><span class="o">::</span><span class="n">self</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">startThreadPool</span><span class="p">();</span>
+    <span class="c1">// 加入到主线程</span>
+    <span class="n">IPCThreadState</span><span class="o">::</span><span class="n">self</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">joinThreadPool</span><span class="p">();</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></table></code></div></div><h3 id="编写-androidbp-文件并编译出-service-端可执行程序">编写 Android.bp 文件并编译出 service 端可执行程序</h3><pre><code class="language-androidbp">// 编译二进制可执行程序：sample_service
+cc_binary {
+    // 可执行程序的名字
+    name: "sample_service",
+    // 使用哪些源文件来进行编译
+    srcs: [
+        "ITest.cpp",
+        "TestServer.cpp",
+    ],
+    // 包含的头文件所在的目录
+    include_dirs: [
+        "vendor/grandstream/test-service/native"
+    ],
+    // 使用到哪些共享库
+    shared_libs: [
+        "libbinder",
+        "libcutils",
+        "liblog",
+        "libutils",
+    ],
+    // c flags
+    cflags: [
+        "-Werror",
+        "-Wno-error=deprecated-declarations",
+        "-Wall",
+    ],
+}
+</code></pre><p>至此，程序源代码目录结构如下：</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+</pre><td class="rouge-code"><pre>├── Android.bp
+├── ITest.cpp
+├── ITest.h
+└── TestServer.cpp
+</pre></table></code></div></div><p>然后在源码环境下进入目录，执行 <code class="language-plaintext highlighter-rouge">mm</code> 命令进行编译生成 <code class="language-plaintext highlighter-rouge">sample_server</code> 程序： <code class="language-plaintext highlighter-rouge">out/target/product/xxx/system/bin/sample_server</code>，最后将该程序 push 到 设备中：</p><div class="language-bash highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>adb push out/target/product/xxx/system/bin/sample_service /system/bin/sample_service
+</pre></table></code></div></div><h3 id="编写-testclientcpp-文件实现-client-端">编写 TestClient.cpp 文件实现 client 端</h3><div class="language-cpp highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+</pre><td class="rouge-code"><pre><span class="cp">#define LOG_TAG "TestClient"
+</span>
+<span class="cp">#include &lt;binder/IPCThreadState.h&gt;
+#include &lt;binder/ProcessState.h&gt;
+#include &lt;binder/IServiceManager.h&gt;
+#include &lt;utils/Log.h&gt;
+#include &lt;utils/String8.h&gt;
+#include "ITest.h"
+</span>
+<span class="c1">// 使用 android 命名空间</span>
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">android</span><span class="p">;</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">ALOGI</span><span class="p">(</span><span class="s">"sample client start count: %d, argv[0]: %s"</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+
+    <span class="c1">// 获取 service manager</span>
+    <span class="n">sp</span><span class="o">&lt;</span><span class="n">IServiceManager</span><span class="o">&gt;</span> <span class="n">sm</span><span class="p">(</span><span class="n">defaultServiceManager</span><span class="p">());</span>
+    <span class="n">ALOGI</span><span class="p">(</span><span class="s">"defaultServiceManager(): %p"</span><span class="p">,</span> <span class="n">sm</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+
+    <span class="c1">// 获取注册的 sample.service 服务</span>
+    <span class="n">sp</span><span class="o">&lt;</span><span class="n">IBinder</span><span class="o">&gt;</span> <span class="n">binder</span> <span class="o">=</span> <span class="n">sm</span><span class="o">-&gt;</span><span class="n">getService</span><span class="p">(</span><span class="n">String16</span><span class="p">(</span><span class="s">"sample.service"</span><span class="p">));</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">binder</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">ALOGE</span><span class="p">(</span><span class="s">"sample service binder is null, abort..."</span><span class="p">);</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">ALOGI</span><span class="p">(</span><span class="s">"sample service binder is %p"</span><span class="p">,</span> <span class="n">binder</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+
+    <span class="c1">// 通过 interface_cast 还原 ITest 接口</span>
+    <span class="n">sp</span><span class="o">&lt;</span><span class="n">ITest</span><span class="o">&gt;</span> <span class="n">service</span> <span class="o">=</span> <span class="n">interface_cast</span><span class="o">&lt;</span><span class="n">ITest</span><span class="o">&gt;</span><span class="p">(</span><span class="n">binder</span><span class="p">);</span>
+    <span class="n">ALOGI</span><span class="p">(</span><span class="s">"sample service is %p"</span><span class="p">,</span> <span class="n">service</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+
+    <span class="c1">// 使用服务提供的业务接口</span>
+    <span class="n">service</span><span class="o">-&gt;</span><span class="n">write</span><span class="p">();</span>
+    <span class="n">service</span><span class="o">-&gt;</span><span class="n">read</span><span class="p">();</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></table></code></div></div><h3 id="修改-androidbp-文件并编译出-client-可执行程序">修改 Android.bp 文件并编译出 client 可执行程序</h3><p>1、修改 Android.bp 文件追加如下内容：</p><pre><code class="language-androidbp">// 编译二进制可执行程序：sample_client
+cc_binary {
+    name: "sample_client",
+    srcs: [
+        "ITest.cpp",
+        "TestClient.cpp",
+    ],
+    include_dirs: [
+        "vendor/grandstream/test-service/native"
+    ],
+    shared_libs: [
+        "libbinder",
+        "libcutils",
+        "liblog",
+        "libutils",
+    ],
+    cflags: [
+        "-Werror",
+        "-Wno-error=deprecated-declarations",
+        "-Wall",
+    ],
+}
+</code></pre><p>2、编译出 <code class="language-plaintext highlighter-rouge">sample_client</code> 可执行程序并且 push 到设备中</p><p>然后在源码环境下进入目录，执行 <code class="language-plaintext highlighter-rouge">mm</code> 命令进行编译生成 <code class="language-plaintext highlighter-rouge">sample_client</code> 程序： <code class="language-plaintext highlighter-rouge">out/target/product/xxx/system/bin/sample_client</code>，最后将该程序 push 到设备中：</p><div class="language-bash highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>adb push out/target/product/xxx/system/bin/sample_client /system/bin/sample_client
+</pre></table></code></div></div><p>3、运行程序观察调用过程</p><p>进入串口先执行 <code class="language-plaintext highlighter-rouge">sample_service</code>（或<code class="language-plaintext highlighter-rouge">/system/bin/sample_service</code>） 启动 service, 在执行 <code class="language-plaintext highlighter-rouge">sample_client</code> （或<code class="language-plaintext highlighter-rouge">/system/bin/sample_client</code>） 向 server 发送请求，在 logcat 中可观察到如下日志输出：</p><pre><code class="language-logcat">I/TestService: sample service start count: 1, argv[0]: sample_service
+I/TestService: defaultServiceManager(): 0x729e23d180
+I/TestService: add sample.service to service manager
+I/TestClient: sample client start count: 1, argv[0]: system/bin/sample_client
+I/TestClient: defaultServiceManager(): 0x76f023d180
+I/TestClient: sample service binder is 0x76f024b140
+I/TestClient: sample service is 0x76f023d1c0
+D/TestServer: BpTest::write() start transact WRITE cmd(16)
+D/TestServer: BnTest::onTransact() write(16), flags(16)
+D/TestServer: ITest::write() called, start do hard work
+D/TestServer: BpTest::read() start transact READ cmd(17)
+D/TestServer: BnTest::onTransact() read(17), flags(16)
+D/TestServer: ITest::read() called, start do hard work
+</code></pre><p><strong>总结：</strong></p><p>从以上日志输出可以看出，当对某一 service 中的业务函数发起调用时，首先调用 BpXxx（即 BpInterface），接着调用 BnXxx（即 BnInterface），最终调用 IXxx（即 IInterface）</p><p>本例源码：<a href="https://github.com/sleticalboy/DailyLearning/tree/master/binder-demo/server/native">binder server(native)</a></p><hr /><h2 id="第二种java-层实现">第二种：java 层实现</h2><h3 id="实现-server-端">实现 server 端</h3><p>1、编写 AIDL 文件 <code class="language-plaintext highlighter-rouge">DataStruct.aidl</code> 和 <code class="language-plaintext highlighter-rouge">ITest.aidl</code></p><p>1.1、 <code class="language-plaintext highlighter-rouge">ITest.aidl</code> 文件</p><pre><code class="language-aidl">package com.sleticalboy.sample.service;
+// aidl 文件中，即使文件是在同一个 package 下，也要显示导入
+import com.sleticalboy.sample.service.DataStruct;
+
+interface ITest {
+    void doWrite(in DataStruct data);
+    void doRead(in String name, in boolean notify);
+}
+</code></pre><p>1.2、 <code class="language-plaintext highlighter-rouge">ITest.aidl</code> 文件</p><pre><code class="language-aidl">package com.sleticalboy.sample.service;
+// 切记，当 java 类实现 Parcelable 接口时，在 aidl 中要用 parcelable 关键字
+parcelable DataStruct;
+</code></pre><p>可以使用 <code class="language-plaintext highlighter-rouge">aidl</code> 命令先生成对应的 java 文件以方便代码编写</p><div class="language-bash highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>aidl <span class="nt">-Iaidl</span>/ <span class="nt">-osrc</span>/ aidl/com/sleticalboy/sample/service/ITest.aidl
+</pre></table></code></div></div><p>2、编写 server 端</p><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+</pre><td class="rouge-code"><pre><span class="kn">package</span> <span class="nn">com.sleticalboy.sample.service</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">android.app.Service</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.content.Intent</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.os.IBinder</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.os.RemoteException</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.util.Log</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">SampleService</span> <span class="kd">extends</span> <span class="nc">Service</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">TAG</span> <span class="o">=</span> <span class="s">"SampleService"</span><span class="o">;</span>
+
+    <span class="kd">private</span> <span class="kd">final</span> <span class="nc">IBinder</span> <span class="n">mBinder</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ITest</span><span class="o">.</span><span class="na">Stub</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doWrite</span><span class="o">(</span><span class="nc">DataStruct</span> <span class="n">data</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">RemoteException</span> <span class="o">{</span>
+            <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"doWrite() data = ["</span> <span class="o">+</span> <span class="n">data</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doRead</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">notify</span><span class="o">)</span> <span class="kd">throws</span> <span class="nc">RemoteException</span> <span class="o">{</span>
+            <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"doRead() name = ["</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">"], notify = ["</span> <span class="o">+</span> <span class="n">notify</span> <span class="o">+</span> <span class="s">"]"</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">};</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onCreate</span><span class="o">()</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">.</span><span class="na">onCreate</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">onStartCommand</span><span class="o">(</span><span class="nc">Intent</span> <span class="n">intent</span><span class="o">,</span> <span class="kt">int</span> <span class="n">flags</span><span class="o">,</span> <span class="kt">int</span> <span class="n">startId</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="kd">super</span><span class="o">.</span><span class="na">onStartCommand</span><span class="o">(</span><span class="n">intent</span><span class="o">,</span> <span class="n">flags</span><span class="o">,</span> <span class="n">startId</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="nc">IBinder</span> <span class="nf">onBind</span><span class="o">(</span><span class="nc">Intent</span> <span class="n">intent</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">mBinder</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>3、编写 Android.bp 文件并编译出 SampleService apk</p><p>3.1、Android.bp 文件内容如下：</p><pre><code class="language-androidbp">// 编译 Android apk
+android_app {
+    // apk 名字
+    name: "SampleService",
+    // 源文件: .java/.aidl/.logtags/.proto
+    srcs: [
+        "aidl/com/sleticalboy/sample/service/ITest.aidl",
+        "src/com/sleticalboy/sample/service/**/*.java",
+    ],
+    aidl: {
+        // 本地目录（与 Android.bp 文件同级的目录）
+        local_include_dirs: ["aidl"],
+        // 猜测与日志输出相关
+        generate_traces: true,
+    },
+    // 签名文件，此处表示与平台使用相同的签名文件
+    certificate: "platform",
+    // 清单文件
+    manifest: "AndroidManifest.xml",
+    // 静态库，
+    static_libs: [
+        "android-common",
+    ],
+    // 优化开关
+    optimize: {
+        enabled: false,
+    },
+}
+</code></pre><p>3.2、执行 mmm 命令进行编译</p><div class="language-bash highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>mmm vendor/sleticalboy/sample_service/java/
+</pre></table></code></div></div><p>3.3、将编译出的 service apk 安装到设备中</p><div class="language-bash highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>adb <span class="nb">install</span> <span class="nt">-r</span> <span class="nt">-d</span> <span class="nt">-t</span> out/target/product/xxx/system/priv-app/SampleService/SampleService.apk
+</pre></table></code></div></div><p>4、server 端目录结构如下：</p><pre><code class="language-filetree">├── aidl
+│   └── com
+│       └── sleticalboy
+│           └── sample
+│               └── service
+│                   ├── DataStruct.aidl
+│                   └── ITest.aidl
+├── Android.bp
+├── AndroidManifest.xml
+├── build_manul.sh
+└── src
+    └── com
+        └── sleticalboy
+            └── sample
+                └── service
+                    ├── DataStruct.java
+                    └── SampleService.java
+</code></pre><p>本例源码：<a href="https://github.com/sleticalboy/DailyLearning/tree/master/binder-demo/server/java">binder server(java)</a></p><h3 id="实现-client-端">实现 client 端</h3><p>1、直接在 Activity 中访问服务端</p><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+</pre><td class="rouge-code"><pre><span class="kn">package</span> <span class="nn">com.sleticalboy.sample.client</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">android.annotation.Nullable</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.app.Activity</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.content.ComponentName</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.content.Intent</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.content.ServiceConnection</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.os.Bundle</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.os.IBinder</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.os.RemoteException</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.os.ServiceManager</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.util.Log</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">android.widget.Toast</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">com.sleticalboy.sample.client.R</span><span class="o">;</span>
+
+<span class="kn">import</span> <span class="nn">com.sleticalboy.sample.service.DataStruct</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">com.sleticalboy.sample.service.ITest</span><span class="o">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">SampleClient</span> <span class="kd">extends</span> <span class="nc">Activity</span> <span class="o">{</span>
+
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="nc">String</span> <span class="no">TAG</span> <span class="o">=</span> <span class="s">"SampleClient"</span><span class="o">;</span>
+
+    <span class="kd">private</span> <span class="nc">ITest</span> <span class="n">mService</span><span class="o">;</span>
+    <span class="kd">private</span> <span class="kd">final</span> <span class="nc">ServiceConnection</span> <span class="n">mConn</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ServiceConnection</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onServiceConnected</span><span class="o">(</span><span class="nc">ComponentName</span> <span class="n">name</span><span class="o">,</span> <span class="nc">IBinder</span> <span class="n">binder</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"onServiceConnected() name: "</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s">", binder: "</span> <span class="o">+</span> <span class="n">binder</span><span class="o">);</span>
+            <span class="n">mService</span> <span class="o">=</span> <span class="nc">ITest</span><span class="o">.</span><span class="na">Stub</span><span class="o">.</span><span class="na">asInterface</span><span class="o">(</span><span class="n">binder</span><span class="o">);</span>
+            <span class="nc">SampleClient</span><span class="o">.</span><span class="na">this</span><span class="o">.</span><span class="na">onServiceConnected</span><span class="o">();</span>
+        <span class="o">}</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onServiceDisconnected</span><span class="o">(</span><span class="nc">ComponentName</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">mService</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">};</span>
+
+    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">onServiceConnected</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">mService</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">Toast</span><span class="o">.</span><span class="na">makeText</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="no">R</span><span class="o">.</span><span class="na">string</span><span class="o">.</span><span class="na">service_bind_ok</span><span class="o">,</span> <span class="nc">Toast</span><span class="o">.</span><span class="na">LENGTH_SHORT</span><span class="o">).</span><span class="na">show</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onCreate</span><span class="o">(</span><span class="nd">@Nullable</span> <span class="nc">Bundle</span> <span class="n">savedInstanceState</span><span class="o">)</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">.</span><span class="na">onCreate</span><span class="o">(</span><span class="n">savedInstanceState</span><span class="o">);</span>
+
+        <span class="n">setContentView</span><span class="o">(</span><span class="no">R</span><span class="o">.</span><span class="na">layout</span><span class="o">.</span><span class="na">sample_client</span><span class="o">);</span>
+
+        <span class="n">doBindeService</span><span class="o">();</span>
+
+        <span class="n">initViews</span><span class="o">();</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">initViews</span><span class="o">()</span> <span class="o">{</span>
+        <span class="n">findViewById</span><span class="o">(</span><span class="no">R</span><span class="o">.</span><span class="na">id</span><span class="o">.</span><span class="na">btn_write</span><span class="o">).</span><span class="na">setOnClickListener</span><span class="o">(</span><span class="n">v</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">mService</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="nc">DataStruct</span> <span class="n">data</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">DataStruct</span><span class="o">();</span>
+                <span class="n">data</span><span class="o">.</span><span class="na">mName</span> <span class="o">=</span> <span class="s">"data to server"</span><span class="o">;</span>
+                <span class="n">data</span><span class="o">.</span><span class="na">mNotify</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                <span class="n">mService</span><span class="o">.</span><span class="na">doWrite</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">RemoteException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">});</span>
+        <span class="n">findViewById</span><span class="o">(</span><span class="no">R</span><span class="o">.</span><span class="na">id</span><span class="o">.</span><span class="na">btn_read</span><span class="o">).</span><span class="na">setOnClickListener</span><span class="o">(</span><span class="n">v</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">mService</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">return</span><span class="o">;</span>
+            <span class="o">}</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="n">mService</span><span class="o">.</span><span class="na">doRead</span><span class="o">(</span><span class="s">"client"</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+            <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">RemoteException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+            <span class="o">}</span>
+        <span class="o">});</span>
+        <span class="n">findViewById</span><span class="o">(</span><span class="no">R</span><span class="o">.</span><span class="na">id</span><span class="o">.</span><span class="na">btn_native</span><span class="o">).</span><span class="na">setOnClickListener</span><span class="o">(</span><span class="n">v</span> <span class="o">-&gt;</span> <span class="o">{</span>
+            <span class="c1">// 只要有权限，是能查询到 ServiceManager 中注册的 service</span>
+            <span class="nc">IBinder</span> <span class="n">service</span> <span class="o">=</span> <span class="nc">ServiceManager</span><span class="o">.</span><span class="na">getService</span><span class="o">(</span><span class="s">"sample.service"</span><span class="o">);</span>
+            <span class="nc">Log</span><span class="o">.</span><span class="na">w</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"sample.service: "</span> <span class="o">+</span> <span class="n">service</span><span class="o">);</span>
+        <span class="o">});</span>
+    <span class="o">}</span>
+
+    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">doBindeService</span><span class="o">()</span> <span class="o">{</span>
+        <span class="nc">Intent</span> <span class="n">intent</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Intent</span><span class="o">();</span>
+        <span class="n">intent</span><span class="o">.</span><span class="na">setClassName</span><span class="o">(</span><span class="s">"com.sleticalboy.sample.service"</span><span class="o">,</span>
+                <span class="s">"com.sleticalboy.sample.service.SampleService"</span><span class="o">);</span>
+        <span class="kt">boolean</span> <span class="n">bound</span> <span class="o">=</span> <span class="n">bindService</span><span class="o">(</span><span class="n">intent</span><span class="o">,</span> <span class="n">mConn</span><span class="o">,</span> <span class="no">BIND_AUTO_CREATE</span><span class="o">);</span>
+        <span class="nc">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"bind service: "</span> <span class="o">+</span> <span class="n">bound</span><span class="o">);</span>
+    <span class="o">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onDestroy</span><span class="o">()</span> <span class="o">{</span>
+        <span class="kd">super</span><span class="o">.</span><span class="na">onDestroy</span><span class="o">();</span>
+        <span class="n">unbindService</span><span class="o">(</span><span class="n">mConn</span><span class="o">);</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></table></code></div></div><p>2、编写 Android.bp 文件并编译出 SampleClient apk</p><p>2.1、Android.bp 文件内容如下</p><pre><code class="language-androidbp">android_app {
+    name: "SampleClient",
+    srcs: [
+        "src/com/sleticalboy/sample/client/**/*.java",
+        "../sample_service/java/src/com/sleticalboy/sample/service/**/*.java",
+        "../sample_service/java/aidl/com/sleticalboy/sample/service/ITest.aidl",
+    ],
+    aidl: {
+        local_include_dirs: ["../sample_service/java/aidl"],
+        generate_traces: true,
+    },
+    certificate: "platform",
+    manifest: "AndroidManifest.xml",
+    static_libs: [
+        "android-common",
+    ],
+    optimize: {
+        enabled: false,
+    },
+}
+</code></pre><p>2.2、执行 <code class="language-plaintext highlighter-rouge">mmm</code> 命令进行编译</p><div class="language-bash highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>mmm vendor/sleticalboy/sample_client/
+</pre></table></code></div></div><p>2.3、将编译出的 client apk 安装到设备中</p><div class="language-bash highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre>adb <span class="nb">install</span> <span class="nt">-r</span> <span class="nt">-d</span> <span class="nt">-t</span> out/target/product/xxx/system/priv-app/SampleClient/SampleClient.apk
+</pre></table></code></div></div><p>3、client 端目录结构如下</p><div class="language-plaintext highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre><td class="rouge-code"><pre>├── Android.bp
+├── AndroidManifest.xml
+├── res
+│   ├── layout
+│   │   └── sample_client.xml
+│   └── values
+│       └── strings.xml
+└── src
+    └── com
+        └── sleticalboy
+            └── sample
+                └── client
+                    └── SampleClient.java
+</pre></table></code></div></div><h3 id="client-访问-service-运行输出如下">client 访问 service 运行输出如下：</h3><pre><code class="language-log">// 1、客户端发起绑定服务
+sample.client D/SampleClient: bind service: true
+// 2、服务端开始创建
+sample.service D/SampleService: onCreate() called
+// 3、服务端收到客户端绑定请求
+sample.service D/SampleService: onBind() called
+// 4、客户端绑定服务成功
+sample.client D/SampleClient: onServiceConnected() name: ComponentInfo{}, binder: android.os.BinderProxy@1ff5453
+// 5、服务端收到客户端的 write 调用
+sample.service D/SampleService: doWrite() data = [DataStruct{mName='data to server', mNotify=true}]
+// 6、服务端收到客户端的 read 调用
+sample.service D/SampleService: doRead() name = [client], notify = [false]
+</code></pre><p>本例源码：<a href="https://github.com/sleticalboy/DailyLearning/tree/master/binder-demo/client">binder client</a></p><hr /><h2 id="参考资料">参考资料</h2><h3 id="aidl-使用文档">aidl 使用文档</h3><p><code class="language-plaintext highlighter-rouge">aidl</code> 工具的源码在 <code class="language-plaintext highlighter-rouge">${ANDROID_ROOT}/system/tools/aidl</code> 目录下，分为 java 和 cpp 两类，分别可以通过输入 aidl 文件生成 java 文件和 cpp 文件</p><pre><code class="language-txt">INPUT required
+usage: aidl OPTIONS INPUT [OUTPUT]
+       aidl --preprocess OUTPUT INPUT...
+
+OPTIONS:
+   -I&lt;DIR&gt;    search path for import statements.可以去哪个目录下寻找import文件
+   -d&lt;FILE&gt;   generate dependency file.
+   -a         generate dependency file next to the output file with the name based on the input file.
+   -ninja     generate dependency file in a format ninja understands.
+   -p&lt;FILE&gt;   file created by --preprocess to import.
+   -o&lt;FOLDER&gt; base output folder for generated files. 生成的java文件输出目录
+   -b         fail when trying to compile a parcelable.
+   -t         include tracing code for systrace. Note that if either the client or server code is not auto-generated by this tool, that part will not be traced.
+
+INPUT:
+   An aidl interface file.
+
+OUTPUT:
+   The generated interface files.
+   If omitted and the -o option is not used, the input filename is used, with the .aidl extension changed to a .java extension.
+   If the -o option is used, the generated files will be placed in the base output folder, under their package folder
+</code></pre><h3 id="androidbp-文件格式"><a href="/assets/android/soong_build.html">androidbp 文件格式</a></h3><p>编译源码时会自动生成相关的文档，文档具体路径在： <code class="language-plaintext highlighter-rouge">${ANDROID_ROOT}/out/soong/docs/soong_build.html</code></p></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/android/'>android</a></div><div class="post-tags"> <i class="fa fa-tags fa-fw mr-1"></i> <a href="/tags/android/" class="post-tag no-text-decoration" >android</a> <a href="/tags/framework/" class="post-tag no-text-decoration" >framework</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center mt-3 pt-5 pb-2"><div class="license-wrapper"> This post is licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> by the author.</div><div class="share-wrapper"> <span class="share-label text-muted mr-1">Share</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=实战：使用 Binder 机制实现 C/S 架构 - sleticalboy&url=https://sleticalboy.github.io/android/2021/01/04/android-implement-a-native-service/" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank" rel="noopener" aria-label="Twitter"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=实战：使用 Binder 机制实现 C/S 架构 - sleticalboy&u=https://sleticalboy.github.io/android/2021/01/04/android-implement-a-native-service/" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://telegram.me/share?text=实战：使用 Binder 机制实现 C/S 架构 - sleticalboy&url=https://sleticalboy.github.io/android/2021/01/04/android-implement-a-native-service/" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank" rel="noopener" aria-label="Telegram"> <i class="fa-fw fab fa-telegram"></i> </a> <i class="fa-fw fas fa-link small" onclick="copyLink()" data-toggle="tooltip" data-placement="top" title="Copy link"></i> </span></div></div></div></div></div><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted topbar-down"><div class="access"><div id="access-lastmod" class="post"> <span>Recent Update</span><ul class="post-content pl-0 pb-1 ml-1 mt-2"><li><a href="/android/2021/01/28/android-input-subsystem-2/">Android 输入子系统2：EventHub 工作原理</a><li><a href="/android/2021/02/02/andorid-input-subsystem-3/">Android 输入子系统3：InputDispatcher 对事件分发</a><li><a href="/android/2021/01/22/android-input-subsystem-1/">Android 输入子系统1：IMS 初始化与启动</a><li><a href="/android/2019/01/21/build-aosp/">aosp 编译、工具等记录</a><li><a href="/android/2019/01/21/build-idegen-jar/">build-idegen-jar</a></ul></div><div id="access-tags"> <span>Trending Tags</span><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/android/">android</a> <a class="post-tag" href="/tags/framework/">framework</a> <a class="post-tag" href="/tags/english/">english</a> <a class="post-tag" href="/tags/linux/">linux</a> <a class="post-tag" href="/tags/tools/">tools</a> <a class="post-tag" href="/tags/open-source/">open source</a> <a class="post-tag" href="/tags/book/">book</a> <a class="post-tag" href="/tags/aosp/">aosp</a> <a class="post-tag" href="/tags/java/">java</a> <a class="post-tag" href="/tags/git/">git</a></div></div></div><div id="toc-wrapper" class="pl-0 pr-4 mb-5"> <span class="pl-3 pt-2 mb-2">Contents</span><nav id="toc" data-toggle="toc"></nav></div></div></div><div class="row"><div class="col-12 col-lg-11 col-xl-8"><div id="post-extend-wrapper" class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><div id="related-posts" class="mt-5 mb-2 mb-sm-4"><h3 class="pt-2 mt-1 mb-4 ml-1" data-toc-skip>Further Reading</h3><div class="card-deck mb-4"><div class="card"> <a href="/android/2019/04/09/app%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90-01/"><div class="card-body"> <span class="timeago small" > Apr 9, 2019 <i class="unloaded">2019-04-09T05:38:47+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>app 启动流程源码分析-1</h3><div class="text-muted small"><p> 源码 基于 android 8.0 从点击桌面 app 图标到 ActivityThread 的 main() 方法执行 先来两张图(先凑合下吧，没找到合适的画图工具，找到了再补上=_=) Launcher /packages/apps/Launcher2/src/com/android/launcher2/Launcher.java 什么是 Launcher ...</p></div></div></a></div><div class="card"> <a href="/android/2019/04/13/app%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90-02/"><div class="card-body"> <span class="timeago small" > Apr 13, 2019 <i class="unloaded">2019-04-13T23:40:34+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>app 启动流程分析-2</h3><div class="text-muted small"><p> 源码 基于 android 8.0 从 ActivityThread 的 main() 方法执行到页面显示 开篇之前，先思考以下几个问题 Q1: Application 是如何创建的？ Q2: Application 的 attachBaseContext() 为什么会在 onCreate() 方法之前调用？ Q3: Activity 是如何被创建的？ Q4: A...</p></div></div></a></div><div class="card"> <a href="/android/2019/04/17/AndroidManifest%E6%96%87%E4%BB%B6%E8%A7%A3%E6%9E%90/"><div class="card-body"> <span class="timeago small" > Apr 17, 2019 <i class="unloaded">2019-04-17T07:17:07+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>03-AndroidManifest文件解析</h3><div class="text-muted small"><p> 03-AndroidManifest.xml文件解析分析 启动 app 时 AndroidManifest.xml 文件是何时解析的？ Questtions 找不到解析入口在哪里？解决思路： LoadedApk.makeApplication() 方法里有个 clsName, 可以尝试反向查找 clsName 在哪里赋值的【未果】 网上搜一下...</p></div></div></a></div></div></div><div class="post-navigation d-flex justify-content-between"> <a href="/android/2020/12/16/camera-service/" class="btn btn-outline-primary"><p>Camera Service</p></a> <a href="/android/2021/01/08/android-binder-architecture-2/" class="btn btn-outline-primary"><p>Android binder 架构： java 层</p></a></div></div></div></div><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lozad/dist/lozad.min.js"></script> <script type="text/javascript"> const imgs = document.querySelectorAll('#post-wrapper img'); const observer = lozad(imgs); observer.observe(); </script><footer class="d-flex w-100 justify-content-center"><div class="d-flex justify-content-between align-items-center"><div class="footer-left"><p class="mb-0"> © 2021 <a href="https://github.com/sleticalboy">BenLee</a>. <span data-toggle="tooltip" data-placement="top" title="Except where otherwise noted, the blog posts on this site are licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) License by the author.">Some rights reserved.</span></p></div><div class="footer-right"><p class="mb-0"> Powered by <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a> with <a href="https://github.com/cotes2020/jekyll-theme-chirpy/" target="_blank" rel="noopener">Chirpy</a> theme.</p></div></div></footer></div><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-xl-11 post-content"><div id="search-hints"><h4 class="text-muted mb-4">Trending Tags</h4><a class="post-tag" href="/tags/android/">android</a> <a class="post-tag" href="/tags/framework/">framework</a> <a class="post-tag" href="/tags/english/">english</a> <a class="post-tag" href="/tags/linux/">linux</a> <a class="post-tag" href="/tags/tools/">tools</a> <a class="post-tag" href="/tags/open-source/">open source</a> <a class="post-tag" href="/tags/book/">book</a> <a class="post-tag" href="/tags/aosp/">aosp</a> <a class="post-tag" href="/tags/java/">java</a> <a class="post-tag" href="/tags/git/">git</a></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><div id="mask"></div><a id="back-to-top" href="#" aria-label="back-to-top" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a> <script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.7.3/dest/simple-jekyll-search.min.js"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/js/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="https://sleticalboy.github.io{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"><div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>{categories}</div><div><i class="fa fa-tag fa-fw"></i>{tags}</div></div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">Oops! No result founds.</p>' }); </script>
