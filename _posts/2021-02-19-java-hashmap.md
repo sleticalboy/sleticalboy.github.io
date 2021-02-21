@@ -25,7 +25,9 @@ map 的大小即键值对的个数
 
 下次数组扩容时的临界值，当达到此临界值时需要对 hash 表进行扩容（capacity * loadFactor）
 
-## HashMap.put() 方法
+## HashMap#put() 方法
+
+作用：添加元素
 
 ```java
 public V put(K key, V value) {
@@ -62,7 +64,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
             // list 装换为 tree
             for (int binCount = 0; ; ++binCount) { // binCount 表示链表长度
                 if ((e = p.next) == null) {
-                    // 如果当前链表只有一个元素，则将新元素存到链表的下一个位置
+                    // 如果当前链表只有一个元素，则将新元素存到链表的尾部（尾插法）
                     p.next = newNode(hash, key, value, null);
                     if (binCount >= TREEIFY_THRESHOLD - 1) // -1 for 1st
                         // 如果 binCount 大于等于阈值，则把链表转换成红黑树
@@ -97,7 +99,9 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent, boolean evict) {
 }
 ```
 
-## HashMap.get() 方法
+## HashMap#get() 方法
+
+作用：根据 key 获取 value
 
 ```java
 public V get(Object key) {
@@ -132,5 +136,147 @@ final Node<K,V> getNode(int hash, Object key) {
     }
     // 否则直接返回 null
     return null;
+}
+```
+
+## HashMap#treeifyBin() 方法
+
+作用：将链表转换成红黑树
+
+```java
+final void treeifyBin(Node<K,V>[] tab, int hash) {
+    // n 表示数组长度
+    // index = (tab.length - 1) & hash
+    // e 表示 key 对应当前的 node 节点
+    int n, index; Node<K,V> e;
+    // 数组为空或数组长度小于 64，则扩容
+    if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY/*64*/)
+        resize();
+    // 根据 key 的 hash 值找节点，如果节点存在则执行
+    else if ((e = tab[index = (n - 1) & hash]) != null) {
+        // hd 表示树根节点
+        // tl 表示红黑树的左子叶节点
+        TreeNode<K,V> hd = null, tl = null;
+        // 循环整个链表，将其转换成红黑树树
+        do {
+            // 将链表节点替换成树节点
+            TreeNode<K,V> p = replacementTreeNode(e, null);
+            // 如果 tl 为 null（首次进入循环，即链表的头结点）则将 p 赋值给 hd
+            if (tl == null) hd = p;
+            else {
+                p.prev = tl;
+                tl.next = p;
+            }
+            tl = p;
+        } while ((e = e.next) != null);
+        if ((tab[index] = hd) != null) hd.treeify(tab);
+    }
+}
+```
+
+## HashMap#resize() 方法
+
+作用：扩容
+
+```java
+final Node<K, V>[] resize() {
+    // oldTab 表示原始数组，oldCap 表示原始容量
+    Node<K,V>[] oldTab = table;
+    int oldCap = (oldTab == null) ? 0 : oldTab.length;
+    // 原阈值（threshold 默认为 DEFAULT_INITIAL_CAPACITY 即 16）
+    int oldThr = threshold;
+    int newCap, newThr = 0; // 新容量和新阈值
+    if (oldCap > 0) { // 原始容量大于 0
+        // 原始容量大于 1 << 30，将 threshold 置为 Integer.MAX_VALUE 并返回原始数组
+        if (oldCap >= MAXIMUM_CAPACITY/*1 << 30*/) {
+            threshold = Integer.MAX_VALUE;
+            return oldTab;
+        }
+        // 新容量扩展为原始容量的 2 倍后，如果小于 1 << 30 且原容量大于等于 16
+        else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY/*1 << 30*/ &&
+                 oldCap >= DEFAULT_INITIAL_CAPACITY/*16*/)
+            // 将新阈值扩展为原阈值的 2 倍
+            newThr = oldThr << 1; // double threshold
+    }
+    // 原容量等于 0 且原阈值大于 0
+    else if (oldThr > 0) // initial capacity was placed in threshold
+        newCap = oldThr; // 将新容量置为原阈值大小，默认为 16
+    // 原阈值等于 0，即第一次调用 resize() 方法
+    else {               // zero initial threshold signifies using defaults
+        newCap = DEFAULT_INITIAL_CAPACITY/*16*/;
+        newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY)/*12*/;
+    }
+    if (newThr == 0) { // 如果新阈值仍等于 0 时，执行兜底操作
+        float ft = (float)newCap * loadFactor;
+        newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
+                  (int)ft : Integer.MAX_VALUE);
+    }
+    threshold = newThr; // 将新阈值赋值给 threshold
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    Node<K, V>[] newTab = (Node<K, V>[]) new Node[newCap]; // 根据新容量重新生成数组
+    table = newTab; // 将新数组赋值给 table
+    if (oldTab != null) { // 将原数组中的元素转存到新数组中，并将原数组中的元素置空
+        for (int j = 0; j < oldCap; ++j) {
+            Node<K,V> e; // 临时变量用于存储从原数组取出的元素
+            if ((e = oldTab[j]) != null) {
+                oldTab[j] = null; // 置空原数组原色
+                if (e.next == null) // key 对应只有一个 node
+                    newTab[e.hash & (newCap - 1)] = e;
+                else if (e instanceof TreeNode) // key 对应的是一个 tree
+                    // 操作 tree
+                    ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
+                else { // preserve order
+                    // key 对应的是一个 list，保留原始顺序存储
+                    Node<K,V> loHead = null, loTail = null;
+                    Node<K,V> hiHead = null, hiTail = null;
+                    Node<K,V> next;
+                    // 操作 list
+                    do {
+                        next = e.next;
+                        if ((e.hash & oldCap) == 0) {
+                            if (loTail == null) loHead = e;
+                            else loTail.next = e;
+                            loTail = e;
+                        } else {
+                            if (hiTail == null) hiHead = e;
+                            else hiTail.next = e;
+                            hiTail = e;
+                        }
+                    } while ((e = next) != null);
+                    if (loTail != null) {
+                        loTail.next = null;
+                        newTab[j] = loHead;
+                    }
+                    if (hiTail != null) {
+                        hiTail.next = null;
+                        newTab[j + oldCap] = hiHead;
+                    }
+                }
+            }
+        }
+    }
+    // 返回新数组
+    return newTab;
+}
+```
+
+## HashMap#TreeNode
+
+红黑树数据结构，有如下 4 个特点：
+
+- 1、每个节点必然是红色或者黑色；
+- 2、根节点必然为黑色；
+- 3、若一个节点为红色，则其两个子节点必然是是黑色；
+- 4、对任意节点，从该节点到其子孙节点的所有路径上的黑色节点的数目必然相同
+
+```java
+static final class TreeNode<K,V> extends LinkedHashMap.LinkedHashMapEntry<K,V> {
+    // 树根、左子叶、右子叶
+    TreeNode<K,V> parent;  // red-black tree links
+    TreeNode<K,V> left;
+    TreeNode<K,V> right;
+    // 表示当前节点是红色还是黑色
+    boolean red;
+    TreeNode<K,V> prev;    // needed to unlink next upon deletion
 }
 ```
