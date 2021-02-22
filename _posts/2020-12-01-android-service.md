@@ -72,5 +72,11 @@ tags: [android, framework]
   - 使用 Messenger : IPC，单线程
   - 使用 aidl : IPC，多线程
 
+## service ANR
+
+### 前台 service ANR
+
+### 后台 service ANR
+
 ## 总结
 
