@@ -1,0 +1,519 @@
+<!DOCTYPE html><html lang="en" ><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><meta name="theme" content="Chirpy v2.6.2"><meta name="generator" content="Jekyll v4.1.1" /><meta property="og:title" content="at-activity-lifecycle" /><meta name="author" content="sleticalboy" /><meta property="og:locale" content="en_US" /><meta name="description" content="ActivityThread 中 Activity 生命周期 handleLaunchActivity() -&gt; handleStartActivity() -&gt; handleResumeActivity() -&gt; handlePauseActivity() -&gt; handleStopActivity() -&gt; handleDestroyActivity() performRestartActivity()" /><meta property="og:description" content="ActivityThread 中 Activity 生命周期 handleLaunchActivity() -&gt; handleStartActivity() -&gt; handleResumeActivity() -&gt; handlePauseActivity() -&gt; handleStopActivity() -&gt; handleDestroyActivity() performRestartActivity()" /><link rel="canonical" href="https://sleticalboy.github.io/android/2020/12/01/android-activity-lifecycle/" /><meta property="og:url" content="https://sleticalboy.github.io/android/2020/12/01/android-activity-lifecycle/" /><meta property="og:site_name" content="sleticalboy" /><meta property="og:type" content="article" /><meta property="article:published_time" content="2020-12-01T10:31:07+08:00" /><meta name="google-site-verification" content="google_meta_tag_verification" /> <script type="application/ld+json"> {"dateModified":"2020-12-01T10:31:07+08:00","datePublished":"2020-12-01T10:31:07+08:00","@type":"BlogPosting","headline":"at-activity-lifecycle","mainEntityOfPage":{"@type":"WebPage","@id":"https://sleticalboy.github.io/android/2020/12/01/android-activity-lifecycle/"},"author":{"@type":"Person","name":"sleticalboy"},"description":"ActivityThread 中 Activity 生命周期 handleLaunchActivity() -&gt; handleStartActivity() -&gt; handleResumeActivity() -&gt; handlePauseActivity() -&gt; handleStopActivity() -&gt; handleDestroyActivity() performRestartActivity()","url":"https://sleticalboy.github.io/android/2020/12/01/android-activity-lifecycle/","@context":"https://schema.org"}</script><title>at-activity-lifecycle | sleticalboy</title><link rel="shortcut icon" href="/assets/img/favicons/favicon.ico" type="image/x-icon"><link rel="icon" href="/assets/img/favicons/favicon.ico" type="image/x-icon"><link rel="apple-touch-icon" href="/assets/img/favicons/apple-icon.png"><link rel="apple-touch-icon" href="/assets/img/favicons/apple-icon-precomposed.png"><link rel="apple-touch-icon" sizes="57x57" href="/assets/img/favicons/apple-icon-57x57.png"><link rel="apple-touch-icon" sizes="60x60" href="/assets/img/favicons/apple-icon-60x60.png"><link rel="apple-touch-icon" sizes="72x72" href="/assets/img/favicons/apple-icon-72x72.png"><link rel="apple-touch-icon" sizes="76x76" href="/assets/img/favicons/apple-icon-76x76.png"><link rel="apple-touch-icon" sizes="114x114" href="/assets/img/favicons/apple-icon-114x114.png"><link rel="apple-touch-icon" sizes="120x120" href="/assets/img/favicons/apple-icon-120x120.png"><link rel="apple-touch-icon" sizes="144x144" href="/assets/img/favicons/apple-icon-144x144.png"><link rel="apple-touch-icon" sizes="152x152" href="/assets/img/favicons/apple-icon-152x152.png"><link rel="apple-touch-icon" sizes="180x180" href="/assets/img/favicons/apple-icon-180x180.png"><link rel="icon" type="image/png" sizes="192x192" href="/assets/img/favicons/android-icon-192x192.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicons/favicon-32x32.png"><link rel="icon" type="image/png" sizes="96x96" href="/assets/img/favicons/favicon-96x96.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicons/favicon-16x16.png"><link rel="manifest" href="/assets/img/favicons/manifest.json"><meta name='msapplication-config' content='/assets/img/favicons/browserconfig.xml'><meta name="msapplication-TileColor" content="#ffffff"><meta name="msapplication-TileImage" content="/assets/img/favicons/ms-icon-144x144.png"><meta name="theme-color" content="#ffffff"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"><link rel="dns-prefetch" href="https://fonts.gstatic.com"><link rel="preconnect" href="cdn.jsdelivr.net"><link rel="dns-prefetch" href="cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha256-LA89z+k9fjgMKQ/kq4OO2Mrf8VltYml/VES+Rg0fh20=" crossorigin="anonymous"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.11.2/css/all.min.css" integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin="anonymous"><link rel="preload" as="style" href="/assets/css/post.css"><link rel="stylesheet" href="/assets/css/post.css"><link rel="preload" as="style" href="/assets/css/lib/bootstrap-toc.min.css"><link rel="stylesheet" href="/assets/css/lib/bootstrap-toc.min.css" /> <script src="https://cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script> <script async src="https://cdn.jsdelivr.net/combine/npm/popper.js@1.15.0,npm/bootstrap@4/dist/js/bootstrap.min.js"></script> <script async src="/assets/js/post.min.js"></script><body data-spy="scroll" data-target="#toc"><div id="sidebar" class="d-flex flex-column"><div id="nav-wrapper"><div id="profile-wrapper" class="d-flex flex-column"><div id="avatar" class="d-flex justify-content-center"> <a href="/" alt="avatar"> <img src="/assets/img/sample/avatar.jpg" alt="avatar" onerror="this.style.display='none'"> </a></div><div class="profile-text mt-3"><div class="site-title"> <a href="/">sleticalboy</a></div><div class="site-subtitle font-italic">李斌的小站</div></div></div><ul class="nav flex-column"><li class="nav-item d-flex justify-content-center "> <a href="/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-home ml-xl-3 mr-xl-3 unloaded"></i> <span>HOME</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/categories/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-stream ml-xl-3 mr-xl-3 unloaded"></i> <span>CATEGORIES</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/tags/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-tags ml-xl-3 mr-xl-3 unloaded"></i> <span>TAGS</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/archives/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-archive ml-xl-3 mr-xl-3 unloaded"></i> <span>ARCHIVES</span> </a><li class="nav-item d-flex justify-content-center "> <a href="/tabs/about/" class="nav-link d-flex justify-content-center align-items-center w-100"> <i class="fa-fw fas fa-info ml-xl-3 mr-xl-3 unloaded"></i> <span>ABOUT</span> </a></ul></div><div class="sidebar-bottom d-flex flex-wrap justify-content-around mt-4"> <span id="mode-toggle-wrapper"> <i class="mode-toggle fas fa-sun" dark-mode-invisible></i> <i class="mode-toggle fas fa-moon" light-mode-invisible></i> <script type="text/javascript"> class ModeToggle { static get MODE_KEY() { return "mode"; } static get DARK_MODE() { return "dark"; } static get LIGHT_MODE() { return "light"; } constructor() { if (this.mode != null) { if (this.mode == ModeToggle.DARK_MODE) { if (!this.isSysDarkPrefer) { this.setDark(); } } else { if (this.isSysDarkPrefer) { this.setLight(); } } } var self = this; /* always follow the system prefers */ this.sysDarkPrefers.addListener(function() { if (self.mode != null) { if (self.mode == ModeToggle.DARK_MODE) { if (!self.isSysDarkPrefer) { self.setDark(); } } else { if (self.isSysDarkPrefer) { self.setLight(); } } self.clearMode(); } }); } /* constructor() */ setDark() { $('html').attr(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.DARK_MODE); } setLight() { $('html').attr(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); sessionStorage.setItem(ModeToggle.MODE_KEY, ModeToggle.LIGHT_MODE); } clearMode() { $('html').removeAttr(ModeToggle.MODE_KEY); sessionStorage.removeItem(ModeToggle.MODE_KEY); } get sysDarkPrefers() { return window.matchMedia("(prefers-color-scheme: dark)"); } get isSysDarkPrefer() { return this.sysDarkPrefers.matches; } get isDarkMode() { return this.mode == ModeToggle.DARK_MODE; } get isLightMode() { return this.mode == ModeToggle.LIGHT_MODE; } get hasMode() { return this.mode != null; } get mode() { return sessionStorage.getItem(ModeToggle.MODE_KEY); } flipMode() { if (this.hasMode) { if (this.isSysDarkPrefer) { if (this.isLightMode) { this.clearMode(); } else { this.setLight(); } } else { if (this.isDarkMode) { this.clearMode(); } else { this.setDark(); } } } else { if (this.isSysDarkPrefer) { this.setLight(); } else { this.setDark(); } } } /* flipMode() */ } /* ModeToggle */ let toggle = new ModeToggle(); $(".mode-toggle").click(function() { toggle.flipMode(); }); </script> </span> <span class="icon-border"></span> <a href="https://github.com/sleticalboy" aria-label="github" target="_blank" rel="noopener"> <i class="fab fa-github-alt"></i> </a> <a href=" javascript:location.href = 'mailto:' + ['sleticalboy','gmail.com'].join('@')" aria-label="email" > <i class="fas fa-envelope"></i> </a> <a href="/feed.xml" aria-label="rss" > <i class="fas fa-rss"></i> </a></div></div><div id="topbar-wrapper" class="row justify-content-center topbar-down"><div id="topbar" class="col-11 d-flex h-100 align-items-center justify-content-between"> <span id="breadcrumb"> <span> <a href="/"> Posts </a> </span> <span>at-activity-lifecycle</span> </span> <i id="sidebar-trigger" class="fas fa-bars fa-fw"></i><div id="topbar-title"> Post</div><i id="search-trigger" class="fas fa-search fa-fw"></i> <span id="search-wrapper" class="align-items-center"> <i class="fas fa-search fa-fw"></i> <input class="form-control" id="search-input" type="search" aria-label="search" placeholder="Search..."> <i class="fa fa-times-circle fa-fw" id="search-cleaner"></i> </span> <span id="search-cancel" >Cancel</span></div></div><div id="main-wrapper"><div id="main"><div class="row"><div id="post-wrapper" class="col-12 col-lg-11 col-xl-8"><div class="post pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><h1 data-toc-skip>at-activity-lifecycle</h1><div class="post-meta text-muted d-flex flex-column"><div> Posted <span class="timeago " data-toggle="tooltip" data-placement="bottom" title="Tue, Dec 1, 2020, 10:31 AM +0800" > Dec 1, 2020 <i class="unloaded">2020-12-01T10:31:07+08:00</i> </span> by <span class="author"> sleticalboy </span></div></div><div class="post-content"><h1 id="activitythread-中-activity-生命周期">ActivityThread 中 Activity 生命周期</h1><blockquote><p>handleLaunchActivity() -&gt; handleStartActivity() -&gt; handleResumeActivity() -&gt;<br /> handlePauseActivity() -&gt; handleStopActivity() -&gt; handleDestroyActivity()<br /> performRestartActivity()</p></blockquote><h2 id="handlelaunchactivity">handleLaunchActivity</h2><blockquote><p>(ActivityClientRecord r, PendingTransactionActions pendingActions, Intent customIntent)</p></blockquote><h3 id="初始化-windowmanager">初始化 WindowManager</h3><ul><li>通过单例模式来进行初始化： ` WindowManagerGlobal.initialize()`<div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+</pre><td class="rouge-code"><pre><span class="c1">// frameworks/base/core/java/android/app/ActivityThread.java</span>
+<span class="nc">WindowManagerGlobal</span><span class="o">.</span><span class="na">initialize</span><span class="o">();</span>
+<span class="c1">// frameworks/base/core/java/android/view/WindowManagerGlobal.java</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">initialize</span><span class="o">()</span> <span class="o">{</span>
+  <span class="n">getWindowManagerService</span><span class="o">();</span>
+<span class="o">}</span>
+<span class="kd">public</span> <span class="kd">static</span> <span class="nc">IWindowManager</span> <span class="nf">getWindowManagerService</span><span class="o">()</span> <span class="o">{</span>
+  <span class="kd">synchronized</span> <span class="o">(</span><span class="nc">WindowManagerGlobal</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">{</span>
+      <span class="k">if</span> <span class="o">(</span><span class="n">sWindowManagerService</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+          <span class="c1">// 获取系统服务</span>
+          <span class="n">sWindowManagerService</span> <span class="o">=</span> <span class="nc">IWindowManager</span><span class="o">.</span><span class="na">Stub</span><span class="o">.</span><span class="na">asInterface</span><span class="o">(</span><span class="nc">ServiceManager</span><span class="o">.</span><span class="na">getService</span><span class="o">(</span><span class="s">"window"</span><span class="o">));</span>
+          <span class="k">try</span> <span class="o">{</span>
+              <span class="k">if</span> <span class="o">(</span><span class="n">sWindowManagerService</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                  <span class="nc">ValueAnimator</span><span class="o">.</span><span class="na">setDurationScale</span><span class="o">(</span><span class="n">sWindowManagerService</span><span class="o">.</span><span class="na">getCurrentAnimatorScale</span><span class="o">());</span>
+              <span class="o">}</span>
+          <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">RemoteException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+              <span class="k">throw</span> <span class="n">e</span><span class="o">.</span><span class="na">rethrowFromSystemServer</span><span class="o">();</span>
+          <span class="o">}</span>
+      <span class="o">}</span>
+      <span class="k">return</span> <span class="n">sWindowManagerService</span><span class="o">;</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></table></code></div></div></ul><h3 id="执行-performlaunchactivity-返回-activity-对象">执行 performLaunchActivity() 返回 Activity 对象</h3><blockquote><p>(ActivityClientRecord r, Intent customIntent)</p></blockquote><h4 id="通过-getpackageinfo-方法检查-rpackageinfo-loadedapk">通过 getPackageInfo() 方法检查 r.packageInfo (LoadedApk)</h4><ol><li>安全性检查<li>从缓存中查找，如果找到并且资源是最新的则直接返回<li>否则构造一个新的 LoadedApk 放入缓存并返回</ol><h4 id="实例化-activity-对象反射">实例化 Activity 对象（反射）</h4><ol><li>通过调用 <code class="language-plaintext highlighter-rouge">Instrumentation#newActivity()</code> 构造 Activity<div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre><td class="rouge-code"><pre><span class="c1">// frameworks/base/core/java/android/app/Instrumentation.java</span>
+<span class="kd">public</span> <span class="nc">Activity</span> <span class="nf">newActivity</span><span class="o">(</span><span class="nc">ClassLoader</span> <span class="n">cl</span><span class="o">,</span> <span class="nc">String</span> <span class="n">className</span><span class="o">,</span> <span class="nc">Intent</span> <span class="n">intent</span><span class="o">)</span>
+  <span class="kd">throws</span> <span class="nc">InstantiationException</span><span class="o">,</span> <span class="nc">IllegalAccessException</span><span class="o">,</span> <span class="nc">ClassNotFoundException</span> <span class="o">{</span>
+  <span class="k">return</span> <span class="o">(</span><span class="nc">Activity</span><span class="o">)</span><span class="n">cl</span><span class="o">.</span><span class="na">loadClass</span><span class="o">(</span><span class="n">className</span><span class="o">).</span><span class="na">newInstance</span><span class="o">();</span>
+<span class="o">}</span>
+</pre></table></code></div></div></ol><h4 id="检查并实例化-application">检查并实例化 Application</h4><ul><li><code class="language-plaintext highlighter-rouge">r.packageInfo.makeApplication(false, mInstrumentation)</code><ol><li>检查是否已实例化；<li>检查是否是自定义 application；<li><code class="language-plaintext highlighter-rouge">mInstrumentation.newApplication()</code>;<li>添加到缓存： <code class="language-plaintext highlighter-rouge">mActivityThread.mAllApplications.add(app)</code>;<li>调用 <code class="language-plaintext highlighter-rouge">onCreate()</code> 方法：<code class="language-plaintext highlighter-rouge">mInstrumentation.callApplicationOnCreate(app)</code>；<li>Rewrite the R ‘constants’ for all library apks</ol></ul><h4 id="执行-activityattach">执行 Activity#attach()</h4><ol><li><code class="language-plaintext highlighter-rouge">attachBaseContext()</code>;<li>实例化 Activity 的 Window：<code class="language-plaintext highlighter-rouge">mWindow = new PhoneWindow()</code>；<li>设置 WindowCallback：<code class="language-plaintext highlighter-rouge">mWindow.setCallback(this/*Activity*/)</code>；<li>设置 LayoutFactory：<code class="language-plaintext highlighter-rouge">mWindow.getLayoutInflater().setPriviateFactory(this/*Activity*/)</code>；<li>定义 <code class="language-plaintext highlighter-rouge">mUiThread = Thread.currentThread()</code> 即主线程；</ol><h4 id="给-activity-设置主题">给 Activity 设置主题</h4><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre><td class="rouge-code"><pre><span class="c1">// frameworks/base/core/java/android/app/ActivityThread.java</span>
+<span class="kt">int</span> <span class="n">theme</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">activityInfo</span><span class="o">.</span><span class="na">getThemeResource</span><span class="o">();</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">theme</span> <span class="o">!=</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+  <span class="n">activity</span><span class="o">.</span><span class="na">setTheme</span><span class="o">();</span>
+<span class="o">}</span>
+</pre></table></code></div></div><h4 id="执行-activityoncreate">执行 Activity#onCreate()</h4><ul><li>通过 <code class="language-plaintext highlighter-rouge">mInstrumentation.callActivityOnCreate()</code> 调用 <code class="language-plaintext highlighter-rouge">Activity#performCreate()</code>，最终调用 onCreate 方法<li><code class="language-plaintext highlighter-rouge">Activity.performCreate()</code><ul><li><code class="language-plaintext highlighter-rouge">onCreate();</code><li>修改 TransitionState 状态：<code class="language-plaintext highlighter-rouge">mActivityTransitionState.readState(icicle);</code><li><code class="language-plaintext highlighter-rouge">mFragments.dispatchActivityCreated();</code><li>修改 TransitionState 状态：<code class="language-plaintext highlighter-rouge">mActivityTransitionState.setEnterActivityOptions(this, getActivityOptions());</code></ul><li><code class="language-plaintext highlighter-rouge">Activity.onCreate()</code><ol><li>Fragment 恢复状态：<code class="language-plaintext highlighter-rouge">mFragments.restoreAllState()</code>；<li>Fragment 分发 create 方法：<code class="language-plaintext highlighter-rouge">mFragments.dispatchCreate()</code>；<li>执行生命周期回调方法：<code class="language-plaintext highlighter-rouge">getApplication().dispatchActivityCreated()</code>；</ol></ul><h4 id="将-activity-放入-mactivities-缓存">将 Activity 放入 mActivities 缓存</h4><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+</pre><td class="rouge-code"><pre><span class="c1">// frameworks/base/core/java/android/app/ActivityThread.java</span>
+<span class="n">mActivities</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">token</span><span class="o">,</span> <span class="n">r</span><span class="o">);</span>
+</pre></table></code></div></div><h2 id="handlestartactivity">handleStartActivity</h2><blockquote><p>(ActivityClientRecord r, PendingTransactionActions pendingActions)</p></blockquote><h3 id="执行-activityperformstart">执行 Activity#performStart()</h3><ol><li>修改 TransitionState 状态：<code class="language-plaintext highlighter-rouge">mActivityTransitionState.setEnterActivityOptions(this, getActivityOptions());</code><li><code class="language-plaintext highlighter-rouge">mFragments.execPendingActions()</code><li><code class="language-plaintext highlighter-rouge">mInstrumentation.callActivityOnStart(this)</code> -&gt; <code class="language-plaintext highlighter-rouge">activity.onStart()</code><ol><li>执行异步加载任务：<code class="language-plaintext highlighter-rouge">mFragments.doLoaderStart();</code><li>执行生命周期回调方法：<code class="language-plaintext highlighter-rouge">getApplication().dispatchActivityStarted(this);</code></ol><li><code class="language-plaintext highlighter-rouge">mFragments.dispatchStart()</code><li>修改 TransitionState 状态：<code class="language-plaintext highlighter-rouge">mActivityTransitionState.enterReady(this);</code></ol><h3 id="恢复-activity-状态">恢复 Activity 状态</h3><ul><li>判断是否需要恢复状态，如果需要的话还需要区分是否是持久化的 Activity<li>持久化：<code class="language-plaintext highlighter-rouge">mInstrumentation.callActivityOnRestoreInstanceState(activity, r.state, r.persistentState);</code><li>非持久化：<code class="language-plaintext highlighter-rouge">mInstrumentation.callActivityOnRestoreInstanceState(activity, r.state);</code></ul><h3 id="调用-postoncreate">调用 postOnCreate()</h3><h2 id="handleresumeactivity">handleResumeActivity</h2><blockquote><p>(IBinder token, boolean finalStateRequest, boolean isForward, String reason)</p></blockquote><h3 id="执行-performresumeactivity-返回-activityclientrecord-对象">执行 performResumeActivity() 返回 ActivityClientRecord 对象</h3><blockquote><p>(IBinder token, boolean finalStateRequest, String reason)</p></blockquote><h4 id="从缓存-mactivityes-获取-activity">从缓存 mActivityes 获取 Activity</h4><ul><li><code class="language-plaintext highlighter-rouge">final ActivityClientRecord r = mActivities.get(token);</code></ul><h4 id="检查是否已经是-on_resume-状态">检查是否已经是 ON_RESUME 状态</h4><ul><li>如果是 <code class="language-plaintext highlighter-rouge">ON_RESUME</code> 状态，则直接返回</ul><h4 id="检查-onnewintent">检查 onNewIntent()</h4><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+</pre><td class="rouge-code"><pre><span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">pendingIntents</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">deliverNewIntents</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">pendingIntents</span><span class="o">);</span>
+    <span class="n">r</span><span class="o">.</span><span class="na">pendingIntents</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+<span class="o">}</span>
+</pre></table></code></div></div><h4 id="检查-onactivityresule">检查 onActivityResule()</h4><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+</pre><td class="rouge-code"><pre><span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">pendingResults</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">deliverResults</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">pendingResults</span><span class="o">,</span> <span class="n">reason</span><span class="o">);</span>
+    <span class="n">r</span><span class="o">.</span><span class="na">pendingResults</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+<span class="o">}</span>
+</pre></table></code></div></div><h4 id="执行-activityperformresume">执行 Activity.performResume()</h4><ol><li><code class="language-plaintext highlighter-rouge">mFragments.execPendingActions()</code><li><code class="language-plaintext highlighter-rouge">mInstrumentation.callActivityOnResume(this)</code> -&gt; <code class="language-plaintext highlighter-rouge">activity.onResume()</code><ol><li>执行生命周期回调方法：<code class="language-plaintext highlighter-rouge">getApplication().dispatchActivityResumed(this);</code><li>修改 TransitionState 状态：<code class="language-plaintext highlighter-rouge">mActivityTransitionState.onResume(this, isTopOfTask());</code></ol><li><code class="language-plaintext highlighter-rouge">mFragments.dispatchResume();</code><li><code class="language-plaintext highlighter-rouge">mFragments.execPendingActions();</code></ol><h3 id="显示-activity-窗口">显示 Activity 窗口</h3><ul><li><p>首次显示</p><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+</pre><td class="rouge-code"><pre><span class="c1">// If the window hasn't yet been added to the window manager,</span>
+<span class="c1">// and this guy didn't finish itself or start another activity,</span>
+<span class="c1">// then go ahead and add the window.</span>
+<span class="kt">boolean</span> <span class="n">willBeVisible</span> <span class="o">=</span> <span class="o">!</span><span class="n">a</span><span class="o">.</span><span class="na">mStartedActivity</span><span class="o">;</span>
+<span class="k">if</span> <span class="o">(!</span><span class="n">willBeVisible</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">try</span> <span class="o">{</span>
+        <span class="n">willBeVisible</span> <span class="o">=</span> <span class="nc">ActivityManager</span><span class="o">.</span><span class="na">getService</span><span class="o">().</span><span class="na">willActivityBeVisible</span><span class="o">(</span><span class="n">a</span><span class="o">.</span><span class="na">getActivityToken</span><span class="o">());</span>
+    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="nc">RemoteException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">throw</span> <span class="n">e</span><span class="o">.</span><span class="na">rethrowFromSystemServer</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">window</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">a</span><span class="o">.</span><span class="na">mFinished</span> <span class="o">&amp;&amp;</span> <span class="n">willBeVisible</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">r</span><span class="o">.</span><span class="na">window</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">getWindow</span><span class="o">();</span>
+    <span class="c1">// 如果 Activity#mDecor 为空，会执行 Activity#installDecor() 方法实例化 mDecor</span>
+    <span class="nc">View</span> <span class="n">decor</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">window</span><span class="o">.</span><span class="na">getDecorView</span><span class="o">();</span>
+    <span class="c1">// 此时 Activity 对用户仍不可见</span>
+    <span class="n">decor</span><span class="o">.</span><span class="na">setVisibility</span><span class="o">(</span><span class="nc">View</span><span class="o">.</span><span class="na">INVISIBLE</span><span class="o">);</span>
+    <span class="nc">ViewManager</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="na">getWindowManager</span><span class="o">();</span>
+    <span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span> <span class="n">l</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">window</span><span class="o">.</span><span class="na">getAttributes</span><span class="o">();</span>
+    <span class="n">a</span><span class="o">.</span><span class="na">mDecor</span> <span class="o">=</span> <span class="n">decor</span><span class="o">;</span>
+    <span class="n">l</span><span class="o">.</span><span class="na">type</span> <span class="o">=</span> <span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span><span class="o">.</span><span class="na">TYPE_BASE_APPLICATION</span><span class="o">;</span>
+    <span class="n">l</span><span class="o">.</span><span class="na">softInputMode</span> <span class="o">|=</span> <span class="n">forwardBit</span><span class="o">;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">mPreserveWindow</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">a</span><span class="o">.</span><span class="na">mWindowAdded</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">mPreserveWindow</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="c1">// Normally the ViewRoot sets up callbacks with the Activity</span>
+        <span class="c1">// in addView-&gt;ViewRootImpl#setView. If we are instead reusing</span>
+        <span class="c1">// the decor view we have to notify the view root that the</span>
+        <span class="c1">// callbacks may have changed.</span>
+        <span class="nc">ViewRootImpl</span> <span class="n">impl</span> <span class="o">=</span> <span class="n">decor</span><span class="o">.</span><span class="na">getViewRootImpl</span><span class="o">();</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">impl</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">impl</span><span class="o">.</span><span class="na">notifyChildRebuilt</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">a</span><span class="o">.</span><span class="na">mVisibleFromClient</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// 此时 Activity 对用户可见</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">a</span><span class="o">.</span><span class="na">mWindowAdded</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">a</span><span class="o">.</span><span class="na">mWindowAdded</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+            <span class="c1">// 将 mDecor 添加到 WindowManager 中，调用链如下：</span>
+            <span class="c1">// WindowManagerImpl.addView() -&gt; WindowManagerGlobal.addView()</span>
+            <span class="n">wm</span><span class="o">.</span><span class="na">addView</span><span class="o">(</span><span class="n">decor</span><span class="o">,</span> <span class="n">l</span><span class="o">);</span>
+            <span class="c1">// 在 WindowManagerGlobal#addView() 中实例化 ViewRootImpl：</span>
+            <span class="c1">// 定义 UI Thread ViewRootImplement#mThread，之后每次对 View 的更新操作都会检测操作线程与 mThread 是否相同</span>
+            <span class="c1">// 实例化 ViewRootImpl#mAttachInfo</span>
+            <span class="c1">// 实例化 ViewRootImpl#mChoreographer</span>
+            <span class="c1">// 执行 requestLayout() 开启 View 的三个流程 -&gt; layout -&gt; measure -&gt; draw</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="c1">// The activity will get a callback for this {@link LayoutParams} change</span>
+            <span class="c1">// earlier. However, at that time the decor will not be set (this is set</span>
+            <span class="c1">// in this method), so no action will be taken. This call ensures the</span>
+            <span class="c1">// callback occurs with the decor set.</span>
+            <span class="n">a</span><span class="o">.</span><span class="na">onWindowAttributesChanged</span><span class="o">(</span><span class="n">l</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+  
+    <span class="c1">// If the window has already been added, but during resume</span>
+    <span class="c1">// we started another activity, then don't yet make the</span>
+    <span class="c1">// window visible.</span>
+<span class="o">}</span>
+</pre></table></code></div></div><li><p>非首次显示</p><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+</pre><td class="rouge-code"><pre><span class="c1">// The window is now visible if it has been added, we are not</span>
+<span class="c1">// simply finishing, and we are not starting another activity.</span>
+<span class="k">if</span> <span class="o">(!</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mFinished</span> <span class="o">&amp;&amp;</span> <span class="n">willBeVisible</span> <span class="o">&amp;&amp;</span> <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mDecor</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">r</span><span class="o">.</span><span class="na">hideForNow</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">newConfig</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">performConfigurationChangedForActivity</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">newConfig</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="no">DEBUG_CONFIGURATION</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">Slog</span><span class="o">.</span><span class="na">v</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Resuming activity "</span> <span class="o">+</span> <span class="n">r</span><span class="o">.</span><span class="na">activityInfo</span><span class="o">.</span><span class="na">name</span> <span class="o">+</span> <span class="s">" with newConfig "</span>
+                   <span class="o">+</span> <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mCurrentConfig</span><span class="o">);</span>
+        <span class="o">}</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">newConfig</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+    <span class="o">}</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">localLOGV</span><span class="o">)</span> <span class="nc">Slog</span><span class="o">.</span><span class="na">v</span><span class="o">(</span><span class="no">TAG</span><span class="o">,</span> <span class="s">"Resuming "</span> <span class="o">+</span> <span class="n">r</span> <span class="o">+</span> <span class="s">" with isForward="</span> <span class="o">+</span> <span class="n">isForward</span><span class="o">);</span>
+    <span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span> <span class="n">l</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">window</span><span class="o">.</span><span class="na">getAttributes</span><span class="o">();</span>
+    <span class="k">if</span> <span class="o">((</span><span class="n">l</span><span class="o">.</span><span class="na">softInputMode</span> <span class="o">&amp;</span> <span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span><span class="o">.</span><span class="na">SOFT_INPUT_IS_FORWARD_NAVIGATION</span><span class="o">)</span> <span class="o">!=</span> <span class="n">forwardBit</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">l</span><span class="o">.</span><span class="na">softInputMode</span> <span class="o">=</span> <span class="o">(</span><span class="n">l</span><span class="o">.</span><span class="na">softInputMode</span> <span class="o">&amp;</span> <span class="o">(~</span><span class="nc">WindowManager</span><span class="o">.</span><span class="na">LayoutParams</span><span class="o">.</span><span class="na">SOFT_INPUT_IS_FORWARD_NAVIGATION</span><span class="o">))</span> <span class="o">|</span> <span class="n">forwardBit</span><span class="o">;</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mVisibleFromClient</span><span class="o">)</span> <span class="o">{</span>
+            <span class="nc">ViewManager</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="na">getWindowManager</span><span class="o">();</span>
+            <span class="nc">View</span> <span class="n">decor</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">window</span><span class="o">.</span><span class="na">getDecorView</span><span class="o">();</span>
+            <span class="c1">// 更新 mDecor 布局，调用链如下：</span>
+            <span class="c1">// WindowManagerImpl.updateViewLayout() -&gt; WindowManagerGlobal.updateViewLayout()</span>
+            <span class="n">wm</span><span class="o">.</span><span class="na">updateViewLayout</span><span class="o">(</span><span class="n">decor</span><span class="o">,</span> <span class="n">l</span><span class="o">);</span>
+            <span class="c1">// 通过 view.setLayoutParams() -&gt; requestLayout() 来更新 View</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+  
+    <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mVisibleFromServer</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="n">mNumVisibleActivities</span><span class="o">++;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mVisibleFromClient</span><span class="o">)</span> <span class="o">{</span>
+        <span class="c1">// 如果 mDecor 还未添加到 WindowManager 中，则执行 wm.addView(mDecor, param) 并且 </span>
+        <span class="c1">// mDecor.setVisibility(View.VISIBLE);</span>
+        <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">makeVisible</span><span class="o">();</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></table></code></div></div></ul><h2 id="handlepauseactivity">handlePauseActivity</h2><blockquote><p>(IBinder token, boolean finished, boolean userLeaving, int configChanges,<br /> PendingTransactionActions pendingActions, String reason)</p></blockquote><h3 id="performuserleaving">performUserLeaving()</h3><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+</pre><td class="rouge-code"><pre><span class="k">if</span> <span class="o">(</span><span class="n">userLeaving</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">performUserLeavingActivity</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></table></code></div></div><h3 id="performpauseactivity">performPauseActivity()</h3><blockquote><p>(ActivityClientRecord r, boolean finished, String reason, PendingTransactionActions pendingActions)</p></blockquote><h4 id="保存-activity-状态">保存 Activity 状态</h4><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+</pre><td class="rouge-code"><pre><span class="c1">// Pre-Honeycomb apps always save their state before pausing</span>
+<span class="kd">final</span> <span class="kt">boolean</span> <span class="n">shouldSaveState</span> <span class="o">=</span> <span class="o">!</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mFinished</span> <span class="o">&amp;&amp;</span> <span class="n">r</span><span class="o">.</span><span class="na">isPreHoneycomb</span><span class="o">();</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">shouldSaveState</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">callActivityOnSaveInstanceState</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></table></code></div></div><h4 id="performpauseactivityifneeded">performPauseActivityIfNeeded()</h4><blockquote><p>(ActivityClientRecord r, String reason)</p></blockquote><h5 id="执行-activityonpause">执行 Activity#onPause()</h5><ul><li><code class="language-plaintext highlighter-rouge">mInstrumentation.callActivityOnPause()</code> -&gt; <code class="language-plaintext highlighter-rouge">activity.performPause()</code> -&gt; <code class="language-plaintext highlighter-rouge">Activity.onPause()</code>方法<li><code class="language-plaintext highlighter-rouge">Activity#performPause()</code><ol><li><code class="language-plaintext highlighter-rouge">mFragments.dispatchPause();</code><li><code class="language-plaintext highlighter-rouge">onPause();</code></ol><li><code class="language-plaintext highlighter-rouge">Activity#onPause()</code><ul><li>执行生命周期回调方法：<code class="language-plaintext highlighter-rouge">getApplication().dispatchActivityPaused(this);</code></ul></ul><h2 id="handlestopactivity">handleStopActivity</h2><blockquote><p>(IBinder token, boolean show, int configChanges,<br /> PendingTransactionActions pendingActions, boolean finalStateRequest, String reason)</p></blockquote><h3 id="从缓存-mactivityes-获取-activity-1">从缓存 mActivityes 获取 Activity</h3><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+</pre><td class="rouge-code"><pre><span class="kd">final</span> <span class="nc">ActivityClientRecord</span> <span class="n">r</span> <span class="o">=</span> <span class="n">mActivities</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">token</span><span class="o">);</span>
+</pre></table></code></div></div><h3 id="performstopactivityinner">performStopActivityInner</h3><blockquote><p>(ActivityClientRecord r, StopInfo info, boolean keepShown,<br /> boolean saveState, boolean finalStateRequest, String reason)</p></blockquote><h4 id="检查是否已执行过-onstop">检查是否已执行过 onStop</h4><h4 id="performpauseactivityifneeded-1">performPauseActivityIfNeeded</h4><blockquote><p>(ActivityClientRecord r, String reason)</p></blockquote><h4 id="检查是否已调用-onpause">检查是否已调用 onPause</h4><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+</pre><td class="rouge-code"><pre><span class="c1">// One must first be paused before stopped...</span>
+<span class="n">performPauseActivityIfNeeded</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">reason</span><span class="o">);</span>
+<span class="c1">// 如果已执行过 pause 方法则返回，否则执行 onPause</span>
+</pre></table></code></div></div><h4 id="callactivityonstop">callActivityOnStop</h4><blockquote><p>(ActivityClientRecord r, boolean saveState, String reason)</p></blockquote><ol><li><p>保存 Activity 状态</p><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+</pre><td class="rouge-code"><pre><span class="c1">// Before P onSaveInstanceState was called before onStop, starting with P it's</span>
+<span class="c1">// called after. Before Honeycomb state was always saved before onPause.</span>
+<span class="kd">final</span> <span class="kt">boolean</span> <span class="n">shouldSaveState</span> <span class="o">=</span> <span class="n">saveState</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mFinished</span> 
+    <span class="o">&amp;&amp;</span> <span class="n">r</span><span class="o">.</span><span class="na">state</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">r</span><span class="o">.</span><span class="na">isPreHoneycomb</span><span class="o">();</span>
+<span class="kd">final</span> <span class="kt">boolean</span> <span class="n">isPreP</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">isPreP</span><span class="o">();</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">shouldSaveState</span> <span class="o">&amp;&amp;</span> <span class="n">isPreP</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">callActivityOnSaveInstanceState</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></table></code></div></div><li><p>执行 Activity#performStop()：<code class="language-plaintext highlighter-rouge">r.activity.performStop(r.mPreserveWindow, reason);</code></p><ol><li><p>停止任务加载：<code class="language-plaintext highlighter-rouge">mFragments.doLoaderStop(mChangingConfigurations /*retain*/);</code></p><li><p>分发 stop：<code class="language-plaintext highlighter-rouge">mFragments.dispatchStop();</code></p><li><p><code class="language-plaintext highlighter-rouge">mInstrumentation.callActivityOnStop(this)</code> -&gt; <code class="language-plaintext highlighter-rouge">activity.onStop()</code></p><li><p>清理 cursour：</p><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</pre><td class="rouge-code"><pre><span class="kd">synchronized</span> <span class="o">(</span><span class="n">mManagedCursors</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kd">final</span> <span class="kt">int</span> <span class="no">N</span> <span class="o">=</span> <span class="n">mManagedCursors</span><span class="o">.</span><span class="na">size</span><span class="o">();</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="no">N</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="nc">ManagedCursor</span> <span class="n">mc</span> <span class="o">=</span> <span class="n">mManagedCursors</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(!</span><span class="n">mc</span><span class="o">.</span><span class="na">mReleased</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">mc</span><span class="o">.</span><span class="na">mCursor</span><span class="o">.</span><span class="na">deactivate</span><span class="o">();</span>
+            <span class="n">mc</span><span class="o">.</span><span class="na">mReleased</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></table></code></div></div></ol><li><p><code class="language-plaintext highlighter-rouge">Activity#onStop()</code></p><ol><li>修改 TransitionState 状态：<code class="language-plaintext highlighter-rouge">mActivityTransitionState.onStop();</code><li>执行生命周期回调方法：<code class="language-plaintext highlighter-rouge">getApplication().dispatchActivityStopped(this);</code></ol></ol><h3 id="更新-activity-可见性">更新 Activity 可见性</h3><ul><li><p><code class="language-plaintext highlighter-rouge">updateVisibility()</code></p><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+</pre><td class="rouge-code"><pre><span class="kd">private</span> <span class="kt">void</span> <span class="nf">updateVisibility</span><span class="o">(</span><span class="nc">ActivityClientRecord</span> <span class="n">r</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">show</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// Activity#mDecor</span>
+    <span class="nc">View</span> <span class="n">v</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mDecor</span><span class="o">;</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">v</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">show</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mVisibleFromServer</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mVisibleFromServer</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                <span class="n">mNumVisibleActivities</span><span class="o">++;</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mVisibleFromClient</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="c1">// 更新窗口可见性</span>
+                    <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">makeVisible</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">newConfig</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                <span class="c1">// 触发 Activity#onConfiturationChaned() 方法</span>
+                <span class="n">performConfigurationChangedForActivity</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="n">r</span><span class="o">.</span><span class="na">newConfig</span><span class="o">);</span>
+                <span class="n">r</span><span class="o">.</span><span class="na">newConfig</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+            <span class="o">}</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mVisibleFromServer</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mVisibleFromServer</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+                <span class="n">mNumVisibleActivities</span><span class="o">--;</span>
+                <span class="c1">// 更新窗口可见性</span>
+                <span class="n">v</span><span class="o">.</span><span class="na">setVisibility</span><span class="o">(</span><span class="nc">View</span><span class="o">.</span><span class="na">INVISIBLE</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></table></code></div></div></ul><h2 id="handledestroyactivity">handleDestroyActivity</h2><blockquote><p>(IBinder token, boolean finishing, int configChanges,<br /> boolean getNonConfigInstance, String reason)</p></blockquote><h3 id="performdestroyactivity">performDestroyActivity</h3><blockquote><p>(IBinder token, boolean finishing, int configChanges,<br /> boolean getNonConfigInstance, String reason)</p></blockquote><h4 id="从缓存-mactivities-获取-activity">从缓存 mActivities 获取 Activity</h4><ul><li><code class="language-plaintext highlighter-rouge">ActivityClientRecord r = mActivities.get(token);</code></ul><h4 id="检查是否已执行-onpause-方法">检查是否已执行 <code class="language-plaintext highlighter-rouge">onPause</code> 方法</h4><ul><li><code class="language-plaintext highlighter-rouge">performPauseActivityIfNeeded()</code></ul><h4 id="检查是否已执行-onstop-方法">检查是否已执行 onStop 方法</h4><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+</pre><td class="rouge-code"><pre><span class="k">if</span> <span class="o">(!</span><span class="n">r</span><span class="o">.</span><span class="na">stopped</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">callActivityOnStop</span><span class="o">(</span><span class="n">r</span><span class="o">,</span> <span class="kc">false</span> <span class="cm">/* saveState */</span><span class="o">,</span> <span class="s">"destroy"</span><span class="o">);</span>
+<span class="o">}</span>
+</pre></table></code></div></div><h4 id="执行-activityondestroy">执行 Activity#onDestroy()</h4><ol><li><p><code class="language-plaintext highlighter-rouge">mInstrumentation.callActivityOnDestroy(r.activity);</code> -&gt; <code class="language-plaintext highlighter-rouge">activity.performDestroy();</code></p><li><p><code class="language-plaintext highlighter-rouge">Activity#performDestroy()</code></p><ol><li>标记 window 已销毁：<code class="language-plaintext highlighter-rouge">mWindow.destroy();</code><li>分发 destroy：<code class="language-plaintext highlighter-rouge">mFragments.dispatchDestroy();</code><li>执行 <code class="language-plaintext highlighter-rouge">onDestroy()</code> 方法<li>销毁任务加载器：<code class="language-plaintext highlighter-rouge">mFragments.doLoaderDestroy()</code></ol><li><p><code class="language-plaintext highlighter-rouge">Activity#onDestroy()</code></p><ol><li><p>关闭 dialog</p><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre><td class="rouge-code"><pre><span class="c1">// dismiss any dialogs we are managing.</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">mManagedDialogs</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kd">final</span> <span class="kt">int</span> <span class="n">numDialogs</span> <span class="o">=</span> <span class="n">mManagedDialogs</span><span class="o">.</span><span class="na">size</span><span class="o">();</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">numDialogs</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="kd">final</span> <span class="nc">ManagedDialog</span> <span class="n">md</span> <span class="o">=</span> <span class="n">mManagedDialogs</span><span class="o">.</span><span class="na">valueAt</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">md</span><span class="o">.</span><span class="na">mDialog</span><span class="o">.</span><span class="na">isShowing</span><span class="o">())</span> <span class="o">{</span>
+            <span class="n">md</span><span class="o">.</span><span class="na">mDialog</span><span class="o">.</span><span class="na">dismiss</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="n">mManagedDialogs</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+<span class="o">}</span>
+</pre></table></code></div></div><li><p>关闭 cursor</p><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre><td class="rouge-code"><pre><span class="c1">// close any cursors we are managing.</span>
+<span class="kd">synchronized</span> <span class="o">(</span><span class="n">mManagedCursors</span><span class="o">)</span> <span class="o">{</span>
+    <span class="kt">int</span> <span class="n">numCursors</span> <span class="o">=</span> <span class="n">mManagedCursors</span><span class="o">.</span><span class="na">size</span><span class="o">();</span>
+    <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">numCursors</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="nc">ManagedCursor</span> <span class="n">c</span> <span class="o">=</span> <span class="n">mManagedCursors</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">c</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">c</span><span class="o">.</span><span class="na">mCursor</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="n">mManagedCursors</span><span class="o">.</span><span class="na">clear</span><span class="o">();</span>
+<span class="o">}</span>
+</pre></table></code></div></div><li><p>执行生命周期回调方法：<code class="language-plaintext highlighter-rouge">getApplication().dispatchActivityDestroyed(this);</code></p></ol></ol><h4 id="从缓存-mactivities-中移除">从缓存 mActivities 中移除</h4><ul><li><code class="language-plaintext highlighter-rouge">mActivities.remove(token);</code></ul><h3 id="从-windowmanager-中移除当前-activity-的-window">从 WindowManager 中移除当前 Activity 的 Window</h3><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+</pre><td class="rouge-code"><pre><span class="nc">WindowManager</span> <span class="n">wm</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">getWindowManager</span><span class="o">();</span>
+<span class="nc">View</span> <span class="n">v</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mDecor</span><span class="o">;</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">v</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mVisibleFromServer</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">mNumVisibleActivities</span><span class="o">--;</span>
+    <span class="o">}</span>
+    <span class="nc">IBinder</span> <span class="n">wtoken</span> <span class="o">=</span> <span class="n">v</span><span class="o">.</span><span class="na">getWindowToken</span><span class="o">();</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">mWindowAdded</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">mPreserveWindow</span><span class="o">)</span> <span class="o">{</span> <span class="c1">// ...}</span>
+        <span class="k">else</span> <span class="o">{</span>
+            <span class="n">wm</span><span class="o">.</span><span class="na">removeViewImmediate</span><span class="o">(</span><span class="n">v</span><span class="o">);</span>
+            <span class="c1">// 从 WindowManager 中移除 DecorView，调用链如下：</span>
+            <span class="c1">// WindowManagerImpl.removeViewImmediate() -&gt; </span>
+            <span class="c1">// WindowManagerGlobal.removeView() -&gt; removeViewLocked() -&gt;</span>
+            <span class="c1">// ViewRootImpl.die() -&gt; doDie():</span>
+            <span class="c1">//   1. dispatchDetachedFromWindow();</span>
+            <span class="c1">//   2. destroyHardwareRenderer();</span>
+            <span class="c1">//   3. mSurface.release();</span>
+            <span class="c1">//   4. WindowManagerGlobal.getInstance().doRemoveView(this);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></table></code></div></div><h3 id="最终的清理工作">最终的清理工作</h3><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+</pre><td class="rouge-code"><pre><span class="c1">// Mocked out contexts won't be participating in the normal process lifecycle, but if we're </span>
+<span class="c1">// running with a proper ApplicationContext we need to have it tear down things cleanly.</span>
+<span class="nc">Context</span> <span class="n">c</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">getBaseContext</span><span class="o">();</span>
+<span class="k">if</span> <span class="o">(</span><span class="n">c</span> <span class="k">instanceof</span> <span class="nc">ContextImpl</span><span class="o">)</span> <span class="o">{</span>
+    <span class="o">((</span><span class="nc">ContextImpl</span><span class="o">)</span> <span class="n">c</span><span class="o">).</span><span class="na">scheduleFinalCleanup</span><span class="o">(</span><span class="n">r</span><span class="o">.</span><span class="na">activity</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getName</span><span class="o">(),</span> <span class="s">"Activity"</span><span class="o">);</span>
+    <span class="c1">// 移除潜在的 context 泄露，调用链如下：</span>
+    <span class="c1">// ContextImpl.scheduleFinalCleanup() -&gt;</span>
+    <span class="c1">// ActivityThread.scheduleContextCleanup() -&gt; mH.sendMessage(H.CLEAN_UP_CONTEXT) -&gt; </span>
+    <span class="c1">// ContextImpl.performFinalCleanup() -&gt;</span>
+    <span class="c1">// LoadedApk.removeContextRegistrations()</span>
+    <span class="c1">//   1. 清理未 unregister 的 Receiver;</span>
+    <span class="c1">//   2. 清理未 unbind 的 Service</span>
+<span class="o">}</span>
+</pre></table></code></div></div><h3 id="清除任务栈">清除任务栈</h3><div class="language-java highlighter-rouge"><div class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+2
+3
+4
+5
+6
+7
+</pre><td class="rouge-code"><pre><span class="nc">ActivityManager</span><span class="o">.</span><span class="na">getService</span><span class="o">().</span><span class="na">activityDestroyed</span><span class="o">(</span><span class="n">token</span><span class="o">);</span>
+<span class="c1">// 从任务栈中移除 Activity，调用链如下：</span>
+<span class="c1">// ActivityManagerService.activityDestroyed() -&gt; </span>
+<span class="c1">// ActivityRecord.activityDestroyedLocked()</span>
+<span class="c1">//   1. mHandler.removeMessages(DESTROY_TIMEOUT_MSG, record);</span>
+<span class="c1">//   2. cleanUpActivityLocked(record, true, false);</span>
+<span class="c1">//   3. removeActivityFromHistoryLocked(record, reason);</span>
+</pre></table></code></div></div><h2 id="performrestartactivity">performRestartActivity</h2><blockquote><p>(IBinder token, boolean start)</p></blockquote><h3 id="从缓存-mactivities-中获取-activity">从缓存 mActivities 中获取 Activity</h3><ul><li><code class="language-plaintext highlighter-rouge">ActivityClientRecord r = mActivities.get(token);</code></ul><h3 id="activityperformrestart">activity#performRestart()</h3><ol><li><code class="language-plaintext highlighter-rouge">mFragments.noteStateNotSaved();</code><li><code class="language-plaintext highlighter-rouge">mInstrumentation.callActivityOnRestart(this)</code> -&gt; <code class="language-plaintext highlighter-rouge">activity.onRestart()</code><li>如果 start ，则执行 <code class="language-plaintext highlighter-rouge">performStart()</code> 方法，流程与 <code class="language-plaintext highlighter-rouge">handleStartActivity</code>一致</ol></div><div class="post-tail-wrapper text-muted"><div class="post-meta mb-3"> <i class="far fa-folder-open fa-fw mr-1"></i> <a href='/categories/android/'>android</a></div><div class="post-tags"> <i class="fa fa-tags fa-fw mr-1"></i> <a href="/tags/android/" class="post-tag no-text-decoration" >android</a> <a href="/tags/framework/" class="post-tag no-text-decoration" >framework</a></div><div class="post-tail-bottom d-flex justify-content-between align-items-center mt-3 pt-5 pb-2"><div class="license-wrapper"> This post is licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> by the author.</div><div class="share-wrapper"> <span class="share-label text-muted mr-1">Share</span> <span class="share-icons"> <a href="https://twitter.com/intent/tweet?text=at-activity-lifecycle - sleticalboy&url=https://sleticalboy.github.io/android/2020/12/01/android-activity-lifecycle/" data-toggle="tooltip" data-placement="top" title="Twitter" target="_blank" rel="noopener" aria-label="Twitter"> <i class="fa-fw fab fa-twitter"></i> </a> <a href="https://www.facebook.com/sharer/sharer.php?title=at-activity-lifecycle - sleticalboy&u=https://sleticalboy.github.io/android/2020/12/01/android-activity-lifecycle/" data-toggle="tooltip" data-placement="top" title="Facebook" target="_blank" rel="noopener" aria-label="Facebook"> <i class="fa-fw fab fa-facebook-square"></i> </a> <a href="https://telegram.me/share?text=at-activity-lifecycle - sleticalboy&url=https://sleticalboy.github.io/android/2020/12/01/android-activity-lifecycle/" data-toggle="tooltip" data-placement="top" title="Telegram" target="_blank" rel="noopener" aria-label="Telegram"> <i class="fa-fw fab fa-telegram"></i> </a> <i class="fa-fw fas fa-link small" onclick="copyLink()" data-toggle="tooltip" data-placement="top" title="Copy link"></i> </span></div></div></div></div></div><div id="panel-wrapper" class="col-xl-3 pl-2 text-muted topbar-down"><div class="access"><div id="access-lastmod" class="post"> <span>Recent Update</span><ul class="post-content pl-0 pb-1 ml-1 mt-2"><li><a href="/book/2020/12/02/readme-android/">Android 知识体系索引</a><li><a href="/java/2021/02/19/java-hashmap/">Java 容器之 HashMap（java 8）</a><li><a href="/android/2021/01/28/android-input-subsystem-2/">Android 输入子系统2：EventHub 工作原理</a><li><a href="/android/2021/02/02/andorid-input-subsystem-3/">Android 输入子系统3：InputDispatcher 对事件分发</a><li><a href="/android/2021/01/22/android-input-subsystem-1/">Android 输入子系统1：IMS 初始化与启动</a></ul></div><div id="access-tags"> <span>Trending Tags</span><div class="d-flex flex-wrap mt-3 mb-1 mr-3"> <a class="post-tag" href="/tags/android/">android</a> <a class="post-tag" href="/tags/framework/">framework</a> <a class="post-tag" href="/tags/english/">english</a> <a class="post-tag" href="/tags/linux/">linux</a> <a class="post-tag" href="/tags/tools/">tools</a> <a class="post-tag" href="/tags/open-source/">open source</a> <a class="post-tag" href="/tags/book/">book</a> <a class="post-tag" href="/tags/java/">java</a> <a class="post-tag" href="/tags/aosp/">aosp</a> <a class="post-tag" href="/tags/git/">git</a></div></div></div><div id="toc-wrapper" class="pl-0 pr-4 mb-5"> <span class="pl-3 pt-2 mb-2">Contents</span><nav id="toc" data-toggle="toc"></nav></div></div></div><div class="row"><div class="col-12 col-lg-11 col-xl-8"><div id="post-extend-wrapper" class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-md-4 pr-md-4"><div id="related-posts" class="mt-5 mb-2 mb-sm-4"><h3 class="pt-2 mt-1 mb-4 ml-1" data-toc-skip>Further Reading</h3><div class="card-deck mb-4"><div class="card"> <a href="/android/2019/04/09/app%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90-01/"><div class="card-body"> <span class="timeago small" > Apr 9, 2019 <i class="unloaded">2019-04-09T05:38:47+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>app 启动流程源码分析-1</h3><div class="text-muted small"><p> 源码 基于 android 8.0 从点击桌面 app 图标到 ActivityThread 的 main() 方法执行 先来两张图(先凑合下吧，没找到合适的画图工具，找到了再补上=_=) Launcher /packages/apps/Launcher2/src/com/android/launcher2/Launcher.java 什么是 Launcher ...</p></div></div></a></div><div class="card"> <a href="/android/2019/04/13/app%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90-02/"><div class="card-body"> <span class="timeago small" > Apr 13, 2019 <i class="unloaded">2019-04-13T23:40:34+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>app 启动流程分析-2</h3><div class="text-muted small"><p> 源码 基于 android 8.0 从 ActivityThread 的 main() 方法执行到页面显示 开篇之前，先思考以下几个问题 Q1: Application 是如何创建的？ Q2: Application 的 attachBaseContext() 为什么会在 onCreate() 方法之前调用？ Q3: Activity 是如何被创建的？ Q4: A...</p></div></div></a></div><div class="card"> <a href="/android/2021/01/04/android-implement-a-native-service/"><div class="card-body"> <span class="timeago small" > Jan 4 <i class="unloaded">2021-01-04T20:53:51+08:00</i> </span><h3 class="pt-0 mt-1 mb-3" data-toc-skip>实战：使用 Binder 机制实现 C/S 架构</h3><div class="text-muted small"><p> 第一种：native 层实现 声明 service 业务接口 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 #ifndef ANDROID_ITESTSERVICE_H #define ANDROID_ITESTSERVICE_H #include &lt;bind...</p></div></div></a></div></div></div><div class="post-navigation d-flex justify-content-between"> <a href="/android/2020/12/01/ams/" class="btn btn-outline-primary"><p>ams</p></a> <a href="/android/2020/12/01/android-broadcast-receiver/" class="btn btn-outline-primary"><p>at-receiver-lifecycle</p></a></div></div></div></div><script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lozad/dist/lozad.min.js"></script> <script type="text/javascript"> const imgs = document.querySelectorAll('#post-wrapper img'); const observer = lozad(imgs); observer.observe(); </script><footer class="d-flex w-100 justify-content-center"><div class="d-flex justify-content-between align-items-center"><div class="footer-left"><p class="mb-0"> © 2021 <a href="https://github.com/sleticalboy">BenLee</a>. <span data-toggle="tooltip" data-placement="top" title="Except where otherwise noted, the blog posts on this site are licensed under the Creative Commons Attribution 4.0 International (CC BY 4.0) License by the author.">Some rights reserved.</span></p></div><div class="footer-right"><p class="mb-0"> Powered by <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a> with <a href="https://github.com/cotes2020/jekyll-theme-chirpy/" target="_blank" rel="noopener">Chirpy</a> theme.</p></div></div></footer></div><div id="search-result-wrapper" class="d-flex justify-content-center unloaded"><div class="col-12 col-xl-11 post-content"><div id="search-hints"><h4 class="text-muted mb-4">Trending Tags</h4><a class="post-tag" href="/tags/android/">android</a> <a class="post-tag" href="/tags/framework/">framework</a> <a class="post-tag" href="/tags/english/">english</a> <a class="post-tag" href="/tags/linux/">linux</a> <a class="post-tag" href="/tags/tools/">tools</a> <a class="post-tag" href="/tags/open-source/">open source</a> <a class="post-tag" href="/tags/book/">book</a> <a class="post-tag" href="/tags/java/">java</a> <a class="post-tag" href="/tags/aosp/">aosp</a> <a class="post-tag" href="/tags/git/">git</a></div><div id="search-results" class="d-flex flex-wrap justify-content-center text-muted mt-3"></div></div></div></div><div id="mask"></div><a id="back-to-top" href="#" aria-label="back-to-top" class="btn btn-lg btn-box-shadow" role="button"> <i class="fas fa-angle-up"></i> </a> <script src="https://cdn.jsdelivr.net/npm/simple-jekyll-search@1.7.3/dest/simple-jekyll-search.min.js"></script> <script> SimpleJekyllSearch({ searchInput: document.getElementById('search-input'), resultsContainer: document.getElementById('search-results'), json: '/assets/js/data/search.json', searchResultTemplate: '<div class="pl-1 pr-1 pl-sm-2 pr-sm-2 pl-lg-4 pr-lg-4 pl-xl-0 pr-xl-0"> <a href="https://sleticalboy.github.io{url}">{title}</a><div class="post-meta d-flex flex-column flex-sm-row text-muted mt-1 mb-1"><div class="mr-sm-4"><i class="far fa-folder fa-fw"></i>{categories}</div><div><i class="fa fa-tag fa-fw"></i>{tags}</div></div><p>{snippet}</p></div>', noResultsText: '<p class="mt-5">Oops! No result founds.</p>' }); </script>
