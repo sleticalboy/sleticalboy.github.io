@@ -29,7 +29,7 @@
 </br>
 
 ---
-## 技能清单
+## 专业技能
 
 - Java 基础扎实，熟练掌握面向对象思想知晓常用的设计模式并有所实践；
 - 熟练使用 Linux 系统和 AS 进行 Android 应用开发；
@@ -40,7 +40,6 @@
 - 有 JNI 编程经验（Huffman 图片压缩、通过 ioctl 与驱动进行数据传输）；
 - 有即时通讯相关开发经验，如聊天、推送（MQTT）；
 - 了解热修复并知晓其内部原理，了解组件化/插件化开发、热修复和反编译等相关技能；
-- 了解 Android binder 架构，ServiceManager add/getService 工作原理；
 - 了解 Android input 子系统及其子模块的工作原理；
 - 了解 Gradle 插件编程并有实际使用经验（配合 asm 字节码技术实现自动埋点技术）；
 
@@ -138,12 +137,12 @@ Settings 应用的开发和维护工作。
 
 - **参与爆新闻客户端迭代开发**
 - **技术点**
-    - 项目整体采用 MVP 设计模式组织程序结构，方便代码的管理和维护；
-    - 利用 AndroidAnnotations、OrmLite 快速开发框架提高开发速度；
-    - 使用 Volley + Gson 开源框架实现网络数据请求、解析和图片加载一体化；
-    - 使用 CrashHandler 捕获 crash 信息，并上传到服务器，供开发调试；
-    - 使用 RecyclerView 实现首页功能模块、文稿等列表，并提供下拉刷新等功能；
-    - 使用 RxPermissions 开源库适配 Android6.0以上敏感权限的动态申请；
+  - 项目整体采用 MVP 设计模式组织程序结构，方便代码的管理和维护；
+  - 利用 AndroidAnnotations、OrmLite 快速开发框架提高开发速度；
+  - 使用 Volley + Gson 开源框架实现网络数据请求、解析和图片加载一体化；
+  - 使用 CrashHandler 捕获 crash 信息，并上传到服务器，供开发调试；
+  - 使用 RecyclerView 实现首页功能模块、文稿等列表，并提供下拉刷新等功能；
+  - 使用 RxPermissions 开源库适配 Android6.0以上敏感权限的动态申请；
 
 ---
 ## 实习经历 （ 2016年9月 ~ 2017年6月 ）
