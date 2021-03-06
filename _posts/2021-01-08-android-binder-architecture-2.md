@@ -866,5 +866,14 @@ private boolean execTransact(int code, long dataObj, long replyObj, int flags) {
 象；但 JavaBBinder 只起到中转作用，即把来自客户端的请求从 native 层传递到 Java 层
 - 无论是 Java 层还是 native 层，自始至终都只有一个 ServiceManager
 
+1、从 IPC 角度来说：binder 是 Android 系统提供的一种 IPC 机制，该方式为 Android 独有；
+2、从 Android 驱动层：binder 可以理解为一种虚拟的物理设备，其启动是 /dev/binder；
+3、从 Android native 层：binder 是创建 ServiceManager 以及 BpBinder/BBinder 模型，
+搭建与 binder 驱动的桥梁；
+4、从 Android 框架层：binder 是各种系统 xxxService 与 xxxManager 的桥梁；
+5、从 Android APP 层：binder 是客户端和服务端进行通信的媒介，当 bindService() 时，
+服务端会返回一个包含了服务端业务调用的 Binder 对象，通过这个对象客户端就可以获取服务
+端提供的服务或数据，这里的服务包括普通服务和基于 AIDL 的服务；
+
 ## 参考资料
 - 《深入理解Android卷1》（邓凡平）第六章：深入理解 Binder
