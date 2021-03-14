@@ -74,7 +74,7 @@
 											],
 											"font": "Arial;13;0",
 											"width": 1084,
-											"height": 521,
+											"height": 529,
 											"nameLabel": {
 												"$ref": "AAAAAAF4JR917oXxw7Y="
 											},
@@ -763,11 +763,11 @@
 											},
 											"fillColor": "#d8f2ff",
 											"font": "Arial;13;0",
-											"left": 560,
-											"top": 168,
+											"left": 568,
+											"top": 176,
 											"width": 465,
-											"height": 291,
-											"text": "createGlide() 方法初始化或设置了：\n1、获取资源的线程池：sourceService\nnew FifoPriorityThreadPoolExecutor(cores); 先进先出且优先级从高到底\n2、写入磁盘缓存的线程池：diskCacheService\nnew FifoPriorityThreadPoolExecutor(1); 先进先出且优先级从高到底\n3、内存计算器：calculator\nnew MemorySizeCalculator(context); 计算内存\n4、Bitmap 缓存：bitmapPool\nnew LruBitmapPool(calculator.getBitmapPoolSize());\n5、内存缓存：memoryCache\nnew LruResourceCache(calculator.getMemoryCacheSize());\n6、磁盘缓存：diskCache\nDiskLruCacheWrapper.get(cacheDir, 256M);\n7、任务处理器：engine\nnew Engine(memoryCache, diskCache, diskCacheService, sourceService);\n8、默认编码：decodeFormat = DecodeFormat.DEFAULT;"
+											"height": 293,
+											"text": "createGlide() 方法初始化或设置了：\n1、用于获取资源的线程池：sourceService\nnew FifoPriorityThreadPoolExecutor(cores); 先进先出且优先级从高到底；\n核心线程数为1或 CPUu最大核心数\n2、用于写入磁盘缓存的线程池：diskCacheService\nnew FifoPriorityThreadPoolExecutor(1); 先进先出且优先级从高到底\n核心线程数为1\n3、内存计算器：calculator\nnew MemorySizeCalculator(context); 计算设备最大内存从而给内存缓存分配一个合理的值\n4、Bitmap 缓存：bitmapPool\nnew LruBitmapPool(calculator.getBitmapPoolSize());\n5、内存缓存：memoryCache\nnew LruResourceCache(calculator.getMemoryCacheSize());\n6、磁盘缓存：diskCache\nDiskLruCacheWrapper.get(cacheDir, 256M);\n7、任务处理器：engine\nnew Engine(memoryCache, diskCache, diskCacheService, sourceService);\n8、默认编码：decodeFormat = DecodeFormat.DEFAULT;"
 										},
 										{
 											"_type": "UMLNoteView",
@@ -2972,8 +2972,8 @@
 											},
 											"fillColor": "#d8f2ff",
 											"font": "Arial;13;0",
-											"left": 632,
-											"top": 536,
+											"left": 552,
+											"top": 544,
 											"width": 384.0319519042969,
 											"height": 81,
 											"text": "优点：\n1、给Activity添加一个透明的Fragment用来监听页面生命周期，\n在页面进入时开始加载，页面退出时停止加载，避免资源浪费。\n3、监听网络变化，在网络可达时加载 pause 的任务。"
@@ -2990,7 +2990,7 @@
 											"top": 544,
 											"width": 384.0319519042969,
 											"height": 81,
-											"text": "总结：\n执行完 with() 方法，返回了一个 RequestManager 对象"
+											"text": "总结：\n执行完 with() 方法，返回了一个 RequestManager 对象，该对象具有感知 Activity/Fragment 生命周期和网络变化的能力，从而更好的管理任务的加载与暂停"
 										}
 									]
 								}
@@ -6011,6 +6011,20 @@
 											"width": 393,
 											"height": 81,
 											"text": "总结：\n执行完 load() 方法，生成了一个 RequestBuilder，其中包含了\nlifecycle 感知组件，requestTracker 组件，glide 对象等配置参数。"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4MBqGgwZYPtE=",
+											"_parent": {
+												"$ref": "AAAAAAF4JYkfrYjgMxY="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 1024,
+											"top": 96,
+											"width": 145,
+											"height": 38,
+											"text": "继承自 RequestBuilder"
 										}
 									]
 								}
@@ -6395,8 +6409,8 @@
 												}
 											],
 											"font": "Arial;13;0",
-											"width": 1161,
-											"height": 833,
+											"width": 1113,
+											"height": 745,
 											"nameLabel": {
 												"$ref": "AAAAAAF4JaeXEIvpM+0="
 											},
@@ -6844,14 +6858,14 @@
 													"left": 329,
 													"top": 80,
 													"width": 1,
-													"height": 649
+													"height": 441
 												}
 											],
 											"font": "Arial;13;0",
 											"left": 288,
 											"top": 40,
 											"width": 81.419921875,
-											"height": 689,
+											"height": 481,
 											"nameCompartment": {
 												"$ref": "AAAAAAF4Jaojh4xKHIM="
 											},
@@ -7071,14 +7085,14 @@
 													"left": 532,
 													"top": 80,
 													"width": 1,
-													"height": 649
+													"height": 441
 												}
 											],
 											"font": "Arial;13;0",
 											"left": 432,
 											"top": 40,
 											"width": 200.63525390625,
-											"height": 689,
+											"height": 481,
 											"nameCompartment": {
 												"$ref": "AAAAAAF4Ja2zAoyD8q4="
 											},
@@ -7298,14 +7312,14 @@
 													"left": 794,
 													"top": 80,
 													"width": 1,
-													"height": 649
+													"height": 441
 												}
 											],
 											"font": "Arial;13;0",
 											"left": 672,
 											"top": 40,
 											"width": 244.9482421875,
-											"height": 689,
+											"height": 481,
 											"nameCompartment": {
 												"$ref": "AAAAAAF4Ja9hB4y+4fI="
 											},
@@ -7859,14 +7873,14 @@
 													"left": 1018,
 													"top": 80,
 													"width": 1,
-													"height": 649
+													"height": 441
 												}
 											],
 											"font": "Arial;13;0",
 											"left": 944,
 											"top": 40,
 											"width": 148.6162109375,
-											"height": 689,
+											"height": 481,
 											"nameCompartment": {
 												"$ref": "AAAAAAF4Jbfcgo2FsbE="
 											},
@@ -8772,11 +8786,11 @@
 											},
 											"fillColor": "#d8f2ff",
 											"font": "Arial;13;0",
-											"left": 56,
-											"top": 752,
-											"width": 329,
+											"left": 320,
+											"top": 536,
+											"width": 361,
 											"height": 57,
-											"text": "总结：\n执行完 into() 方法，一个请求就被构建并开始执行了"
+											"text": "总结：\n当 into() 方法执行完成后，一个请求就被构建并开始执行了"
 										}
 									]
 								}
@@ -9122,7 +9136,7 @@
 											],
 											"font": "Arial;13;0",
 											"width": 1209,
-											"height": 993,
+											"height": 913,
 											"nameLabel": {
 												"$ref": "AAAAAAF4JdGdS48q9xk="
 											},
@@ -11943,11 +11957,11 @@
 											},
 											"fillColor": "#d8f2ff",
 											"font": "Arial;13;0",
-											"left": 64,
-											"top": 560,
-											"width": 225,
-											"height": 161,
-											"text": "一、请求开始后：\n1、先获取 view 尺寸；\n2、然后设置占位图；\n3、尺寸计算完毕后开始加载；\n二、加载过程：\n1、先生成 key；\n2、从内存加载；\n3、从活动资源加载；\n4、从网络获取；"
+											"left": 24,
+											"top": 464,
+											"width": 393,
+											"height": 184,
+											"text": "一、请求过程：\n1、首先通过 getSize(cb) 获取 view 尺寸（可能是异步操作）；\n2、然后给目标 View 设置占位图；\n3、最后当尺寸计算完成后回调 onSizeReady() ，开始加载资源；\n二、资源加载过程：\n1、首先根据尺寸等参数生成 key；\n2、然后尝试从内存中加载，若成功则将资源放入活动资源并回调 onResourceReady()；\n3、若内存不存在则从活动资源加载，成功则回调 onSizeReady()，失败则将该活动资源移除；\n4、最后从磁盘或网络加载；"
 										},
 										{
 											"_type": "UMLNoteView",
@@ -11962,6 +11976,34 @@
 											"width": 297,
 											"height": 137,
 											"text": "尺寸计算：\n1、若已计算完毕，则回调 onSizeReady(w, h)；\n2、若布局参数指定，则使用并回调；\n3、若使用自填充，则使用屏幕宽高并回调；\n4、在 View.OnPreDrawListener 中获取宽高并回调。\n其中 #3 有浪费资源的风险"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4MDN8DwZ0rN8=",
+											"_parent": {
+												"$ref": "AAAAAAF4JdGdS48oQEM="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 424,
+											"top": 464,
+											"width": 345.00030517578125,
+											"height": 115,
+											"text": "LRU 算法：Latest Recently Used\n要求：\n1、查询快：数组\n2、修改快：链表\nLinkedHashMap：数组+双链表，被访问的的元素放到链\n表尾部，则链表头部的数据是访问频率最低、尾部被访问\n的频率最高。"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4MHN5twaHhAA=",
+											"_parent": {
+												"$ref": "AAAAAAF4JdGdS48oQEM="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 24,
+											"top": 656,
+											"width": 393,
+											"height": 160,
+											"text": "日志文件结构与作用：\n一、结构\nheader：magic、缓存版本、APP 版本、缓存数量、空行\nDirty：创建或者修改，后跟 remove 或 clean\nRemove：删除缓存\nClean：新入缓存，之后可能被访问到\nRead：读取缓存\n二、作用\n1、应用程序异常退出时保留操作日志；\n2、应用程序启动时根据日志文件恢复缓存并删除异常文件；"
 										}
 									]
 								}
