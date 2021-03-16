@@ -784,9 +784,9 @@
 														"$ref": "AAAAAAF4MI5R6/8+Qpw="
 													},
 													"font": "Arial;13;0",
-													"left": 310,
+													"left": 306,
 													"top": 201,
-													"width": 161.12890625,
+													"width": 168.35888671875,
 													"height": 13,
 													"alpha": 1.5707963267948966,
 													"distance": 10,
@@ -794,7 +794,7 @@
 														"$ref": "AAAAAAF4MI5R6/8/WXI="
 													},
 													"edgePosition": 1,
-													"text": "4 : Dispatcher#execute(call)"
+													"text": "4 : Dispatcher#executed(call)"
 												},
 												{
 													"_type": "EdgeLabelView",
@@ -2012,9 +2012,9 @@
 														"$ref": "AAAAAAF4MI+xX/9UsXI="
 													},
 													"font": "Arial;13;0",
-													"left": 314,
+													"left": 307,
 													"top": 616,
-													"width": 153.17529296875,
+													"width": 167.63525390625,
 													"height": 13,
 													"alpha": 1.5707963267948966,
 													"distance": 10,
@@ -2022,7 +2022,7 @@
 														"$ref": "AAAAAAF4MI+xX/9V+G0="
 													},
 													"edgePosition": 1,
-													"text": "14 : Dispatcher#finish(call)"
+													"text": "14 : Dispatcher#finished(call)"
 												},
 												{
 													"_type": "EdgeLabelView",
@@ -2113,9 +2113,9 @@
 											"font": "Arial;13;0",
 											"left": 664,
 											"top": 88,
-											"width": 465,
-											"height": 158,
-											"text": "一、Call#getResponse()\n1、首先给 request 添加通用的请求头：\nContent-Type/Content-Length/Transfer-Encoding；\n2、然后创建 HttpEngine 用于发送 http 请求并接收响应数据；\n3、接着通过 engine.sendRequest() 发送 Request、engine.readResponse() \n接收 Response；\n4、之后通过 engine.getResponse() 获取响应结果、engine.followUpRequest() \n检查是否需要重定向；\n5、最后若需要重定向则继续请求，若不需要则返回 Response。"
+											"width": 471.42022705078125,
+											"height": 291,
+											"text": "一、Call#execute() 为同步方法，在结果返回前会一直阻塞\n1、首先调用 Dispatcher#executed(this) 将 call 放入已执行队列中；\n2、接着调用 getResponseWithInterceptorChain() 获取请求结果；\n3、最后调用 Dispatcher#finished(this) 将 call 从已执行队列中移除；\n二、Call#getResponseWithInterceptorChain() 方法最终会调用到\nApplicationInterceptorChain#proceed() 方法，该方法为责任链入口\n1、首先检查用户是否设置了 interceptor，如果设置则遍历所有的拦截器获取结果，若成功得到结果则返回；\n2、若#未成功返回则执行 Call#getResponse() 方法获取结果；\n三、Call#getResponse()\n1、首先给 request 添加通用的请求头：\nContent-Type/Content-Length/Transfer-Encoding；\n2、然后创建 HttpEngine 用于发送 http 请求并接收响应数据；\n3、接着通过 engine.sendRequest() 发送 Request、engine.readResponse() \n接收 Response；\n4、之后通过 engine.getResponse() 获取响应结果、engine.followUpRequest() \n检查是否需要重定向；\n5、最后若需要重定向则继续请求，若不需要则返回 Response。"
 										}
 									]
 								}
@@ -2169,7 +2169,7 @@
 									"_parent": {
 										"$ref": "AAAAAAF4MIZMbf5+fWI="
 									},
-									"name": "Dispatcher#execute(call)",
+									"name": "Dispatcher#executed(call)",
 									"source": {
 										"$ref": "AAAAAAF4MIb7+v7HwXg="
 									},
@@ -2309,7 +2309,7 @@
 									"_parent": {
 										"$ref": "AAAAAAF4MIZMbf5+fWI="
 									},
-									"name": "Dispatcher#finish(call)",
+									"name": "Dispatcher#finished(call)",
 									"source": {
 										"$ref": "AAAAAAF4MIb7+v7HwXg="
 									},
@@ -6730,7 +6730,7 @@
 													"left": 113,
 													"top": 428,
 													"width": 14,
-													"height": 29
+													"height": 229
 												}
 											],
 											"font": "Arial;13;0",
@@ -6752,6 +6752,117 @@
 											},
 											"activation": {
 												"$ref": "AAAAAAF4NlLssg9IWZw="
+											}
+										},
+										{
+											"_type": "UMLSeqMessageView",
+											"_id": "AAAAAAF4O103K9tBFfk=",
+											"_parent": {
+												"$ref": "AAAAAAF4NjwALg5MyAg="
+											},
+											"model": {
+												"$ref": "AAAAAAF4O103K9tAUbk="
+											},
+											"subViews": [
+												{
+													"_type": "EdgeLabelView",
+													"_id": "AAAAAAF4O103K9tCRY8=",
+													"_parent": {
+														"$ref": "AAAAAAF4O103K9tBFfk="
+													},
+													"model": {
+														"$ref": "AAAAAAF4O103K9tAUbk="
+													},
+													"font": "Arial;13;0",
+													"left": 114,
+													"top": 443,
+													"width": 102.12109375,
+													"height": 13,
+													"alpha": 1.5707963267948966,
+													"distance": 10,
+													"hostEdge": {
+														"$ref": "AAAAAAF4O103K9tBFfk="
+													},
+													"edgePosition": 1,
+													"text": "9 : createTunnel()"
+												},
+												{
+													"_type": "EdgeLabelView",
+													"_id": "AAAAAAF4O103K9tDBuk=",
+													"_parent": {
+														"$ref": "AAAAAAF4O103K9tBFfk="
+													},
+													"model": {
+														"$ref": "AAAAAAF4O103K9tAUbk="
+													},
+													"visible": false,
+													"font": "Arial;13;0",
+													"left": 180,
+													"top": 443,
+													"height": 13,
+													"alpha": 1.5707963267948966,
+													"distance": 25,
+													"hostEdge": {
+														"$ref": "AAAAAAF4O103K9tBFfk="
+													},
+													"edgePosition": 1
+												},
+												{
+													"_type": "EdgeLabelView",
+													"_id": "AAAAAAF4O103K9tEG0g=",
+													"_parent": {
+														"$ref": "AAAAAAF4O103K9tBFfk="
+													},
+													"model": {
+														"$ref": "AAAAAAF4O103K9tAUbk="
+													},
+													"visible": false,
+													"font": "Arial;13;0",
+													"left": 146,
+													"top": 444,
+													"height": 13,
+													"alpha": -1.5707963267948966,
+													"distance": 10,
+													"hostEdge": {
+														"$ref": "AAAAAAF4O103K9tBFfk="
+													},
+													"edgePosition": 1
+												},
+												{
+													"_type": "UMLActivationView",
+													"_id": "AAAAAAF4O103K9tFIPg=",
+													"_parent": {
+														"$ref": "AAAAAAF4O103K9tBFfk="
+													},
+													"model": {
+														"$ref": "AAAAAAF4O103K9tAUbk="
+													},
+													"font": "Arial;13;0",
+													"left": 120,
+													"top": 460,
+													"width": 14,
+													"height": 29
+												}
+											],
+											"font": "Arial;13;0",
+											"head": {
+												"$ref": "AAAAAAF4NjyUNQ5k4T8="
+											},
+											"tail": {
+												"$ref": "AAAAAAF4NjyUNQ5k4T8="
+											},
+											"points": "126:440;156:440;156:460;133:460",
+											"nameLabel": {
+												"$ref": "AAAAAAF4O103K9tCRY8="
+											},
+											"stereotypeLabel": {
+												"$ref": "AAAAAAF4O103K9tDBuk="
+											},
+											"propertyLabel": {
+												"$ref": "AAAAAAF4O103K9tEG0g="
+											},
+											"activation": {
+												"$ref": "AAAAAAF4O103K9tFIPg="
 											}
 										}
 									]
@@ -6863,6 +6974,20 @@
 										"$ref": "AAAAAAF4NjwALg5LbVA="
 									},
 									"name": "connectTls()",
+									"source": {
+										"$ref": "AAAAAAF4NjyUNA5dnTw="
+									},
+									"target": {
+										"$ref": "AAAAAAF4NjyUNA5dnTw="
+									}
+								},
+								{
+									"_type": "UMLMessage",
+									"_id": "AAAAAAF4O103K9tAUbk=",
+									"_parent": {
+										"$ref": "AAAAAAF4NjwALg5LbVA="
+									},
+									"name": "createTunnel()",
 									"source": {
 										"$ref": "AAAAAAF4NjyUNA5dnTw="
 									},
