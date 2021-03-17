@@ -2384,6 +2384,21 @@
 									"name": "seq_HttpEngine#sendRequest()",
 									"ownedViews": [
 										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4Pzq1zYvxes8=",
+											"_parent": {
+												"$ref": "AAAAAAF4MNFF4AD9Cbk="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 672,
+											"top": 112,
+											"width": 481,
+											"height": 281,
+											"text": "一、通过HttpEngine#networkRequest(userRequest) 方法检查并添加默认的请\n求头：Host/Connection/Accept-Encoding（gzip 压缩）/cookie header/UA；\n二、检查缓存\n1、首先通过Internal.instance#internalCache() 查看是否有设置缓存，如果设置\n了缓存就尝试从缓存中查询当前 request 是否有 cacheCandidate；\n2、通过策略模式根据now、request、cacheCandidate 查询缓存，（Date/\nExpires/Last-Modified/ETag/Age/Only-If-Cache(不允许使用网络)）；\n三、通过 HttpEngine#connect() 发起连接并返回 HttpStream 对象，该方法实际\n转发到了StreamAllocation#newStream() 方法，该方法处理两件事：\n1、调用 findHealthyConnect() 获取一个可用的连接 connection；\n2、通过 connection 构建出 HttpStream 对象并返回；\n四、findHealthyConnection() 通过 while 循环调用 findConnection() 查询是否有\n可复用的连接，看下 findConnection() 方法：\n1、首先通过 Internal.instance.get(pool, address) 从连接池中查询是否有已存\n在的连接，若存在则返回；\n2、若无则需要创建一个新的连接（需要Route）；\n3、为新建立的连接建立 socket 连接 RealConnection#connect()\n",
+											"wordWrap": false
+										},
+										{
 											"_type": "UMLFrameView",
 											"_id": "AAAAAAF4MNFF4AD+N6Y=",
 											"_parent": {
@@ -5229,20 +5244,6 @@
 											"activation": {
 												"$ref": "AAAAAAF4MNq+kAHbN4E="
 											}
-										},
-										{
-											"_type": "UMLNoteView",
-											"_id": "AAAAAAF4Pzq1zYvxes8=",
-											"_parent": {
-												"$ref": "AAAAAAF4MNFF4AD9Cbk="
-											},
-											"fillColor": "#d8f2ff",
-											"font": "Arial;13;0",
-											"left": 688,
-											"top": 320,
-											"width": 481,
-											"height": 297,
-											"text": "一、通过HttpEngine#networkRequest(userRequest) 方法检查并添加默认的请\n求头：Host/Connection/Accept-Encoding（gzip 压缩）/cookie header/UA；\n二、检查缓存\n1、首先通过Internal.instance#internalCache() 查看是否有设置缓存，如果设置\n了缓存就尝试从缓存中查询当前 request 是否有 cacheCandidate；\n2、通过策略模式根据now、request、cacheCandidate 查询缓存，（Date/\nExpires/Last-Modified/ETag/Age/Only-If-Cache(不允许使用网络)）；\n三、通过 HttpEngine#connect() 发起连接并返回 HttpStream 对象，该方法实际\n转发到了StreamAllocation#newStream() 方法，该方法处理两件事：\n1、调用 findHealthyConnect() 获取一个可用的连接 connection；\n2、通过 connection 构建出 HttpStream 对象并返回；\n四、findHealthyConnection() 通过 while 循环调用 findConnection() 查询是否有\n可复用的连接，看下 findConnection() 方法：\n1、首先通过 Internal.instance.get(pool, address) 从连接池中查询是否有已存\n在的连接，若存在则返回；\n2、若无，则准备创建一个新的连接\n"
 										}
 									]
 								}
@@ -6878,6 +6879,20 @@
 											"activation": {
 												"$ref": "AAAAAAF4O103K9tFIPg="
 											}
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4QHIK2nJQMRo=",
+											"_parent": {
+												"$ref": "AAAAAAF4NjwALg5MyAg="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 368,
+											"top": 128,
+											"width": 393,
+											"height": 265,
+											"text": "一、准备参数\n1、connectionSpecSelector 用与 TLS；\n2、java.net.Proxy proxy 代理类型；\n3、Address addres 目标地址；\n二、在 while 循环中创建 socket并连接\n1、根据 proxy 类型创建 socket；\n2、调用 connectSocket() 方法连接 socket；\n三、RealConnection#connectSocket() 方法\n1、调用 Platfor#connectSocket() 方法，连接 socket；\n2、拿到输出（source）和输入（sink）流；\n3、如果是 https 连接则执行 connectTls() 方法\n四、RealConnection#connectTls() 方法"
 										}
 									]
 								}
