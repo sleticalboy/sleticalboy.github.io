@@ -74,7 +74,7 @@
 											],
 											"font": "Arial;13;0",
 											"width": 1188,
-											"height": 929,
+											"height": 681,
 											"nameLabel": {
 												"$ref": "AAAAAAF4MIZMbv6BpN0="
 											},
@@ -2111,11 +2111,11 @@
 											},
 											"fillColor": "#d8f2ff",
 											"font": "Arial;13;0",
-											"left": 664,
+											"left": 656,
 											"top": 88,
 											"width": 471.42022705078125,
-											"height": 291,
-											"text": "一、Call#execute() 为同步方法，在结果返回前会一直阻塞\n1、首先调用 Dispatcher#executed(this) 将 call 放入已执行队列中；\n2、接着调用 getResponseWithInterceptorChain() 获取请求结果；\n3、最后调用 Dispatcher#finished(this) 将 call 从已执行队列中移除；\n二、Call#getResponseWithInterceptorChain() 方法最终会调用到\nApplicationInterceptorChain#proceed() 方法，该方法为责任链入口\n1、首先检查用户是否设置了 interceptor，如果设置则遍历所有的拦截器获取结果，若成功得到结果则返回；\n2、若#未成功返回则执行 Call#getResponse() 方法获取结果；\n三、Call#getResponse()\n1、首先给 request 添加通用的请求头：\nContent-Type/Content-Length/Transfer-Encoding；\n2、然后创建 HttpEngine 用于发送 http 请求并接收响应数据；\n3、接着通过 engine.sendRequest() 发送 Request、engine.readResponse() \n接收 Response；\n4、之后通过 engine.getResponse() 获取响应结果、engine.followUpRequest() \n检查是否需要重定向；\n5、最后若需要重定向则继续请求，若不需要则返回 Response。"
+											"height": 306,
+											"text": "一、Call#execute() 为同步方法，在结果返回前会一直阻塞\n1、首先调用 Dispatcher#executed(this) 将 call 放入已执行队列中；\n2、接着调用 getResponseWithInterceptorChain() 获取请求结果；\n3、最后调用 Dispatcher#finished(this) 将 call 从已执行队列中移除；\n二、Call#getResponseWithInterceptorChain() 方法最终会调用到\nApplicationInterceptorChain#proceed() 方法，该方法为责任链入口\n1、首先检查用户是否设置了 interceptor，如果设置则遍历所有的拦截器获取结果，若成功得到结果则返回；\n2、若 #1 未成功返回则执行 Call#getResponse() 方法获取结果；\n三、Call#getResponse()\n1、首先给 request 添加通用的请求头：Content-Type/Content-Length/\nTransfer-Encoding；\n2、然后创建 HttpEngine 用于发送请求并读取响应数据；\n3、接着在 while 循环中通过 engine.sendRequest() 发送 Request、\nengine.readResponse() 接收 Response；\n4、之后通过 engine.getResponse() 获取响应结果、engine.followUpRequest() \n检查是否需要重定向；\n5、最后若需要重定向则继续请求，若不需要则返回 Response；\n6、需要注意最大重定向次数为 20，若超出限制会报错：Too many follow-up request:"
 										}
 									]
 								}
@@ -3459,7 +3459,7 @@
 														"$ref": "AAAAAAF4NiTBqQvL0lY="
 													},
 													"font": "Arial;13;0",
-													"left": 361,
+													"left": 353,
 													"top": 369,
 													"width": 168.3779296875,
 													"height": 13,
@@ -3482,7 +3482,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 445,
+													"left": 437,
 													"top": 354,
 													"height": 13,
 													"alpha": 1.5707963267948966,
@@ -3503,7 +3503,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 445,
+													"left": 437,
 													"top": 389,
 													"height": 13,
 													"alpha": -1.5707963267948966,
@@ -3523,7 +3523,7 @@
 														"$ref": "AAAAAAF4NiTBqQvL0lY="
 													},
 													"font": "Arial;13;0",
-													"left": 537,
+													"left": 521,
 													"top": 385,
 													"width": 14,
 													"height": 29
@@ -3536,7 +3536,7 @@
 											"tail": {
 												"$ref": "AAAAAAF4MNk05wGR+BU="
 											},
-											"points": "354:385;537:385",
+											"points": "354:385;521:385",
 											"nameLabel": {
 												"$ref": "AAAAAAF4NiTBqQvNZLs="
 											},
@@ -3570,7 +3570,7 @@
 														"$ref": "AAAAAAF4NjJWPgzz/ck="
 													},
 													"font": "Arial;13;0",
-													"left": 592,
+													"left": 556,
 													"top": 376,
 													"width": 80.21533203125,
 													"height": 13,
@@ -3593,7 +3593,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 632,
+													"left": 596,
 													"top": 361,
 													"height": 13,
 													"alpha": 1.5707963267948966,
@@ -3614,7 +3614,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 632,
+													"left": 596,
 													"top": 396,
 													"height": 13,
 													"alpha": -1.5707963267948966,
@@ -3634,7 +3634,7 @@
 														"$ref": "AAAAAAF4NjJWPgzz/ck="
 													},
 													"font": "Arial;13;0",
-													"left": 715,
+													"left": 659,
 													"top": 392,
 													"width": 14,
 													"height": 29
@@ -3647,7 +3647,7 @@
 											"tail": {
 												"$ref": "AAAAAAF4NiRgHguyz2U="
 											},
-											"points": "550:392;715:392",
+											"points": "534:392;659:392",
 											"nameLabel": {
 												"$ref": "AAAAAAF4NjJWPwz14mo="
 											},
@@ -4022,7 +4022,7 @@
 															},
 															"visible": false,
 															"font": "Arial;13;0",
-															"left": -304,
+															"left": -336,
 															"height": 13
 														},
 														{
@@ -4032,7 +4032,7 @@
 																"$ref": "AAAAAAF4NiRgHQutRHQ="
 															},
 															"font": "Arial;13;1",
-															"left": 501,
+															"left": 485,
 															"top": 47,
 															"width": 85.8671875,
 															"height": 13,
@@ -4046,7 +4046,7 @@
 															},
 															"visible": false,
 															"font": "Arial;13;0",
-															"left": -304,
+															"left": -336,
 															"width": 195.0888671875,
 															"height": 13,
 															"text": "(from HttpEngine#sendRequest())"
@@ -4059,13 +4059,13 @@
 															},
 															"visible": false,
 															"font": "Arial;13;0",
-															"left": -304,
+															"left": -336,
 															"height": 13,
 															"horizontalAlignment": 1
 														}
 													],
 													"font": "Arial;13;0",
-													"left": 496,
+													"left": 480,
 													"top": 40,
 													"width": 95.8671875,
 													"height": 40,
@@ -4092,14 +4092,14 @@
 														"$ref": "AAAAAAF4NiRgHQurXHM="
 													},
 													"font": "Arial;13;0",
-													"left": 544,
+													"left": 528,
 													"top": 80,
 													"width": 1,
 													"height": 905
 												}
 											],
 											"font": "Arial;13;0",
-											"left": 496,
+											"left": 480,
 											"top": 40,
 											"width": 95.8671875,
 											"height": 945,
@@ -4138,7 +4138,7 @@
 															},
 															"visible": false,
 															"font": "Arial;13;0",
-															"left": -448,
+															"left": -560,
 															"height": 13
 														},
 														{
@@ -4148,7 +4148,7 @@
 																"$ref": "AAAAAAF4NiVBIwvkOQY="
 															},
 															"font": "Arial;13;1",
-															"left": 653,
+															"left": 597,
 															"top": 47,
 															"width": 138.57177734375,
 															"height": 13,
@@ -4162,7 +4162,7 @@
 															},
 															"visible": false,
 															"font": "Arial;13;0",
-															"left": -448,
+															"left": -560,
 															"width": 195.0888671875,
 															"height": 13,
 															"text": "(from HttpEngine#sendRequest())"
@@ -4175,13 +4175,13 @@
 															},
 															"visible": false,
 															"font": "Arial;13;0",
-															"left": -448,
+															"left": -560,
 															"height": 13,
 															"horizontalAlignment": 1
 														}
 													],
 													"font": "Arial;13;0",
-													"left": 648,
+													"left": 592,
 													"top": 40,
 													"width": 148.57177734375,
 													"height": 40,
@@ -4208,14 +4208,14 @@
 														"$ref": "AAAAAAF4NiVBIwviX08="
 													},
 													"font": "Arial;13;0",
-													"left": 722,
+													"left": 666,
 													"top": 80,
 													"width": 1,
 													"height": 905
 												}
 											],
 											"font": "Arial;13;0",
-											"left": 648,
+											"left": 592,
 											"top": 40,
 											"width": 148.57177734375,
 											"height": 945,
@@ -4468,7 +4468,7 @@
 														"$ref": "AAAAAAF4NjQFqw0s7vY="
 													},
 													"font": "Arial;13;0",
-													"left": 320,
+													"left": 312,
 													"top": 679,
 													"width": 245.71142578125,
 													"height": 13,
@@ -4491,7 +4491,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 445,
+													"left": 437,
 													"top": 665,
 													"height": 13,
 													"alpha": 1.5707963267948966,
@@ -4512,7 +4512,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 445,
+													"left": 437,
 													"top": 700,
 													"height": 13,
 													"alpha": -1.5707963267948966,
@@ -4532,7 +4532,7 @@
 														"$ref": "AAAAAAF4NjQFqw0s7vY="
 													},
 													"font": "Arial;13;0",
-													"left": 537,
+													"left": 521,
 													"top": 696,
 													"width": 14,
 													"height": 29
@@ -4545,7 +4545,7 @@
 											"tail": {
 												"$ref": "AAAAAAF4MNk05wGR+BU="
 											},
-											"points": "354:696;537:696",
+											"points": "354:696;521:696",
 											"nameLabel": {
 												"$ref": "AAAAAAF4NjQFqw0ugMM="
 											},
@@ -4579,12 +4579,12 @@
 														"$ref": "AAAAAAF4NjSFbg1Hf4Y="
 													},
 													"font": "Arial;13;0",
-													"left": 560,
-													"top": 693,
+													"left": 536,
+													"top": 692,
 													"width": 143.09521484375,
 													"height": 13,
-													"alpha": -4.629248576082512,
-													"distance": 12.041594578792296,
+													"alpha": 0.9048266477755614,
+													"distance": 17.804493814764857,
 													"hostEdge": {
 														"$ref": "AAAAAAF4NjSFbg1IMSs="
 													},
@@ -4602,7 +4602,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 632,
+													"left": 596,
 													"top": 681,
 													"height": 13,
 													"alpha": 1.5707963267948966,
@@ -4623,7 +4623,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 632,
+													"left": 596,
 													"top": 716,
 													"height": 13,
 													"alpha": -1.5707963267948966,
@@ -4643,7 +4643,7 @@
 														"$ref": "AAAAAAF4NjSFbg1Hf4Y="
 													},
 													"font": "Arial;13;0",
-													"left": 715,
+													"left": 659,
 													"top": 712,
 													"width": 14,
 													"height": 65
@@ -4656,7 +4656,7 @@
 											"tail": {
 												"$ref": "AAAAAAF4NiRgHguyz2U="
 											},
-											"points": "550:712;715:712",
+											"points": "534:712;659:712",
 											"nameLabel": {
 												"$ref": "AAAAAAF4NjSFbg1J59k="
 											},
@@ -4690,7 +4690,7 @@
 														"$ref": "AAAAAAF4NjUmMA1espA="
 													},
 													"font": "Arial;13;0",
-													"left": 717,
+													"left": 661,
 													"top": 723,
 													"width": 101.892578125,
 													"height": 13,
@@ -4713,7 +4713,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 782,
+													"left": 726,
 													"top": 723,
 													"height": 13,
 													"alpha": 1.5707963267948966,
@@ -4734,7 +4734,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 748,
+													"left": 692,
 													"top": 724,
 													"height": 13,
 													"alpha": -1.5707963267948966,
@@ -4754,7 +4754,7 @@
 														"$ref": "AAAAAAF4NjUmMA1espA="
 													},
 													"font": "Arial;13;0",
-													"left": 722,
+													"left": 666,
 													"top": 740,
 													"width": 14,
 													"height": 29
@@ -4767,7 +4767,7 @@
 											"tail": {
 												"$ref": "AAAAAAF4NiVBIwvp2NQ="
 											},
-											"points": "728:720;758:720;758:740;735:740",
+											"points": "672:720;702:720;702:740;679:740",
 											"nameLabel": {
 												"$ref": "AAAAAAF4NjUmMA1gXnw="
 											},
@@ -4809,7 +4809,7 @@
 															},
 															"visible": false,
 															"font": "Arial;13;0",
-															"left": -544,
+															"left": -704,
 															"height": 13
 														},
 														{
@@ -4819,7 +4819,7 @@
 																"$ref": "AAAAAAF4NjZ9zQ2RPSA="
 															},
 															"font": "Arial;13;1",
-															"left": 853,
+															"left": 773,
 															"top": 47,
 															"width": 113.28271484375,
 															"height": 13,
@@ -4833,7 +4833,7 @@
 															},
 															"visible": false,
 															"font": "Arial;13;0",
-															"left": -544,
+															"left": -704,
 															"width": 195.0888671875,
 															"height": 13,
 															"text": "(from HttpEngine#sendRequest())"
@@ -4846,13 +4846,13 @@
 															},
 															"visible": false,
 															"font": "Arial;13;0",
-															"left": -544,
+															"left": -704,
 															"height": 13,
 															"horizontalAlignment": 1
 														}
 													],
 													"font": "Arial;13;0",
-													"left": 848,
+													"left": 768,
 													"top": 40,
 													"width": 123.28271484375,
 													"height": 40,
@@ -4879,14 +4879,14 @@
 														"$ref": "AAAAAAF4NjZ9zQ2P+Cw="
 													},
 													"font": "Arial;13;0",
-													"left": 910,
+													"left": 830,
 													"top": 80,
 													"width": 1,
 													"height": 905
 												}
 											],
 											"font": "Arial;13;0",
-											"left": 848,
+											"left": 768,
 											"top": 40,
 											"width": 123.28271484375,
 											"height": 945,
@@ -4917,7 +4917,7 @@
 														"$ref": "AAAAAAF4NjnAvw4luAY="
 													},
 													"font": "Arial;13;0",
-													"left": 384,
+													"left": 344,
 													"top": 767,
 													"width": 145.97705078125,
 													"height": 13,
@@ -4940,7 +4940,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 628,
+													"left": 588,
 													"top": 753,
 													"height": 13,
 													"alpha": 1.5707963267948966,
@@ -4961,7 +4961,7 @@
 													},
 													"visible": false,
 													"font": "Arial;13;0",
-													"left": 628,
+													"left": 588,
 													"top": 788,
 													"height": 13,
 													"alpha": -1.5707963267948966,
@@ -4981,7 +4981,7 @@
 														"$ref": "AAAAAAF4NjnAvw4luAY="
 													},
 													"font": "Arial;13;0",
-													"left": 903,
+													"left": 823,
 													"top": 784,
 													"width": 14,
 													"height": 29
@@ -4994,7 +4994,7 @@
 											"tail": {
 												"$ref": "AAAAAAF4MNk05wGR+BU="
 											},
-											"points": "354:784;903:784",
+											"points": "354:784;823:784",
 											"nameLabel": {
 												"$ref": "AAAAAAF4NjnAwA4nxaI="
 											},
@@ -5229,6 +5229,20 @@
 											"activation": {
 												"$ref": "AAAAAAF4MNq+kAHbN4E="
 											}
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4Pzq1zYvxes8=",
+											"_parent": {
+												"$ref": "AAAAAAF4MNFF4AD9Cbk="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 688,
+											"top": 320,
+											"width": 481,
+											"height": 297,
+											"text": "一、通过HttpEngine#networkRequest(userRequest) 方法检查并添加默认的请\n求头：Host/Connection/Accept-Encoding（gzip 压缩）/cookie header/UA；\n二、检查缓存\n1、首先通过Internal.instance#internalCache() 查看是否有设置缓存，如果设置\n了缓存就尝试从缓存中查询当前 request 是否有 cacheCandidate；\n2、通过策略模式根据now、request、cacheCandidate 查询缓存，（Date/\nExpires/Last-Modified/ETag/Age/Only-If-Cache(不允许使用网络)）；\n三、通过 HttpEngine#connect() 发起连接并返回 HttpStream 对象，该方法实际\n转发到了StreamAllocation#newStream() 方法，该方法处理两件事：\n1、调用 findHealthyConnect() 获取一个可用的连接 connection；\n2、通过 connection 构建出 HttpStream 对象并返回；\n四、findHealthyConnection() 通过 while 循环调用 findConnection() 查询是否有\n可复用的连接，看下 findConnection() 方法：\n1、首先通过 Internal.instance.get(pool, address) 从连接池中查询是否有已存\n在的连接，若存在则返回；\n2、若无，则准备创建一个新的连接\n"
 										}
 									]
 								}
