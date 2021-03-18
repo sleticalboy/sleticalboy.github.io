@@ -2111,11 +2111,39 @@
 											},
 											"fillColor": "#d8f2ff",
 											"font": "Arial;13;0",
-											"left": 656,
+											"left": 680,
 											"top": 88,
 											"width": 471.42022705078125,
 											"height": 306,
 											"text": "一、Call#execute() 为同步方法，在结果返回前会一直阻塞\n1、首先调用 Dispatcher#executed(this) 将 call 放入已执行队列中；\n2、接着调用 getResponseWithInterceptorChain() 获取请求结果；\n3、最后调用 Dispatcher#finished(this) 将 call 从已执行队列中移除；\n二、Call#getResponseWithInterceptorChain() 方法最终会调用到\nApplicationInterceptorChain#proceed() 方法，该方法为责任链入口\n1、首先检查用户是否设置了 interceptor，如果设置则遍历所有的拦截器获取结果，若成功得到结果则返回；\n2、若 #1 未成功返回则执行 Call#getResponse() 方法获取结果；\n三、Call#getResponse()\n1、首先给 request 添加通用的请求头：Content-Type/Content-Length/\nTransfer-Encoding；\n2、然后创建 HttpEngine 用于发送请求并读取响应数据；\n3、接着在 while 循环中通过 engine.sendRequest() 发送 Request、\nengine.readResponse() 接收 Response；\n4、之后通过 engine.getResponse() 获取响应结果、engine.followUpRequest() \n检查是否需要重定向；\n5、最后若需要重定向则继续请求，若不需要则返回 Response；\n6、需要注意最大重定向次数为 20，若超出限制会报错：Too many follow-up request:"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4QvU4y7+rxVw=",
+											"_parent": {
+												"$ref": "AAAAAAF4MIZMbf5/baE="
+											},
+											"fillColor": "#d8e5ff",
+											"font": "Arial;13;0",
+											"left": 680,
+											"top": 400,
+											"width": 393,
+											"height": 70,
+											"text": "异步获取请求结果：\n1、请求过程与同步请求一致；\n2、回调操作默认在子线程执行，如果需要操作 UI 记得切换线程；\n"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4Qvdp0b+0YV8=",
+											"_parent": {
+												"$ref": "AAAAAAF4MIZMbf5/baE="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 680,
+											"top": 488,
+											"width": 481,
+											"height": 145,
+											"text": "Dispatcher\n1、支持最多 64 个并发，超出的任务放入就绪队列等待；\n2、每个主机最多支持 5 个并发请求，超出的任务同样需要放入就绪队列等待；\n3、每个任务完成后会调用 finished() 方法，将任务从运行队列中移除并酌情开\n始下次请求，即调用 promoteCalls() 方法；\n4、promoteCalls()：检测当前执行的任务是否小于最大并发数、就绪队列是否\n为空、从就绪队列中取出任务放入运行队列中并开始执行；\n5、已执行队列用于存放开始执行 execute() 方法的任务；\n6、核心数为0、最大线程数无上限、存活时间为 60s的线程池用于执行任务"
 										}
 									]
 								}
@@ -2385,14 +2413,28 @@
 									"ownedViews": [
 										{
 											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4Qv6FXL/EklA=",
+											"_parent": {
+												"$ref": "AAAAAAF4MNFF4AD9Cbk="
+											},
+											"fillColor": "#d8e5ff",
+											"font": "Arial;13;0",
+											"left": 680,
+											"top": 384,
+											"width": 449,
+											"height": 145,
+											"text": "连接池 ConnectionPool\n1、默认每台主机支持5个空闲连接，存活时间为 5min；\n2、用一个核心线程数为0、最大线程数为1、存活时间为 60s 的线程池来\n回收超时的空闲连接；\n3、用一个双端队列 ArrayDeque 存放可复用的连接，该集合非线程安全，\n多线程下使用 synchronized 方法来保证线程安全问题；\n4、put() 方法将连接放入连接池、get() 方法从连接池获取可复用的连接；\n5、连接实际是被 StreamAllocation 使用的，也是在这里执行 put/get 操作；\n"
+										},
+										{
+											"_type": "UMLNoteView",
 											"_id": "AAAAAAF4Pzq1zYvxes8=",
 											"_parent": {
 												"$ref": "AAAAAAF4MNFF4AD9Cbk="
 											},
 											"fillColor": "#d8f2ff",
 											"font": "Arial;13;0",
-											"left": 672,
-											"top": 112,
+											"left": 680,
+											"top": 96,
 											"width": 481,
 											"height": 281,
 											"text": "一、通过HttpEngine#networkRequest(userRequest) 方法检查并添加默认的请\n求头：Host/Connection/Accept-Encoding（gzip 压缩）/cookie header/UA；\n二、检查缓存\n1、首先通过Internal.instance#internalCache() 查看是否有设置缓存，如果设置\n了缓存就尝试从缓存中查询当前 request 是否有 cacheCandidate；\n2、通过策略模式根据now、request、cacheCandidate 查询缓存，（Date/\nExpires/Last-Modified/ETag/Age/Only-If-Cache(不允许使用网络)）；\n三、通过 HttpEngine#connect() 发起连接并返回 HttpStream 对象，该方法实际\n转发到了StreamAllocation#newStream() 方法，该方法处理两件事：\n1、调用 findHealthyConnect() 获取一个可用的连接 connection；\n2、通过 connection 构建出 HttpStream 对象并返回；\n四、findHealthyConnection() 通过 while 循环调用 findConnection() 查询是否有\n可复用的连接，看下 findConnection() 方法：\n1、首先通过 Internal.instance.get(pool, address) 从连接池中查询是否有已存\n在的连接，若存在则返回；\n2、若无则需要创建一个新的连接（需要Route）；\n3、为新建立的连接建立 socket 连接 RealConnection#connect()\n",
@@ -6891,7 +6933,7 @@
 											"left": 368,
 											"top": 128,
 											"width": 393,
-											"height": 265,
+											"height": 201,
 											"text": "一、准备参数\n1、connectionSpecSelector 用与 TLS；\n2、java.net.Proxy proxy 代理类型；\n3、Address addres 目标地址；\n二、在 while 循环中创建 socket并连接\n1、根据 proxy 类型创建 socket；\n2、调用 connectSocket() 方法连接 socket；\n三、RealConnection#connectSocket() 方法\n1、调用 Platfor#connectSocket() 方法，连接 socket；\n2、拿到输出（source）和输入（sink）流；\n3、如果是 https 连接则执行 connectTls() 方法\n四、RealConnection#connectTls() 方法"
 										}
 									]
