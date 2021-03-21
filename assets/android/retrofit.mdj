@@ -3269,6 +3269,48 @@
 											"width": 409,
 											"height": 65,
 											"text": "parseAnnotation() 方法：\n1、解析 service 方法上的注解，请求方法、url、header、tag等；\n2、解析 service 方法参数注解，path、参数等；"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4VUkfOdCJdI8=",
+											"_parent": {
+												"$ref": "AAAAAAF4RGtCRHe7bjY="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 24,
+											"top": 888,
+											"width": 369,
+											"height": 177,
+											"text": "CallAdapter"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4VUlV8tCPUls=",
+											"_parent": {
+												"$ref": "AAAAAAF4RGtCRHe7bjY="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 408,
+											"top": 888,
+											"width": 369,
+											"height": 177,
+											"text": "CallAdapter.Factory"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4VUl7nNCVLN0=",
+											"_parent": {
+												"$ref": "AAAAAAF4RGtCRHe7bjY="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 792,
+											"top": 896,
+											"width": 345,
+											"height": 177,
+											"text": "Converter"
 										}
 									]
 								}
