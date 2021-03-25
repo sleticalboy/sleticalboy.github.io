@@ -66,7 +66,7 @@
 														"$ref": "AAAAAAF4FZsk6WWxLs8="
 													},
 													"font": "Arial;13;0",
-													"left": 70.97900390625,
+													"left": 24.72998046875,
 													"top": 5,
 													"width": 117.365234375,
 													"height": 13,
@@ -81,14 +81,14 @@
 													"font": "Arial;13;1",
 													"left": 5,
 													"top": 5,
-													"width": 60.97900390625,
+													"width": 14.72998046875,
 													"height": 13,
-													"text": "interaction"
+													"text": "sd"
 												}
 											],
 											"font": "Arial;13;0",
-											"width": 1580,
-											"height": 956,
+											"width": 1185,
+											"height": 897,
 											"nameLabel": {
 												"$ref": "AAAAAAF4FZsk6WWyDSo="
 											},
@@ -2255,81 +2255,6 @@
 											"activation": {
 												"$ref": "AAAAAAF4FiTjNmjZvQI="
 											}
-										},
-										{
-											"_type": "UMLNoteLinkView",
-											"_id": "AAAAAAF4Gn7bJZgYKec=",
-											"_parent": {
-												"$ref": "AAAAAAF4FZsk6GWwN78="
-											},
-											"font": "Arial;13;0",
-											"head": {
-												"$ref": "AAAAAAF4FZsk6WWxLs8="
-											},
-											"tail": {
-												"$ref": "AAAAAAF4FZsk6WWxLs8="
-											},
-											"points": "789:0;789:-21;1608:-21;1608:477;1579:477"
-										},
-										{
-											"_type": "UMLNoteLinkView",
-											"_id": "AAAAAAF4Gn8DdJgczHo=",
-											"_parent": {
-												"$ref": "AAAAAAF4FZsk6GWwN78="
-											},
-											"font": "Arial;13;0",
-											"head": {
-												"$ref": "AAAAAAF4FZsk6WWxLs8="
-											},
-											"tail": {
-												"$ref": "AAAAAAF4FZsk6WWxLs8="
-											},
-											"points": "789:0;789:-21;1608:-21;1608:477;1579:477"
-										},
-										{
-											"_type": "UMLNoteLinkView",
-											"_id": "AAAAAAF4Gn8ODpgfPtY=",
-											"_parent": {
-												"$ref": "AAAAAAF4FZsk6GWwN78="
-											},
-											"font": "Arial;13;0",
-											"head": {
-												"$ref": "AAAAAAF4FZsk6WWxLs8="
-											},
-											"tail": {
-												"$ref": "AAAAAAF4FZsk6WWxLs8="
-											},
-											"points": "789:0;789:-21;1608:-21;1608:477;1579:477"
-										},
-										{
-											"_type": "UMLNoteLinkView",
-											"_id": "AAAAAAF4Gn8SF5gi9zs=",
-											"_parent": {
-												"$ref": "AAAAAAF4FZsk6GWwN78="
-											},
-											"font": "Arial;13;0",
-											"head": {
-												"$ref": "AAAAAAF4FZsk6WWxLs8="
-											},
-											"tail": {
-												"$ref": "AAAAAAF4FZsk6WWxLs8="
-											},
-											"points": "789:0;789:-21;1608:-21;1608:477;1579:477"
-										},
-										{
-											"_type": "UMLNoteLinkView",
-											"_id": "AAAAAAF4Gn8UR5gldzA=",
-											"_parent": {
-												"$ref": "AAAAAAF4FZsk6GWwN78="
-											},
-											"font": "Arial;13;0",
-											"head": {
-												"$ref": "AAAAAAF4FZsk6WWxLs8="
-											},
-											"tail": {
-												"$ref": "AAAAAAF4FZsk6WWxLs8="
-											},
-											"points": "789:0;789:-21;1608:-21;1608:477;1579:477"
 										}
 									]
 								}
@@ -2623,7 +2548,7 @@
 														"$ref": "AAAAAAF4FbHqxme2g6w="
 													},
 													"font": "Arial;13;0",
-													"left": 70.97900390625,
+													"left": 24.72998046875,
 													"top": 5,
 													"width": 97.13525390625,
 													"height": 13,
@@ -2638,9 +2563,9 @@
 													"font": "Arial;13;1",
 													"left": 5,
 													"top": 5,
-													"width": 60.97900390625,
+													"width": 14.72998046875,
 													"height": 13,
-													"text": "interaction"
+													"text": "sd"
 												}
 											],
 											"font": "Arial;13;0",
@@ -5274,7 +5199,7 @@
 											"top": 992,
 											"width": 417,
 											"height": 241,
-											"text": "消息分类：\n1、普通消息：通过 Handler#postxxx()/sendxxx()或者Message#sendToTarget() 方法发送的消息；\n2、异步消息：Handler#mAsynchronous 字段为 true 时发送的消息或者通过 Message#setAsynchronous(true) 加工过的消息；\n3、barrier 消息：通过 MQ#postSyncBarrier() 方法插入到 MQ 中的消息；（只针对异步消息生效）\n\n如果 MQ 中存在 barrier 消息，则该消息之后的异步消息都不会被 MQ#next() 方法取出。"
+											"text": "消息分类：\n1、同步消息：通过 Handler#postxxx()/sendxxx()或者Message#sendToTarget() 方法发送的消息；\n2、异步消息：Handler#mAsynchronous 字段为 true 时发送的消息或者通过 Message#setAsynchronous(true) 加工过的消息；\n3、barrier 消息：通过 MQ#postSyncBarrier() 方法插入到 MQ 中的消息；（只针对异步消息生效）\n4、MQ 中没有 barrier 消息存在时，同步消息和异步消息没有任何区\n别；若 MQ 中存在 barrier 消息，则 MQ#next() 方法会优先取出并执\n行异步消息，直到调用 removeSyncBarrier() 方法移除 barrier 消息\n5、异步消息的用途：ViewRootImpl 中利用异步消息+barrier 优先处\n理 vsync 绘制 UI。"
 										}
 									]
 								}
@@ -5636,7 +5561,7 @@
 														"$ref": "AAAAAAF4Fj78mmrpRS8="
 													},
 													"font": "Arial;13;0",
-													"left": 70.97900390625,
+													"left": 24.72998046875,
 													"top": 5,
 													"width": 89.1689453125,
 													"height": 13,
@@ -5651,14 +5576,14 @@
 													"font": "Arial;13;1",
 													"left": 5,
 													"top": 5,
-													"width": 60.97900390625,
+													"width": 14.72998046875,
 													"height": 13,
-													"text": "interaction"
+													"text": "sd"
 												}
 											],
 											"font": "Arial;13;0",
 											"width": 1097,
-											"height": 1428,
+											"height": 1265,
 											"nameLabel": {
 												"$ref": "AAAAAAF4Fj78mmrqZqg="
 											},
@@ -9025,6 +8950,20 @@
 											"activation": {
 												"$ref": "AAAAAAF4GjW0zpYNMTI="
 											}
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4Z0KA6IKEm/E=",
+											"_parent": {
+												"$ref": "AAAAAAF4Fj78mmroUz8="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 704,
+											"top": 744,
+											"width": 265,
+											"height": 98,
+											"text": "消息处理优先级：\n1、优先处理 native 层消息；\n2、然后处理 Java 层消息；\n3、这也是为什么 Java 层消息不多，但总是\n响应慢的原因"
 										}
 									]
 								}
