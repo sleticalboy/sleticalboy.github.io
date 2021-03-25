@@ -77,9 +77,9 @@
 													"_parent": {
 														"$ref": "AAAAAAF3/Z6JLkQILO8="
 													},
-													"lineColor": "#ff0000",
+													"lineColor": "#002133",
 													"font": "Arial;13;0",
-													"left": 75.97900390625,
+													"left": 29.72998046875,
 													"top": 5,
 													"width": 110.82080078125,
 													"height": 13,
@@ -91,16 +91,16 @@
 													"_parent": {
 														"$ref": "AAAAAAF3/Z6JLkQILO8="
 													},
-													"lineColor": "#ff0000",
+													"lineColor": "#002133",
 													"font": "Arial;13;1",
 													"left": 10,
 													"top": 5,
-													"width": 60.97900390625,
+													"width": 14.72998046875,
 													"height": 13,
-													"text": "interaction"
+													"text": "sd"
 												}
 											],
-											"lineColor": "#ff0000",
+											"lineColor": "#002133",
 											"font": "Arial;13;0",
 											"left": 5,
 											"width": 1244,
@@ -2472,8 +2472,8 @@
 											},
 											"fillColor": "#d8fff8",
 											"font": "Arial;13;0",
-											"left": 840,
-											"top": 128,
+											"left": 848,
+											"top": 440,
 											"width": 337,
 											"height": 270,
 											"text": "\n\n一、service_manager 启动（main 方法）时做了什么？\n答：1、打开binder驱动，并调用 mmap() 方法分配 128kb 内存映射空间；\n2、将自身注册为大管家（可以理解为守护进程）；\n3、进入无限循环开始处理请求；\n二、service manager 是被谁启动的？\n答：init 进程通过解析 init.rc 文件进而启动，其进程名为 /system/bin/servicemanager\n三、service manager 核心任务是什么？\n答：核心任务是注册（添加）和查询服务。\n1、注册服务：根据 name 来注册，同时记录 handle 信息（同名服务后来者会替换并移除原有的服务）；\n2、查询服务：遍历服务链表根据 name 查询 handle 信息；\n3、死亡通知：当 binder 所在的进程 dead 后，会释放 binder 占用的资源并发出死亡通知；"
@@ -2503,6 +2503,20 @@
 											"width": 241.00025939941406,
 											"height": 40,
 											"text": "蓝色表示用户空间，红色表示内核空间"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4Z/5KRsCMS1c=",
+											"_parent": {
+												"$ref": "AAAAAAF3/Z6JLUQHePQ="
+											},
+											"fillColor": "#d8fff8",
+											"font": "Arial;13;0",
+											"left": 840,
+											"top": 80,
+											"width": 342.94976806640625,
+											"height": 270,
+											"text": "ServiceManager 如何启动？\n1、是由 init 进程通过解析 init.rc 文件而创建，对应的可\n执行程序为 /system/bin/servicemanager，源文件为\nservice_manager.c，进程名/system/bin/servicemanager\n2、既然是可执行程序，则一定有 main() 方法；\n3、init 进程启动\n1、android 系统在根目录下有一个 init 可执行程序，该程\n序在 kernel 初始化后被启动；\n2、init 程序是 kernel 启动后开启的第一个 user space 程\n序；调用路径如下： kernel/init/main.c#kernel_init() -> \ninit_post() -> run_init_process(\"/init\") -> kernel_execve()"
 										}
 									]
 								}
@@ -2849,7 +2863,7 @@
 														"$ref": "AAAAAAF4ACo8xEvQrQU="
 													},
 													"font": "Arial;13;0",
-													"left": 70.97900390625,
+													"left": 24.72998046875,
 													"top": 5,
 													"width": 124.56982421875,
 													"height": 13,
@@ -2864,9 +2878,9 @@
 													"font": "Arial;13;1",
 													"left": 5,
 													"top": 5,
-													"width": 60.97900390625,
+													"width": 14.72998046875,
 													"height": 13,
-													"text": "interaction"
+													"text": "sd"
 												}
 											],
 											"font": "Arial;13;0",
@@ -6823,7 +6837,7 @@
 														"$ref": "AAAAAAF4AO7p91G9B2g="
 													},
 													"font": "Arial;13;0",
-													"left": 70.97900390625,
+													"left": 24.72998046875,
 													"top": 5,
 													"width": 99.287109375,
 													"height": 13,
@@ -6838,9 +6852,9 @@
 													"font": "Arial;13;1",
 													"left": 5,
 													"top": 5,
-													"width": 60.97900390625,
+													"width": 14.72998046875,
 													"height": 13,
-													"text": "interaction"
+													"text": "sd"
 												}
 											],
 											"font": "Arial;13;0",
@@ -14367,7 +14381,8 @@
 								"$ref": "AAAAAAF4X1Yh5BA+gsk="
 							},
 							"name": "IBinder mRemote",
-							"visibility": "private"
+							"visibility": "private",
+							"type": ""
 						}
 					],
 					"operations": [
@@ -14435,7 +14450,8 @@
 								"$ref": "AAAAAAF4X1b1SRB9TJQ="
 							},
 							"name": "long mObject",
-							"visibility": "private"
+							"visibility": "private",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
@@ -14444,7 +14460,8 @@
 								"$ref": "AAAAAAF4X1b1SRB9TJQ="
 							},
 							"name": "IInterface mOwner",
-							"visibility": "private"
+							"visibility": "private",
+							"type": ""
 						}
 					],
 					"operations": [
@@ -14580,7 +14597,7 @@
 														"$ref": "AAAAAAF4AU7p71Y7s7Y="
 													},
 													"font": "Arial;13;0",
-													"left": 70.97900390625,
+													"left": 24.72998046875,
 													"top": 5,
 													"width": 145.52978515625,
 													"height": 13,
@@ -14595,9 +14612,9 @@
 													"font": "Arial;13;1",
 													"left": 5,
 													"top": 5,
-													"width": 60.97900390625,
+													"width": 14.72998046875,
 													"height": 13,
-													"text": "interaction"
+													"text": "sd"
 												}
 											],
 											"font": "Arial;13;0",
@@ -18003,7 +18020,8 @@
 								"$ref": "AAAAAAF4Y14gyBUOk+8="
 							},
 							"name": "IServiceManager sServiceManager",
-							"visibility": "private"
+							"visibility": "private",
+							"type": ""
 						},
 						{
 							"_type": "UMLAttribute",
