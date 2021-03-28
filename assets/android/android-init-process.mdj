@@ -53,7 +53,7 @@
 													},
 													"font": "Arial;13;0",
 													"left": 32.72998046875,
-													"top": 13,
+													"top": 5,
 													"width": 45.80810546875,
 													"height": 13,
 													"text": "seq_init"
@@ -66,7 +66,7 @@
 													},
 													"font": "Arial;13;1",
 													"left": 13,
-													"top": 13,
+													"top": 5,
 													"width": 14.72998046875,
 													"height": 13,
 													"text": "sd"
@@ -74,7 +74,6 @@
 											],
 											"font": "Arial;13;0",
 											"left": 8,
-											"top": 8,
 											"width": 1041,
 											"height": 592,
 											"nameLabel": {
@@ -867,6 +866,33 @@
 											"linePart": {
 												"$ref": "AAAAAAF4dATrysHHkmk="
 											}
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4eRHmvXXWkIc=",
+											"_parent": {
+												"$ref": "AAAAAAF4c/7JYcGLjzk="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 496,
+											"top": 48,
+											"width": 409,
+											"height": 97,
+											"text": "1、kernel 启动后会执行 /init 程序，因此 init 进程是 Android 世界的第一个进程；\n2、init 程序启动后会解析 init.rc 文件启动各种服务，其中比较重要的是 servicemanager 和 zygote 这两个程序"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF4eRbTrHXfDpU=",
+											"_parent": {
+												"$ref": "AAAAAAF4c/7JYcGLjzk="
+											},
+											"font": "Arial;13;0",
+											"left": 472,
+											"top": 200,
+											"width": 425,
+											"height": 177,
+											"text": "1、第一阶段主要挂载文件系统；\n2、第二阶段初始化属性服务、解析 rc 文件并执行注册的指令"
 										}
 									]
 								}
