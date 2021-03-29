@@ -52,7 +52,7 @@
 														"$ref": "AAAAAAF4c/7JYsGMSK0="
 													},
 													"font": "Arial;13;0",
-													"left": 32.72998046875,
+													"left": 24.72998046875,
 													"top": 5,
 													"width": 45.80810546875,
 													"height": 13,
@@ -65,7 +65,7 @@
 														"$ref": "AAAAAAF4c/7JYsGMSK0="
 													},
 													"font": "Arial;13;1",
-													"left": 13,
+													"left": 5,
 													"top": 5,
 													"width": 14.72998046875,
 													"height": 13,
@@ -73,7 +73,6 @@
 												}
 											],
 											"font": "Arial;13;0",
-											"left": 8,
 											"width": 1041,
 											"height": 592,
 											"nameLabel": {
@@ -875,11 +874,11 @@
 											},
 											"fillColor": "#d8f2ff",
 											"font": "Arial;13;0",
-											"left": 496,
-											"top": 48,
+											"left": 480,
+											"top": 40,
 											"width": 409,
-											"height": 97,
-											"text": "1、kernel 启动后会执行 /init 程序，因此 init 进程是 Android 世界的第一个进程；\n2、init 程序启动后会解析 init.rc 文件启动各种服务，其中比较重要的是 servicemanager 和 zygote 这两个程序"
+											"height": 126,
+											"text": "1、kernel 启动后会执行 /init 程序，因此 init 进程是 Android 世界的第\n一个进程，同时也是用户空间的第一个进程；\n2、init 程序启动后会解析 init.rc 文件启动各种服务，其中比较重要的\n是 servicemanager(binder 服务管家) 和 zygote(Android世界的第一\n个 Java 进程) 这两个程序；\n3、zygote 进程会创建并启动 system_server 进程和各种 app 进程"
 										},
 										{
 											"_type": "UMLNoteView",
@@ -889,9 +888,9 @@
 											},
 											"font": "Arial;13;0",
 											"left": 472,
-											"top": 200,
+											"top": 192,
 											"width": 425,
-											"height": 177,
+											"height": 41,
 											"text": "1、第一阶段主要挂载文件系统；\n2、第二阶段初始化属性服务、解析 rc 文件并执行注册的指令"
 										}
 									]
