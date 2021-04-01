@@ -1,7 +1,7 @@
 {
 	"_type": "Project",
 	"_id": "AAAAAAFF+h6SjaM2Hec=",
-	"name": "Untitled",
+	"name": "app-start",
 	"ownedElements": [
 		{
 			"_type": "UMLUseCase",
@@ -9,7 +9,7 @@
 			"_parent": {
 				"$ref": "AAAAAAFF+h6SjaM2Hec="
 			},
-			"name": "UseCase1",
+			"name": "app-start-2",
 			"ownedElements": [
 				{
 					"_type": "UMLInteraction",
@@ -17,7 +17,7 @@
 					"_parent": {
 						"$ref": "AAAAAAFqEBzSqJWHnSY="
 					},
-					"name": "Interaction1",
+					"name": "ActivityThread#main()",
 					"ownedElements": [
 						{
 							"_type": "UMLSequenceDiagram",
@@ -25,7 +25,7 @@
 							"_parent": {
 								"$ref": "AAAAAAFqEB0OrpWKr1s="
 							},
-							"name": "app启动流程",
+							"name": "app-start-2",
 							"ownedViews": [
 								{
 									"_type": "UMLFrameView",
@@ -44,11 +44,11 @@
 												"$ref": "AAAAAAFqEB0OrpWMKf4="
 											},
 											"font": "Arial;13;0",
-											"left": 70.97900390625,
+											"left": 24.72998046875,
 											"top": 5,
-											"width": 74.69000244140625,
+											"width": 63.86083984375,
 											"height": 13,
-											"text": "app启动流程"
+											"text": "app-start-2"
 										},
 										{
 											"_type": "LabelView",
@@ -59,9 +59,9 @@
 											"font": "Arial;13;1",
 											"left": 5,
 											"top": 5,
-											"width": 60.97900390625,
+											"width": 14.72998046875,
 											"height": 13,
-											"text": "interaction"
+											"text": "sd"
 										}
 									],
 									"font": "Arial;13;0",
@@ -129,9 +129,9 @@
 													"font": "Arial;13;0",
 													"left": 48,
 													"top": -16,
-													"width": 106.20263671875,
+													"width": 164.6962890625,
 													"height": 13,
-													"text": "(from Interaction1)"
+													"text": "(from ActivityThread#main())"
 												},
 												{
 													"_type": "LabelView",
@@ -248,9 +248,9 @@
 													"font": "Arial;13;0",
 													"left": 19.8564453125,
 													"top": -16,
-													"width": 106.20263671875,
+													"width": 164.6962890625,
 													"height": 13,
-													"text": "(from Interaction1)"
+													"text": "(from ActivityThread#main())"
 												},
 												{
 													"_type": "LabelView",
@@ -367,9 +367,9 @@
 													"font": "Arial;13;0",
 													"left": 451.8564453125,
 													"top": -16,
-													"width": 106.20263671875,
+													"width": 164.6962890625,
 													"height": 13,
-													"text": "(from Interaction1)"
+													"text": "(from ActivityThread#main())"
 												},
 												{
 													"_type": "LabelView",
@@ -486,9 +486,9 @@
 													"font": "Arial;13;0",
 													"left": 1976,
 													"top": -16,
-													"width": 106.20263671875,
+													"width": 164.6962890625,
 													"height": 13,
-													"text": "(from Interaction1)"
+													"text": "(from ActivityThread#main())"
 												},
 												{
 													"_type": "LabelView",
@@ -605,9 +605,9 @@
 													"font": "Arial;13;0",
 													"left": 1104,
 													"top": -16,
-													"width": 106.20263671875,
+													"width": 164.6962890625,
 													"height": 13,
-													"text": "(from Interaction1)"
+													"text": "(from ActivityThread#main())"
 												},
 												{
 													"_type": "LabelView",
@@ -835,9 +835,9 @@
 													"font": "Arial;13;0",
 													"left": 2240,
 													"top": -16,
-													"width": 106.20263671875,
+													"width": 164.6962890625,
 													"height": 13,
-													"text": "(from Interaction1)"
+													"text": "(from ActivityThread#main())"
 												},
 												{
 													"_type": "LabelView",
@@ -984,9 +984,9 @@
 													"font": "Arial;13;0",
 													"left": 1680,
 													"top": -16,
-													"width": 106.20263671875,
+													"width": 164.6962890625,
 													"height": 13,
-													"text": "(from Interaction1)"
+													"text": "(from ActivityThread#main())"
 												},
 												{
 													"_type": "LabelView",
@@ -1103,9 +1103,9 @@
 													"font": "Arial;13;0",
 													"left": 1091.8564453125,
 													"top": -16,
-													"width": 106.20263671875,
+													"width": 164.6962890625,
 													"height": 13,
-													"text": "(from Interaction1)"
+													"text": "(from ActivityThread#main())"
 												},
 												{
 													"_type": "LabelView",
@@ -1297,9 +1297,9 @@
 													"font": "Arial;13;0",
 													"left": 2179.8564453125,
 													"top": -16,
-													"width": 106.20263671875,
+													"width": 164.6962890625,
 													"height": 13,
-													"text": "(from Interaction1)"
+													"text": "(from ActivityThread#main())"
 												},
 												{
 													"_type": "LabelView",
@@ -2505,9 +2505,9 @@
 													"visible": false,
 													"font": "Arial;13;0",
 													"left": 2627.8564453125,
-													"width": 106.20263671875,
+													"width": 164.6962890625,
 													"height": 13,
-													"text": "(from Interaction1)"
+													"text": "(from ActivityThread#main())"
 												},
 												{
 													"_type": "LabelView",
@@ -9749,9 +9749,6 @@
 								"$ref": "AAAAAAFqEB0OrpWKr1s="
 							},
 							"name": "ContextImpl",
-							"represent": {
-								"$ref": "AAAAAAFqEQEcnvmE7pk="
-							},
 							"isMultiInstance": false
 						},
 						{
@@ -9817,9 +9814,6 @@
 								"$ref": "AAAAAAFqEB0OrpWKr1s="
 							},
 							"name": "LoadedApk",
-							"represent": {
-								"$ref": "AAAAAAFqEU74a/0ds0Q="
-							},
 							"isMultiInstance": false
 						},
 						{
@@ -9925,9 +9919,6 @@
 								"$ref": "AAAAAAFqEB0OrpWKr1s="
 							},
 							"name": "ActivityStackSupervisor",
-							"represent": {
-								"$ref": "AAAAAAFqEeVbyYKjAwc="
-							},
 							"isMultiInstance": false
 						},
 						{
@@ -10017,9 +10008,6 @@
 								"$ref": "AAAAAAFqEB0OrpWKr1s="
 							},
 							"name": "Lifeline1",
-							"represent": {
-								"$ref": "AAAAAAFqEjLW/If6mVQ="
-							},
 							"isMultiInstance": false
 						},
 						{
@@ -10029,9 +10017,6 @@
 								"$ref": "AAAAAAFqEB0OrpWKr1s="
 							},
 							"name": "Activity",
-							"represent": {
-								"$ref": "AAAAAAFqEjNI3IhLCqo="
-							},
 							"isMultiInstance": false
 						},
 						{
@@ -10099,62 +10084,6 @@
 							"name": "Gate37"
 						}
 					]
-				}
-			],
-			"attributes": [
-				{
-					"_type": "UMLAttribute",
-					"_id": "AAAAAAFqEQEcnvmE7pk=",
-					"_parent": {
-						"$ref": "AAAAAAFqEBzSqJWHnSY="
-					},
-					"name": "Role1",
-					"type": ""
-				},
-				{
-					"_type": "UMLAttribute",
-					"_id": "AAAAAAFqEU74a/0ds0Q=",
-					"_parent": {
-						"$ref": "AAAAAAFqEBzSqJWHnSY="
-					},
-					"name": "Role2",
-					"type": ""
-				},
-				{
-					"_type": "UMLAttribute",
-					"_id": "AAAAAAFqEXfpIH3+JTU=",
-					"_parent": {
-						"$ref": "AAAAAAFqEBzSqJWHnSY="
-					},
-					"name": "Role3",
-					"type": ""
-				},
-				{
-					"_type": "UMLAttribute",
-					"_id": "AAAAAAFqEeVbyYKjAwc=",
-					"_parent": {
-						"$ref": "AAAAAAFqEBzSqJWHnSY="
-					},
-					"name": "Role4",
-					"type": ""
-				},
-				{
-					"_type": "UMLAttribute",
-					"_id": "AAAAAAFqEjLW/If6mVQ=",
-					"_parent": {
-						"$ref": "AAAAAAFqEBzSqJWHnSY="
-					},
-					"name": "Role5",
-					"type": ""
-				},
-				{
-					"_type": "UMLAttribute",
-					"_id": "AAAAAAFqEjNI3IhLCqo=",
-					"_parent": {
-						"$ref": "AAAAAAFqEBzSqJWHnSY="
-					},
-					"name": "Role6",
-					"type": ""
 				}
 			]
 		}
