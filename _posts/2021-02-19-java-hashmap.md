@@ -282,6 +282,13 @@ final Node<K, V>[] resize() {
 - 1、其左子树下的每个后代节点的值都小于节点 n 的值；
 - 2、其右子树下的每个后代节点的值都大于节点 n 的值；
 
+4、红黑树解决了什么问题
+
+- 防止平衡二叉搜索树变为线性数据结构(链表)
+
+5、AVL 树(平衡二叉搜索树)
+
+- 它是一颗空树或它的左右两个子树的高度差绝对值不超过1，并且左右两个子树都是平衡二叉树
 
 ```java
 static final class TreeNode<K,V> extends LinkedHashMap.LinkedHashMapEntry<K,V> {
