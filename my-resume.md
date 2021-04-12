@@ -9,7 +9,7 @@
     </tr>
     <tr align="right">
         <th>工作年限</th>
-        <td align="left" style="padding-left: 2em">4年+</td>
+        <td align="left" style="padding-left: 2em">4年</td>
         <th>Github</th>
         <td align="left" style="padding-left: 2em">
             <a href="https://www.github.com/sleticalboy" target="_blank">sleticalboy</a>
@@ -18,35 +18,42 @@
     <tr align="right">
         <th>毕业院校</th>
         <td align="left" style="padding-left: 2em">华北科技学院·本科·网络工程专业</td>
-        <th>手机/微信号</th>
+        <th>&nbsp;&nbsp;手机/微信</th>
         <td align="left" style="padding-left: 2em">18911233403</td>
     </tr>
     <tr align="right">
         <th>期望职位</th>
-        <td align="left" style="padding-left: 2em">Android 开发工程师</td>
+        <td align="left" style="padding-left: 2em" colspan="3">
+        Android 开发工程师·杭州·计算机软件·移动互联网·物联网
+        </td>
     </tr>
 </table>
 </br>
 
 ---
-## 专业技能
 
-- Java 基础扎实，熟练掌握面向对象思想知晓常用的设计模式并有所实践；
-- 熟练使用 Linux 系统和 AS 进行 Android 应用开发；
-- 熟练掌握 Android 开发基本技能: 四大组件、常用控件以及自定义控件实现、数据存储、网络编程；
-- 熟悉 Android 平台下卡顿/布局/内存优化，OOM、ANR异常处理技巧；
-- 熟练使用 OkHttp、Glide、Retrofit 框架并了解其内部原理；
-- 熟练使用 AIDL 进行跨进程通信开发并了解 Android binder 架构、ServiceManager 工作原理；
-- 有 JNI 编程经验（Huffman 图片压缩、通过 ioctl 与驱动进行数据传输）；
+## 个人优势
+
+- 熟悉常用的数据结构与算法；
+- 熟悉面向对象思想和常用设计模式并在工作中有所实践；
+- 熟悉 JDK 中各种集合、队列、锁、多线程、底层结构及原理；
+- JVM/JMM/GC/ HTTP/HTTPS/TCP/IP
+- 熟悉 Android 四大组件、数据存储、网络编程以及自定义控件；
+- 熟悉 Android 平台下卡顿/布局/内存优化，OOM、ANR、crash 处理技巧；
+- 熟悉 OkHttp、Glide、Retrofit 开源框架并了解其内部原理；
+- 熟悉 Linux 常用命令并熟练进行 Android 源码编译、阅读、调试等工作；
+- 熟悉 Android 跨进程通信开发并了解 binder 架构、ServiceManager 底层原理；
+- 了解 Android input 系统及其子模块的工作原理；
 - 有即时通讯相关开发经验，如聊天、推送（MQTT）；
-- 了解热修复并知晓其内部原理，了解组件化/插件化开发、热修复和反编译等相关技能；
-- 了解 Android input 子系统及其子模块的工作原理；
+- 有 JNI （Huffman 图片压缩、通过 ioctl 与驱动进行数据传输）和 BLE 开发经验；
+- 了解热修复技术并知晓其内部原理，了解组件化/插件化开发和反编译等相关技能；
 - 了解 Gradle 插件编程并有实际使用经验（配合 asm 字节码技术实现自动埋点技术）；
 
 ---
+
 ## 工作经历
 
-### [深圳市潮流网络技术有限公司杭州分公司][5] （ 2019年10月 ~ 至今 ）
+### [深圳市潮流网络技术有限公司杭州分公司][3] (2019/10 ~ 2021/4)
 
 在开发一部任 Android 开发工程师，简单来讲一部的工作就是 Android ROM 定制开发，针对不同的
 客户需求来定制产品。内部分为若干产品小组，我是在 GVC 小组主要负责一款高清视频会议终端系统
@@ -55,12 +62,12 @@ Settings 应用的开发和维护工作。
 #### GVC3220 项目 Settings 应用维护
 
 - **职责**
- - 参考 3210 项目移植开发 Settings 应用到 3220 项目；
- - 根据产品需求实现部分功能、开发自测完成提测以及解决 bug；
+  - 参考 3210 项目移植开发 Settings 应用到 3220 项目；
+  - 根据产品需求实现部分功能、开发自测完成提测以及解决 bug；
 - **技术点**
- - 使用 MediaPlayer + AudioPlayer 实现系统铃声播放；
- - 参考 Android 原生 Settings 完成 WiFi 模块功能改造适配；
- - 使用 Messenger 实现 Settings 应用与 GMD 蓝牙固件升级子模块之间跨进程通信；
+  - 使用 MediaPlayer + AudioPlayer 实现系统铃声播放；
+  - 参考 Android 原生 Settings 完成 WiFi 模块功能改造适配；
+  - 使用 Messenger 实现 Settings 应用与 GMD 蓝牙固件升级子模块之间跨进程通信；
 - **业绩**
   - 完成 GMD 蓝牙固件升级子模块开发任务；
   - 期间修复 bug 200+，完成需求开发 5 个
@@ -84,8 +91,8 @@ Settings 应用的开发和维护工作。
   - 自定义注解+反射技术实现 JavaBean 对象与 SQLite 数据库表的关联；
   - 设计模式实践：享元模式、责任链模型、观察者模型、生产者消费者模型以及静态代理；
 - **业绩**
- - 独立开发并维护 GMD 子模块所有功能；
- - 实现 GMD 功能 12 个，修复问题 100+；
+  - 独立开发并维护 GMD 子模块所有功能；
+  - 实现 GMD 功能 12 个，修复问题 100+；
 
 #### AirMedia 项目 ATE测试及出厂程序开发维护
 
@@ -104,11 +111,13 @@ Settings 应用的开发和维护工作。
 - **业绩**
   - 提前 2 周完成开发任务，开发质量得到同事及领导的肯定
 
-### [北京德惠众合信息技术有限公司][2] （ 2018年1月 ~ 2019年9月 ）
+### [北京德惠众合信息技术有限公司][2] (2017/2 ~ 2019/9)
 
-敏行客户端是一款基于`敏行SDK` 开发的，集`即时通讯`、`敏邮`、`公司通讯录`、`工作圈`、
+敏行客户端是一款基于`敏行SDK` 开发的集`即时通讯`、`敏邮`、`公司通讯录`、`工作圈`、
 `应用商店`、 `新闻资讯`等功能于一体的移动化办公软件；受众主要是银行、政府等企业机关。
 
+实习期间，学习了 Android 四大组件、常用基本布局控件、数据存储、网络编程等基础知识；
+同时也了解了 Android 应用开发的基本流程，初步学习git 版本控制工具的使用。
 
 - **基于`敏行SDK`进行的定制化开发**
 - **项目职责**
@@ -126,42 +135,20 @@ Settings 应用的开发和维护工作。
   - 使用 Glide 重构 SDK `图片加载` 模块
   - 使用鲁班压缩优化 IM 模块发送图片大小，极大提高图片发送和加载速度
   - 重构 SDK `网络层`：使用 OkHttp 对整个网络层进行替换
+  - 使用透明 Fragment 实现 Android 6.0+ 动态权限申请适配
+  - 使用 CrashHandler 捕获 crash 信息，并上传到服务器，供开发调试
+  - 使用 OkHttp 重构网络层
+  - MVC、MVP、MVVM 架构在项目中实践
 - **业绩**
   - 在职期间修复 bug 760+，完成大小需求 59 个
 
-### [北京悦影科技有限公司][3] （ 2017年7月 ~ 2017年12月 ）
-
-[`爆新闻`][4]app是北京悦影科技有限公司于2016年推出的一款移动新闻采编工具。该产品主要为新闻机构、记者、爆料
-人等提供基于云服务和移动端的新闻采编服务，摆脱传统新闻采编方式对于专业设备的依赖，用手机就可以轻松进行新闻
-采集、编辑、传输等工作，高效、快捷的完成新闻采编，提高新闻时效性。
-
-- **参与爆新闻客户端迭代开发**
-- **技术点**
-  - 项目整体采用 MVP 设计模式组织程序结构，方便代码的管理和维护；
-  - 利用 AndroidAnnotations、OrmLite 快速开发框架提高开发速度；
-  - 使用 Volley + Gson 开源框架实现网络数据请求、解析和图片加载一体化；
-  - 使用 CrashHandler 捕获 crash 信息，并上传到服务器，供开发调试；
-  - 使用 RecyclerView 实现首页功能模块、文稿等列表，并提供下拉刷新等功能；
-  - 使用 RxPermissions 开源库适配 Android6.0以上敏感权限的动态申请；
-
 ---
-## 实习经历 （ 2016年9月 ~ 2017年6月 ）
 
-### 三河市鼎科远图技术有限公司
-
-实习期间，学习了 Android 四大组件、常用基本布局控件、数据存储、网络编程等基础知识；同时也了解了 Android 应用
-开发的基本流程，初步学习了了 svn 和 git 这两款版本控制工具的使用。
-
----
-# 自我评价
+## 自我评价
 
 - 工作有激情、学习能力强，有团队精神并且善于沟通合作；
 - 能独立钻研，没有什么问题是不能通过阅读源码来解决的；
-- 业务理解能力强，能够快速理解并上手业务；
-- 具备良好的业务架构基础，理解常用的设计模式并在项目中有所实践
 
 [1]: https://github.com/sleticalboy
 [2]: https://www.minxing365.com/web/
-[3]: http://www.yomovie.cn/
-[4]: https://www.baoxinwen.com/
-[5]: http://www.grandstream.cn/
+[3]: http://www.grandstream.cn/
