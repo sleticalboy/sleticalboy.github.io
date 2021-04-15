@@ -2532,6 +2532,20 @@
 									"name": "seq_looper_loop",
 									"ownedViews": [
 										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF41cr4DtBMAtU=",
+											"_parent": {
+												"$ref": "AAAAAAF4FbHqxme1fV4="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 704,
+											"top": 848,
+											"width": 297,
+											"height": 128,
+											"text": "MQ 何时会被阻塞？\n答：当 next() 方法未取到消息且 idle handlers 为\n空时，会阻塞。\nMQ 何时会被唤醒？\n答：1、向 MQ 头部插入消息时；\n2、MQ 头部是一条 barrier 消息并且插入队列的\n是一条异步消息时；"
+										},
+										{
 											"_type": "UMLFrameView",
 											"_id": "AAAAAAF4FbHqxme2g6w=",
 											"_parent": {
@@ -5199,7 +5213,21 @@
 											"top": 992,
 											"width": 417,
 											"height": 241,
-											"text": "消息分类：\n1、同步消息：通过 Handler#postxxx()/sendxxx()或者Message#sendToTarget() 方法发送的消息；\n2、异步消息：Handler#mAsynchronous 字段为 true 时发送的消息或者通过 Message#setAsynchronous(true) 加工过的消息；\n3、barrier 消息：通过 MQ#postSyncBarrier() 方法插入到 MQ 中的消息；（只针对异步消息生效）\n4、MQ 中没有 barrier 消息存在时，同步消息和异步消息没有任何区\n别；若 MQ 中存在 barrier 消息，则 MQ#next() 方法会优先取出并执\n行异步消息，直到调用 removeSyncBarrier() 方法移除 barrier 消息\n5、异步消息的用途：ViewRootImpl 中利用异步消息+barrier 优先处\n理 vsync 绘制 UI。"
+											"text": "消息分类：\n1、同步消息：通过 Handler#postxxx()/sendxxx()或者\nMessage#sendToTarget() 方法发送的消息；\n2、异步消息：Handler#mAsynchronous 字段为 true 时发送的消息或者通过 Message#setAsynchronous(true) 加工过的消息；\n3、barrier 消息：通过 MQ#postSyncBarrier() 方法插入到 MQ 中的消息；（只针对异步消息生效）\n4、MQ 中没有 barrier 消息存在时，同步消息和异步消息没有任何区\n别；若 MQ 中存在 barrier 消息，则 MQ#next() 方法会优先取出并执\n行异步消息，直到调用 removeSyncBarrier() 方法移除 barrier 消息\n5、异步消息的用途：ViewRootImpl 中利用异步消息+barrier 优先处\n理 vsync 绘制 UI。"
+										},
+										{
+											"_type": "UMLNoteView",
+											"_id": "AAAAAAF41dFxFNBaP0Y=",
+											"_parent": {
+												"$ref": "AAAAAAF4FbHqxme1fV4="
+											},
+											"fillColor": "#d8f2ff",
+											"font": "Arial;13;0",
+											"left": 704,
+											"top": 536,
+											"width": 289,
+											"height": 137,
+											"text": "MQ 机制有哪些设计模式？\n1、享元模式：Message 缓存池、50；\n2、命令模式：Handler 发送消息；\n3、观察者模式：Handler#Callback、\nMQ#IdleHandler；\n4、生产者消费者模型：消息的插入和获取；"
 										}
 									]
 								}
