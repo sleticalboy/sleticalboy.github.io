@@ -13,6 +13,8 @@ tags: [technology]
 
 HttpClient 和 AndroidHttpClient 实现
 
+其本质为添加请求头 
+
 ### 文件上传与下载
 
 HttpUrlConnection 和 AndroidHttpClient 实现
@@ -43,9 +45,15 @@ HttpAdapter
 
 2、调用方式收敛
 
+原有调用方式标记为 Deprecated，统一使用新的调用方式
+
 3、老旧方式移除
 
+若干版本后统一移除原有实现方式
+
 4、底层实现替换
+
+将原有调用方式底层实现替换为新的实现方式
 
 默认实现为 HttpUrlConnection
 可自行替换为 OkHttp + Retrofit + RxJava
