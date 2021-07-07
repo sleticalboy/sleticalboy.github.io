@@ -191,7 +191,7 @@ public synchronized void sync() {
 
 ## LockSupport、淘宝面试题与源码阅读方法讨论
 
-## AQS 源码阅读与强软弱虚四种引用以及 ThreadLocal 原理
+## AQS 源码阅读与强软弱虚四种引用以及 ThreadLocal 原理 & 源码分析
 
 ### AQS：AbstractQueuedSynchronizer
 
