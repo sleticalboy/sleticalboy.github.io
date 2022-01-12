@@ -40,11 +40,13 @@ module JB
   end #Path
 end #JB
 
-# Usage: rake post title="A Title" [date="2012-02-09"]
+# Usage: rake post title="A Title" [date="2012-02-09"] [category="articale"] [tags="android"]
 desc "Begin a new post in #{CONFIG['posts']}"
 task :post do
   abort("rake aborted: '#{CONFIG['posts']}' directory not found.") unless FileTest.directory?(CONFIG['posts'])
   title = ENV["title"] || "new-post"
+  category = ENV["art"] || "articale"
+  tags = ENV["tags"] || "technology"
   # 标题转为小写作为文件名
   slug = title.downcase.strip.gsub(' ', '-').gsub(/[^\w-]/, '')
   begin
@@ -65,8 +67,8 @@ task :post do
     post.puts "title: #{title.gsub(/-/,' ')}"
     post.puts "author: sleticalboy"
     post.puts "date: #{Time.now}"
-    post.puts "category: articale"
-    post.puts "tags: [technology]"
+    post.puts "category: #{category}"
+    post.puts "tags: [#{tags}]"
     post.puts "---"
   end
 end # task :post
