@@ -160,9 +160,19 @@ Lunch menu... pick a combo:
 ### Ubuntu 18.04 编译 Android 6.0 源码
 
 1、问题：`flex-2.5.39: loadlocale.c:130: _nl_intern_locale_data: Assertioncnt < (sizeof (_nl_valu`
+
+方法一：
 ```bash
 # 解决办法
 export LC_ALL=C
+```
+
+方法二：（如果方法一无效再尝试方法二）
+```bash
+# 最好是重命名而不是删除
+# rm prebuilts/misc/linux-x86/flex/flex-2.5.39
+# 做一个软连接
+ln -s /usr/bin/flex prebuilts/misc/linux-x86/flex/flex-2.5.39
 ```
 
 2、recipe for target 'out/host/linux-x86/obj/lib/libart.so' failed function.sh: line 44: sendemail: command not found
